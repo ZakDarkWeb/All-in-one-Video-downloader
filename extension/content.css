@@ -1,0 +1,222 @@
+/* ZDownloader by Zak — FAB Styles v3.2 */
+
+/* ── Main FAB container ── */
+#zak-fab {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+}
+
+#zak-fab.zak-dragging {
+  opacity: 0.92 !important;
+  cursor: grabbing !important;
+}
+
+/* ── Button wrapper with ring ── */
+#zak-fab-btn-wrap {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+/* ── SVG Progress Ring ── */
+#zak-ring-svg {
+  position: absolute !important;
+  top: -5px !important;
+  left: -5px !important;
+  width: 62px !important;
+  height: 62px !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+#zak-ring-fill {
+  transition: stroke-dashoffset 0.4s cubic-bezier(0.16,1,0.3,1) !important;
+}
+
+/* ── Main FAB button ── */
+#zak-fab-btn {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  background: linear-gradient(135deg, #00d4ff, #8b5cf6) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 10px 16px 10px 12px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 20px rgba(139,92,246,0.5), 0 2px 8px rgba(0,0,0,0.4) !important;
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
+  white-space: nowrap !important;
+  letter-spacing: -0.2px !important;
+  -webkit-font-smoothing: antialiased !important;
+  outline: none !important;
+}
+
+#zak-fab-btn:hover {
+  transform: translateY(-2px) scale(1.04) !important;
+  box-shadow: 0 8px 28px rgba(139,92,246,0.65), 0 4px 12px rgba(0,0,0,0.3) !important;
+  filter: brightness(1.08) !important;
+}
+
+#zak-fab-btn:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+#zak-fab-btn svg.zak-dl-icon {
+  width: 15px !important;
+  height: 15px !important;
+  stroke: #fff !important;
+  flex-shrink: 0 !important;
+}
+
+/* Busy state */
+#zak-fab-btn.zak-busy {
+  background: linear-gradient(135deg, #1a1040, #0d1a30) !important;
+  cursor: default !important;
+  animation: zakBusyPulse 1.6s ease-in-out infinite !important;
+}
+
+/* Done state */
+#zak-fab-btn.zak-done {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  box-shadow: 0 4px 20px rgba(16,185,129,0.5) !important;
+  animation: zakDonePop 0.4s cubic-bezier(0.34,1.56,0.64,1) !important;
+}
+
+/* Active (menu open) state */
+#zak-fab-btn.zak-active {
+  background: linear-gradient(135deg, #8b5cf6, #00d4ff) !important;
+}
+
+@keyframes zakBusyPulse {
+  0%,100% { box-shadow: 0 4px 16px rgba(139,92,246,0.3); }
+  50%      { box-shadow: 0 4px 28px rgba(0,212,255,0.5); }
+}
+
+@keyframes zakDonePop {
+  from { transform: scale(0.92); }
+  to   { transform: scale(1); }
+}
+
+/* ── Drag handle ── */
+#zak-drag-handle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 22px !important;
+  height: 36px !important;
+  color: rgba(255,255,255,0.4) !important;
+  font-size: 14px !important;
+  cursor: grab !important;
+  transition: color 0.2s !important;
+  letter-spacing: -2px !important;
+  flex-shrink: 0 !important;
+  padding-left: 4px !important;
+}
+
+#zak-drag-handle:hover {
+  color: rgba(255,255,255,0.8) !important;
+}
+
+#zak-fab.zak-dragging #zak-drag-handle {
+  cursor: grabbing !important;
+}
+
+/* ── Dropdown Menu ── */
+#zak-fab-menu {
+  display: none !important;
+  flex-direction: column !important;
+  background: #0d1117 !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(139,92,246,0.15) !important;
+  min-width: 210px !important;
+  order: -1 !important;
+}
+
+#zak-fab-menu.zak-open {
+  display: flex !important;
+  animation: zakMenuIn 0.22s cubic-bezier(0.16,1,0.3,1) forwards !important;
+}
+
+@keyframes zakMenuIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.zak-menu-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 9px 14px !important;
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.3px !important;
+  color: #475569 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  background: rgba(0,0,0,0.25) !important;
+  font-family: inherit !important;
+}
+
+.zak-menu-header svg {
+  width: 12px !important;
+  height: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.zak-menu-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  padding: 10px 14px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+  color: #cbd5e1 !important;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background 0.15s, color 0.15s !important;
+  text-align: left !important;
+  width: 100% !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+.zak-menu-row:last-child { border-bottom: none !important; }
+
+.zak-menu-row:hover {
+  background: rgba(139,92,246,0.18) !important;
+  color: #fff !important;
+}
+
+.zak-row-best:hover { background: rgba(0,212,255,0.14) !important; }
+.zak-row-audio:hover { background: rgba(244,114,182,0.14) !important; }
+
+.zak-menu-icon { font-size: 14px !important; flex-shrink: 0 !important; line-height: 1 !important; }
+.zak-menu-txt  { flex: 1 !important; font-size: 12px !important; font-weight: 600 !important; }
+.zak-menu-tag  {
+  font-size: 9px !important; font-weight: 800 !important;
+  color: #64748b !important; background: rgba(255,255,255,0.07) !important;
+  padding: 2px 6px !important; border-radius: 5px !important;
+  letter-spacing: 0.3px !important; flex-shrink: 0 !important;
+}
+.zak-tag-hot   { background: rgba(0,212,255,0.18) !important; color: #7dd3fc !important; }
+.zak-tag-audio { background: rgba(244,114,182,0.18) !important; color: #f9a8d4 !important; }

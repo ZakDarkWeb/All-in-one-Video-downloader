@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec
+
+# Large binaries and media files (exceeds GitHub limits)
+ffmpeg.exe
+aria2c.exe
+*.webm
+*.mp4
+*.mkv
+*.mp3
+*.zip
+!ZDownloader_v3.zip
+
+# User downloads & private cookies
+downloads/
+cookies/*.txt
+
+# Environments & IDE
+.vscode/
+.idea/
+.gemini/
+*.log
+Thumbs.db
+.DS_Store

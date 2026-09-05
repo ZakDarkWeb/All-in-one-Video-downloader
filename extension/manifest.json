@@ -1,0 +1,65 @@
+{
+  "manifest_version": 3,
+  "name": "ZDownloader by Zak",
+  "version": "3.0.0",
+  "description": "Ultra-fast 1-click video & audio downloader by Zak with in-page IDM-style buttons, tabs, clip trimmer, QR share & background downloads.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "downloads",
+    "contextMenus",
+    "notifications",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ZDownloader by Zak",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "commands": {
+    "quick-download": {
+      "suggested_key": {
+        "default": "Alt+Shift+D",
+        "windows": "Alt+Shift+D"
+      },
+      "description": "Quick download current page video instantly"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://*.instagram.com/*",
+        "*://*.tiktok.com/*",
+        "*://*.facebook.com/*",
+        "*://*.twitter.com/*",
+        "*://*.x.com/*",
+        "*://*.snapchat.com/*",
+        "*://*.pinterest.com/*",
+        "*://*.pin.it/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
+
