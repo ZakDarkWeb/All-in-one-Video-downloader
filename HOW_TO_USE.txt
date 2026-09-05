@@ -1,0 +1,57 @@
+================================================================
+          ZDownloader - Universal Video Downloader
+               Asaan Setup Guide (Kaise Chalayein)
+================================================================
+
+Agar aapne yeh folder ZIP se download kiya hai, to app chalane 
+ke liye bas yeh 4 asaan steps follow karein:
+
+----------------------------------------------------------------
+STEP 1: Python Check Karein (Agar pehle se nahi hai)
+----------------------------------------------------------------
+Aapke PC mein Python install hona zaroori hai.
+- Agar nahi hai, to yahan se download karein: https://www.python.org/downloads/
+- (IMPORTANT): Install karte waqt "Add Python to PATH" par zaroor 
+  tick lagayein!
+
+----------------------------------------------------------------
+STEP 2: Dependencies Install Karein (Sirf 1-Click!)
+----------------------------------------------------------------
+Folder ke andar mojood is file par DOUBLE-CLICK karein:
+--> install_dependencies.bat
+
+Ek black window khulegi aur saari zaroori cheezein 1 minute mein 
+khud install ho jayengi. Window close ho jaye to Step 3 par jayein.
+
+----------------------------------------------------------------
+STEP 3: App Start Karein aur Use Karein!
+----------------------------------------------------------------
+App chalane ke 2 asaan tareeqay hain:
+
+Tareeqa A (Web App - Recommended):
+- Folder mein "start.bat" par DOUBLE-CLICK karein.
+- Browser mein ZDownloader page (http://localhost:8000) khud khul jayega.
+- Koi bhi YouTube, Facebook, Pinterest, Insta video link paste karein 
+  aur Download kar lein!
+
+Tareeqa B (Desktop Window App):
+- Agar alag Desktop window chahiye to "start_app.bat" par DOUBLE-CLICK karein.
+
+----------------------------------------------------------------
+STEP 4: Chrome Extension Lagana (Optional)
+----------------------------------------------------------------
+Agar aap chahte hain ke browser mein har video par download button aaye:
+1. Google Chrome open karein aur address bar mein likhein:
+   chrome://extensions/
+2. Top-right corner par "Developer mode" ko ON karein.
+3. Top-left par "Load unpacked" button par click karein.
+4. Is project folder ke andar jo "extension" folder hai, usay select karein.
+5. ZDownloader Extension aapke Chrome mein active ho jayegi!
+
+----------------------------------------------------------------
+SUMMARY (Short Cut):
+Unzip ➔ Double Click 'install_dependencies.bat' ➔ Double Click 'start.bat' ➔ Enjoy!
+================================================================
+GitHub Repo: https://github.com/ZakDarkWeb/All-in-one-Video-downloader
+Developed by: Zak
+================================================================
