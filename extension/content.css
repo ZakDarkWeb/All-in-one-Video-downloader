@@ -1,222 +1,462 @@
-/* ZDownloader by Zak — FAB Styles v3.2 */
+/* ZDownloader PRO — Professional In-Page Floating Card v4.0 */
 
-/* ── Main FAB container ── */
+/* ── Container ── */
 #zak-fab {
   position: fixed !important;
-  bottom: 24px !important;
-  right: 24px !important;
+  bottom: 28px !important;
+  right: 28px !important;
   z-index: 2147483647 !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-end !important;
   gap: 8px !important;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   pointer-events: auto !important;
   user-select: none !important;
+  -webkit-user-select: none !important;
+  opacity: 1 !important;
+  transition: opacity 0.25s ease, transform 0.25s ease !important;
+  filter: drop-shadow(0 12px 36px rgba(0, 0, 0, 0.65)) !important;
+}
+
+#zak-fab * {
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: inherit !important;
+}
+
+#zak-fab.zak-hidden {
+  display: none !important;
 }
 
 #zak-fab.zak-dragging {
-  opacity: 0.92 !important;
+  opacity: 0.9 !important;
   cursor: grabbing !important;
 }
 
-/* ── Button wrapper with ring ── */
-#zak-fab-btn-wrap {
-  position: relative !important;
+/* ── COMPACT PILL (Normal Floating State) ── */
+#zak-fab-pill {
   display: flex !important;
   align-items: center !important;
-  gap: 0 !important;
-}
-
-/* ── SVG Progress Ring ── */
-#zak-ring-svg {
-  position: absolute !important;
-  top: -5px !important;
-  left: -5px !important;
-  width: 62px !important;
-  height: 62px !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-}
-
-#zak-ring-fill {
-  transition: stroke-dashoffset 0.4s cubic-bezier(0.16,1,0.3,1) !important;
-}
-
-/* ── Main FAB button ── */
-#zak-fab-btn {
-  position: relative !important;
-  z-index: 2 !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 7px !important;
-  background: linear-gradient(135deg, #00d4ff, #8b5cf6) !important;
-  color: #fff !important;
-  border: none !important;
+  background: rgba(13, 17, 23, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 50px !important;
-  padding: 10px 16px 10px 12px !important;
-  font-size: 12.5px !important;
-  font-weight: 700 !important;
-  font-family: inherit !important;
+  padding: 4px 6px 4px 5px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 212, 255, 0.15) !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 20px rgba(139,92,246,0.5), 0 2px 8px rgba(0,0,0,0.4) !important;
-  transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
-  white-space: nowrap !important;
-  letter-spacing: -0.2px !important;
-  -webkit-font-smoothing: antialiased !important;
-  outline: none !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  gap: 6px !important;
 }
 
-#zak-fab-btn:hover {
-  transform: translateY(-2px) scale(1.04) !important;
-  box-shadow: 0 8px 28px rgba(139,92,246,0.65), 0 4px 12px rgba(0,0,0,0.3) !important;
-  filter: brightness(1.08) !important;
+#zak-fab-pill:hover {
+  background: rgba(18, 24, 34, 0.95) !important;
+  border-color: rgba(0, 212, 255, 0.45) !important;
+  box-shadow: 0 6px 28px rgba(0, 212, 255, 0.25), 0 0 20px rgba(139, 92, 246, 0.2) !important;
+  transform: translateY(-2px) scale(1.02) !important;
 }
 
-#zak-fab-btn:active {
-  transform: translateY(0) scale(0.98) !important;
-}
-
-#zak-fab-btn svg.zak-dl-icon {
-  width: 15px !important;
-  height: 15px !important;
-  stroke: #fff !important;
-  flex-shrink: 0 !important;
-}
-
-/* Busy state */
-#zak-fab-btn.zak-busy {
-  background: linear-gradient(135deg, #1a1040, #0d1a30) !important;
-  cursor: default !important;
-  animation: zakBusyPulse 1.6s ease-in-out infinite !important;
-}
-
-/* Done state */
-#zak-fab-btn.zak-done {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
-  box-shadow: 0 4px 20px rgba(16,185,129,0.5) !important;
-  animation: zakDonePop 0.4s cubic-bezier(0.34,1.56,0.64,1) !important;
-}
-
-/* Active (menu open) state */
-#zak-fab-btn.zak-active {
-  background: linear-gradient(135deg, #8b5cf6, #00d4ff) !important;
-}
-
-@keyframes zakBusyPulse {
-  0%,100% { box-shadow: 0 4px 16px rgba(139,92,246,0.3); }
-  50%      { box-shadow: 0 4px 28px rgba(0,212,255,0.5); }
-}
-
-@keyframes zakDonePop {
-  from { transform: scale(0.92); }
-  to   { transform: scale(1); }
-}
-
-/* ── Drag handle ── */
-#zak-drag-handle {
+/* Glow logo icon in pill */
+.zak-pill-logo {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #00d4ff, #8b5cf6) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 22px !important;
-  height: 36px !important;
-  color: rgba(255,255,255,0.4) !important;
-  font-size: 14px !important;
-  cursor: grab !important;
-  transition: color 0.2s !important;
-  letter-spacing: -2px !important;
+  color: #fff !important;
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.5) !important;
   flex-shrink: 0 !important;
-  padding-left: 4px !important;
 }
 
-#zak-drag-handle:hover {
-  color: rgba(255,255,255,0.8) !important;
+.zak-pill-logo svg {
+  width: 15px !important;
+  height: 15px !important;
+  fill: #fff !important;
+  stroke: none !important;
 }
 
-#zak-fab.zak-dragging #zak-drag-handle {
-  cursor: grabbing !important;
-}
-
-/* ── Dropdown Menu ── */
-#zak-fab-menu {
-  display: none !important;
+.zak-pill-info {
+  display: flex !important;
   flex-direction: column !important;
-  background: #0d1117 !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  border-radius: 16px !important;
-  overflow: hidden !important;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(139,92,246,0.15) !important;
-  min-width: 210px !important;
-  order: -1 !important;
+  padding-right: 4px !important;
 }
 
-#zak-fab-menu.zak-open {
-  display: flex !important;
-  animation: zakMenuIn 0.22s cubic-bezier(0.16,1,0.3,1) forwards !important;
-}
-
-@keyframes zakMenuIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.zak-menu-header {
-  display: flex !important;
-  align-items: center !important;
-  gap: 7px !important;
-  padding: 9px 14px !important;
-  font-size: 9.5px !important;
-  font-weight: 800 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1.3px !important;
-  color: #475569 !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
-  background: rgba(0,0,0,0.25) !important;
-  font-family: inherit !important;
-}
-
-.zak-menu-header svg {
-  width: 12px !important;
-  height: 12px !important;
-  flex-shrink: 0 !important;
-}
-
-.zak-menu-row {
-  display: flex !important;
-  align-items: center !important;
-  gap: 9px !important;
-  padding: 10px 14px !important;
-  background: transparent !important;
-  border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
-  color: #cbd5e1 !important;
-  font-family: inherit !important;
+.zak-pill-title {
   font-size: 12px !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  transition: background 0.15s, color 0.15s !important;
-  text-align: left !important;
-  width: 100% !important;
-  -webkit-font-smoothing: antialiased !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.2px !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
 }
 
-.zak-menu-row:last-child { border-bottom: none !important; }
-
-.zak-menu-row:hover {
-  background: rgba(139,92,246,0.18) !important;
+.zak-pill-tag {
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  background: linear-gradient(135deg, #00d4ff, #8b5cf6) !important;
   color: #fff !important;
 }
 
-.zak-row-best:hover { background: rgba(0,212,255,0.14) !important; }
-.zak-row-audio:hover { background: rgba(244,114,182,0.14) !important; }
-
-.zak-menu-icon { font-size: 14px !important; flex-shrink: 0 !important; line-height: 1 !important; }
-.zak-menu-txt  { flex: 1 !important; font-size: 12px !important; font-weight: 600 !important; }
-.zak-menu-tag  {
-  font-size: 9px !important; font-weight: 800 !important;
-  color: #64748b !important; background: rgba(255,255,255,0.07) !important;
-  padding: 2px 6px !important; border-radius: 5px !important;
-  letter-spacing: 0.3px !important; flex-shrink: 0 !important;
+.zak-pill-sub {
+  font-size: 9.5px !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
 }
-.zak-tag-hot   { background: rgba(0,212,255,0.18) !important; color: #7dd3fc !important; }
-.zak-tag-audio { background: rgba(244,114,182,0.18) !important; color: #f9a8d4 !important; }
+
+/* Drag Handle */
+.zak-drag-handle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 18px !important;
+  height: 28px !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  cursor: grab !important;
+  font-size: 13px !important;
+  letter-spacing: -2px !important;
+  transition: color 0.2s !important;
+  padding-left: 2px !important;
+}
+
+.zak-drag-handle:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ── EXPANDED PROFESSIONAL CARD ── */
+#zak-fab-card {
+  display: none !important;
+  flex-direction: column !important;
+  width: 290px !important;
+  background: rgba(13, 17, 23, 0.94) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(139, 92, 246, 0.25) !important;
+  animation: zakCardPop 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+#zak-fab.zak-expanded #zak-fab-card {
+  display: flex !important;
+}
+
+#zak-fab.zak-expanded #zak-fab-pill {
+  display: none !important;
+}
+
+@keyframes zakCardPop {
+  from { opacity: 0; transform: translateY(12px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Card Header */
+.zak-card-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 14px 9px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.zak-card-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.zak-card-brand-logo {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 5px !important;
+  background: linear-gradient(135deg, #00d4ff, #8b5cf6) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.zak-card-brand-logo svg {
+  width: 10px !important;
+  height: 10px !important;
+  fill: #fff !important;
+}
+
+.zak-card-title-text {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.2px !important;
+  background: linear-gradient(135deg, #00d4ff, #c084fc) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.zak-card-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.zak-btn-icon {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 6px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #94a3b8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 11px !important;
+  transition: all 0.15s !important;
+}
+
+.zak-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Card Video Preview */
+.zak-card-video-info {
+  padding: 10px 14px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.zak-video-badge-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.zak-platform-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  color: #38bdf8 !important;
+  background: rgba(0, 212, 255, 0.1) !important;
+  border: 1px solid rgba(0, 212, 255, 0.25) !important;
+  padding: 2px 7px !important;
+  border-radius: 12px !important;
+}
+
+.zak-video-name {
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #f1f5f9 !important;
+  line-height: 1.4 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+/* Card Download Buttons */
+.zak-card-options {
+  padding: 4px 10px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.zak-dl-main-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 9px 12px !important;
+  background: linear-gradient(135deg, #00d4ff, #8b5cf6) !important;
+  border: none !important;
+  border-radius: 11px !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4) !important;
+  transition: all 0.2s !important;
+  letter-spacing: -0.1px !important;
+}
+
+.zak-dl-main-btn:hover {
+  filter: brightness(1.1) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 22px rgba(139, 92, 246, 0.55), 0 0 16px rgba(0, 212, 255, 0.4) !important;
+}
+
+.zak-dl-main-btn:active {
+  transform: translateY(0) !important;
+}
+
+.zak-btn-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.zak-btn-left svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke: #fff !important;
+  stroke-width: 2.5 !important;
+  fill: none !important;
+}
+
+.zak-pill-badge-hot {
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #fff !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+/* Secondary Buttons Grid */
+.zak-sub-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 5px !important;
+}
+
+.zak-sub-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 7px 10px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 9px !important;
+  color: #cbd5e1 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+  text-align: left !important;
+}
+
+.zak-sub-btn:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  transform: translateY(-1px) !important;
+}
+
+.zak-sub-btn.zak-audio {
+  grid-column: 1 / -1 !important;
+  background: rgba(244, 114, 182, 0.08) !important;
+  border-color: rgba(244, 114, 182, 0.22) !important;
+  color: #f472b6 !important;
+}
+
+.zak-sub-btn.zak-audio:hover {
+  background: rgba(244, 114, 182, 0.16) !important;
+  border-color: rgba(244, 114, 182, 0.4) !important;
+  color: #fff !important;
+}
+
+/* ── PROGRESS CARD STATE ── */
+#zak-fab-progress {
+  display: none !important;
+  padding: 12px 14px 14px !important;
+  flex-direction: column !important;
+  gap: 9px !important;
+  background: rgba(13, 17, 23, 0.95) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  border-radius: 16px !important;
+  width: 260px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 24px rgba(0, 212, 255, 0.15) !important;
+}
+
+#zak-fab.zak-downloading #zak-fab-progress {
+  display: flex !important;
+}
+
+#zak-fab.zak-downloading #zak-fab-pill,
+#zak-fab.zak-downloading #zak-fab-card {
+  display: none !important;
+}
+
+.zak-prog-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.zak-prog-status {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #38bdf8 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.zak-prog-pct {
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  color: #fff !important;
+  font-family: monospace !important;
+}
+
+.zak-prog-bar-track {
+  width: 100% !important;
+  height: 6px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.zak-prog-bar-fill {
+  height: 100% !important;
+  width: 0% !important;
+  background: linear-gradient(90deg, #00d4ff, #8b5cf6) !important;
+  border-radius: 6px !important;
+  transition: width 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+}
+
+.zak-prog-bar-fill::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -50px !important;
+  width: 50px !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent) !important;
+  animation: zakShimmer 1.5s infinite !important;
+}
+
+@keyframes zakShimmer {
+  0% { left: -50px; }
+  100% { left: 110%; }
+}
+
+.zak-prog-sub {
+  font-size: 9.5px !important;
+  color: #94a3b8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+/* Success state inside progress */
+.zak-prog-done {
+  color: #34d399 !important;
+  font-weight: 800 !important;
+}

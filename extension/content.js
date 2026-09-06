@@ -1,5 +1,5 @@
-// ZDownloader by Zak — In-Page Content Script v3.2
-// Features: Draggable FAB, Progress Ring, Chrome Notifications
+// ZDownloader PRO by Zak — In-Page Smart Floating Card v4.0
+// Features: Compact Glass Pill, Expandable Luxury Card, Real-time Progress, Multi-Platform Hover Detection
 
 (function () {
   function isCtxValid() {
@@ -10,9 +10,13 @@
   window.__zakInjected = true;
 
   let isDownloading = false;
-  let fabPos = { x: null, y: null }; // saved position
+  let detectedVideo = {
+    url: window.location.href,
+    title: document.title.replace(/ - YouTube$/, "").replace(/ • Instagram$/, "").trim() || "Web Video",
+    platform: "Video"
+  };
 
-  // ── Context Menu tracking ──────────────────────────────────────
+  // ── Context Menu Tracking ──────────────────────────────────────────
   let lastRightClickedEl = null;
   document.addEventListener("contextmenu", e => { lastRightClickedEl = e.target; }, true);
 
@@ -28,99 +32,169 @@
         if (pinLink?.href) url = url || pinLink.href;
         if (igLink?.href)  url = url || igLink.href;
       }
-      sendResponse({ url: url || window.location.href });
+      sendResponse({ url: url || detectedVideo.url || window.location.href });
       return false;
     }
     if (msg.action === "PROGRESS_TICK" && msg.data) {
-      updateFAB(msg.data);
+      updateProgress(msg.data);
     }
   });
 
-  // ── Inject FAB ────────────────────────────────────────────────
-  function injectFAB() {
+  // ── Smart Video Detection ─────────────────────────────────────────
+  function detectPlatform() {
+    const host = window.location.hostname.toLowerCase();
+    const path = window.location.pathname.toLowerCase();
+
+    if (host.includes("youtube.com")) {
+      if (path.includes("/watch") || path.includes("/shorts/")) return "YouTube";
+      return null;
+    }
+    if (host.includes("instagram.com")) return "Instagram";
+    if (host.includes("pinterest.com") || host.includes("pin.it")) return "Pinterest";
+    if (host.includes("tiktok.com")) return "TikTok";
+    if (host.includes("facebook.com")) return "Facebook";
+    if (host.includes("twitter.com") || host.includes("x.com")) return "Twitter / X";
+    if (document.querySelector("video")) return "Web Video";
+    return null;
+  }
+
+  function updateVideoContext() {
+    const plat = detectPlatform();
+    if (!plat) return false;
+
+    detectedVideo.platform = plat;
+    let url = window.location.href;
+    let title = document.title.replace(/ - YouTube$/, "").replace(/ • Instagram$/, "").trim() || "Detected Video";
+
+    // Platform-specific smart extraction
+    if (plat === "YouTube") {
+      const ytTitle = document.querySelector("h1.ytd-watch-metadata, #title h1, yt-formatted-string.ytd-video-primary-info-renderer");
+      if (ytTitle && ytTitle.textContent.trim()) title = ytTitle.textContent.trim();
+    } else if (plat === "Pinterest") {
+      // Check if viewing a specific pin or focused pin in feed
+      const activePin = document.querySelector('[data-test-id="pin-title"], [data-test-id="rich-pin-title"], h1');
+      if (activePin && activePin.textContent.trim()) title = activePin.textContent.trim();
+    } else if (plat === "Instagram") {
+      const igCaption = document.querySelector("h1, article header + div span, div._a9zs");
+      if (igCaption && igCaption.textContent.trim()) title = igCaption.textContent.trim().slice(0, 70);
+    }
+
+    detectedVideo.url = url;
+    detectedVideo.title = title;
+    return true;
+  }
+
+  // Track hover on feed items (e.g. Pinterest pins, Insta reels in grid)
+  document.addEventListener("mouseover", e => {
+    if (isDownloading) return;
+    const pinLink = e.target.closest('a[href*="/pin/"]');
+    if (pinLink && pinLink.href) {
+      detectedVideo.url = pinLink.href;
+      detectedVideo.platform = "Pinterest";
+      const img = pinLink.querySelector("img");
+      if (img && img.alt) detectedVideo.title = img.alt.slice(0, 60);
+      refreshCardUI();
+      return;
+    }
+
+    const reelLink = e.target.closest('a[href*="/reel/"]');
+    if (reelLink && reelLink.href) {
+      detectedVideo.url = reelLink.href;
+      detectedVideo.platform = "Instagram";
+      refreshCardUI();
+    }
+  }, { passive: true });
+
+  // ── Inject Floating Widget ─────────────────────────────────────────
+  function injectWidget() {
     if (document.getElementById("zak-fab")) return;
+    if (!updateVideoContext()) return;
 
-    const host = window.location.hostname;
-    const path = window.location.pathname;
-
-    const isYT      = host.includes("youtube.com") && (path.includes("/watch") || path.includes("/shorts/"));
-    const isIG      = host.includes("instagram.com") && (path.includes("/reel/") || path.includes("/p/"));
-    const isTikTok  = host.includes("tiktok.com");
-    const isFB      = host.includes("facebook.com");
-    const isTwitter = host.includes("twitter.com") || host.includes("x.com");
-    const isPin     = host.includes("pinterest.com") || host.includes("pin.it");
-    const isSnap    = host.includes("snapchat.com");
-
-    if (!isYT && !isIG && !isTikTok && !isFB && !isTwitter && !isPin && !isSnap) return;
-    if (!isYT && !document.querySelector("video")) return;
-
-    // ── Build FAB HTML ──
     const fab = document.createElement("div");
     fab.id = "zak-fab";
 
     fab.innerHTML = `
-      <div id="zak-fab-menu">
-        <div class="zak-menu-header">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          ZDownloader
+      <!-- COMPACT PILL STATE -->
+      <div id="zak-fab-pill" title="Click to view download options">
+        <div class="zak-pill-logo">
+          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         </div>
-        <button class="zak-menu-row zak-row-best" data-q="best" data-audio="false">
-          <span class="zak-menu-icon">⭐</span>
-          <span class="zak-menu-txt">Best Quality</span>
-          <span class="zak-menu-tag zak-tag-hot">Auto-HD</span>
-        </button>
-        <button class="zak-menu-row" data-q="1080" data-audio="false">
-          <span class="zak-menu-icon">🎬</span>
-          <span class="zak-menu-txt">1080p MP4</span>
-          <span class="zak-menu-tag">Full HD</span>
-        </button>
-        <button class="zak-menu-row" data-q="720" data-audio="false">
-          <span class="zak-menu-icon">🎬</span>
-          <span class="zak-menu-txt">720p MP4</span>
-          <span class="zak-menu-tag">HD</span>
-        </button>
-        <button class="zak-menu-row" data-q="480" data-audio="false">
-          <span class="zak-menu-icon">🎬</span>
-          <span class="zak-menu-txt">480p MP4</span>
-          <span class="zak-menu-tag">SD</span>
-        </button>
-        <button class="zak-menu-row zak-row-audio" data-q="best" data-audio="true">
-          <span class="zak-menu-icon">🎧</span>
-          <span class="zak-menu-txt">MP3 Audio</span>
-          <span class="zak-menu-tag zak-tag-audio">320kbps</span>
-        </button>
+        <div class="zak-pill-info">
+          <div class="zak-pill-title">
+            <span id="zak-pill-plat">${detectedVideo.platform}</span>
+            <span class="zak-pill-tag">AUTO-HD</span>
+          </div>
+          <div class="zak-pill-sub">Click to Download</div>
+        </div>
+        <div class="zak-drag-handle" title="Drag anywhere">⠿</div>
       </div>
 
-      <div id="zak-fab-btn-wrap">
-        <svg id="zak-ring-svg" viewBox="0 0 52 52">
-          <circle id="zak-ring-track" cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
-          <circle id="zak-ring-fill"  cx="26" cy="26" r="22" fill="none" stroke="url(#zak-grad)" stroke-width="3"
-            stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="138.2"
-            transform="rotate(-90 26 26)"/>
-          <defs>
-            <linearGradient id="zak-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#00d4ff"/>
-              <stop offset="100%" stop-color="#8b5cf6"/>
-            </linearGradient>
-          </defs>
-        </svg>
-        <button id="zak-fab-btn" title="ZDownloader — Click to download">
-          <svg class="zak-dl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          <span id="zak-fab-label">Download</span>
-        </button>
-        <div id="zak-drag-handle" title="Drag to move">⠿</div>
+      <!-- EXPANDED CARD STATE -->
+      <div id="zak-fab-card">
+        <div class="zak-card-header">
+          <div class="zak-card-brand">
+            <div class="zak-card-brand-logo">
+              <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <span class="zak-card-title-text">ZDownloader PRO</span>
+          </div>
+          <div class="zak-card-actions">
+            <div class="zak-btn-icon zak-drag-handle" title="Drag to reposition">⠿</div>
+            <div class="zak-btn-icon" id="zak-close-card" title="Minimize">✕</div>
+          </div>
+        </div>
+
+        <div class="zak-card-video-info">
+          <div class="zak-video-badge-row">
+            <span class="zak-platform-tag" id="zak-card-plat-badge">🎬 ${detectedVideo.platform}</span>
+          </div>
+          <div class="zak-video-name" id="zak-card-video-name">${escapeHtml(detectedVideo.title)}</div>
+        </div>
+
+        <div class="zak-card-options">
+          <button class="zak-dl-main-btn" id="zak-btn-best" data-q="best" data-audio="false">
+            <span class="zak-btn-left">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Best Quality
+            </span>
+            <span class="zak-pill-badge-hot">⚡ 1-Click</span>
+          </button>
+
+          <div class="zak-sub-grid">
+            <button class="zak-sub-btn" data-q="1080" data-audio="false">
+              <span>🎬</span> 1080p MP4
+            </button>
+            <button class="zak-sub-btn" data-q="720" data-audio="false">
+              <span>🎬</span> 720p MP4
+            </button>
+            <button class="zak-sub-btn zak-audio" data-q="best" data-audio="true">
+              <span>🎧</span> MP3 Audio (320kbps)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE PROGRESS STATE -->
+      <div id="zak-fab-progress">
+        <div class="zak-prog-top">
+          <span class="zak-prog-status" id="zak-prog-status">⚡ Initializing...</span>
+          <span class="zak-prog-pct" id="zak-prog-pct">0%</span>
+        </div>
+        <div class="zak-prog-bar-track">
+          <div class="zak-prog-bar-fill" id="zak-prog-fill"></div>
+        </div>
+        <div class="zak-prog-sub">
+          <span id="zak-prog-speed">Connecting...</span>
+          <span id="zak-prog-eta">ETA --</span>
+        </div>
       </div>
     `;
 
     document.documentElement.appendChild(fab);
 
-    // ── Restore saved position ──
+    // Restore saved position
     try {
-      const saved = JSON.parse(sessionStorage.getItem("zak_fab_pos") || "null");
+      const saved = JSON.parse(sessionStorage.getItem("zak_fab_pos_v4") || "null");
       if (saved) {
         fab.style.bottom = "auto";
         fab.style.right  = "auto";
@@ -129,127 +203,159 @@
       }
     } catch {}
 
-    const fabBtn    = document.getElementById("zak-fab-btn");
-    const fabMenu   = document.getElementById("zak-fab-menu");
-    const fabLabel  = document.getElementById("zak-fab-label");
-    const ringFill  = document.getElementById("zak-ring-fill");
-    const dragHandle = document.getElementById("zak-drag-handle");
-    const CIRCUMFERENCE = 138.2;
+    // ── Bind Event Listeners ──
+    const pill = document.getElementById("zak-fab-pill");
+    const closeBtn = document.getElementById("zak-close-card");
 
-    // ── Toggle menu ──
-    fabBtn.addEventListener("click", e => {
-      e.stopPropagation();
+    pill.addEventListener("click", e => {
+      if (e.target.closest(".zak-drag-handle")) return;
       if (isDownloading) return;
-      fabMenu.classList.toggle("zak-open");
-      fabBtn.classList.toggle("zak-active");
+      updateVideoContext();
+      refreshCardUI();
+      fab.classList.add("zak-expanded");
     });
 
+    closeBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      fab.classList.remove("zak-expanded");
+    });
+
+    // Close when clicking outside
     document.addEventListener("click", e => {
       if (!fab.contains(e.target)) {
-        fabMenu.classList.remove("zak-open");
-        fabBtn.classList.remove("zak-active");
+        fab.classList.remove("zak-expanded");
       }
     }, true);
 
-    // ── Menu item clicks ──
-    fab.querySelectorAll(".zak-menu-row").forEach(item => {
-      item.addEventListener("click", e => {
+    // Download buttons
+    fab.querySelectorAll("[data-q]").forEach(btn => {
+      btn.addEventListener("click", e => {
         e.stopPropagation();
         e.preventDefault();
-        fabMenu.classList.remove("zak-open");
-        fabBtn.classList.remove("zak-active");
         if (isDownloading) return;
-        const q     = item.getAttribute("data-q");
-        const audio = item.getAttribute("data-audio") === "true";
+        const q = btn.getAttribute("data-q");
+        const audio = btn.getAttribute("data-audio") === "true";
         startDownload(q, audio);
       });
     });
 
-    // ── Draggable ──
-    makeDraggable(fab, dragHandle);
+    // Draggable
+    fab.querySelectorAll(".zak-drag-handle").forEach(handle => {
+      makeDraggable(fab, handle);
+    });
+  }
 
-    // ── Download function ──
-    function startDownload(quality, audioOnly) {
-      if (!isCtxValid()) {
-        fabLabel.textContent = "🔄 Refresh";
-        setTimeout(() => { fabLabel.textContent = "Download"; }, 3000);
-        return;
-      }
+  function escapeHtml(str) {
+    return (str || "").replace(/[&<>"']/g, m => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[m]);
+  }
 
-      isDownloading = true;
-      fabBtn.classList.add("zak-busy");
-      setRingProgress(0);
-      fabLabel.textContent = "⚡ Starting…";
+  function refreshCardUI() {
+    const platText = document.getElementById("zak-pill-plat");
+    const platBadge = document.getElementById("zak-card-plat-badge");
+    const titleText = document.getElementById("zak-card-video-name");
 
-      chrome.runtime.sendMessage({
-        action: "START_DOWNLOAD",
-        url: window.location.href,
-        quality,
-        audioOnly,
-        title: document.title.replace(/ - YouTube$/, "").replace(/ • Instagram$/, "").trim()
-      }, response => {
-        if (chrome.runtime.lastError || !response || !response.ok) {
-          const err = response?.error || "Failed";
-          fabLabel.textContent = "❌ " + err;
-          fabBtn.classList.remove("zak-busy");
-          setRingProgress(0);
-          isDownloading = false;
-          setTimeout(() => { fabLabel.textContent = "Download"; }, 3000);
-        }
-        // Progress comes via PROGRESS_TICK messages
-      });
-    }
+    if (platText) platText.textContent = detectedVideo.platform;
+    if (platBadge) platBadge.textContent = "🎬 " + detectedVideo.platform;
+    if (titleText) titleText.textContent = detectedVideo.title;
+  }
 
-    function setRingProgress(pct) {
-      if (!ringFill) return;
-      const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
-      ringFill.style.strokeDashoffset = offset;
-    }
+  // ── Download Trigger ──────────────────────────────────────────────
+  function startDownload(quality, audioOnly) {
+    if (!isCtxValid()) return;
 
-    // Expose updateFAB to outer scope
-    window.__zakUpdateFAB = function(dl) {
-      const pct = Math.round(dl.progress || 0);
-      if (dl.status === "starting") {
-        fabLabel.textContent = "⚡ Starting…";
-        setRingProgress(0);
-      } else if (dl.status === "downloading") {
-        fabLabel.textContent = `⬇ ${pct}%`;
-        setRingProgress(pct);
-        fabBtn.classList.add("zak-busy");
-      } else if (dl.status === "processing") {
-        fabLabel.textContent = "⚙️ Merging…";
-        setRingProgress(95);
-      } else if (dl.status === "done") {
-        fabLabel.textContent = "✅ Done!";
-        setRingProgress(100);
-        fabBtn.classList.remove("zak-busy");
-        fabBtn.classList.add("zak-done");
-        isDownloading = false;
+    const fab = document.getElementById("zak-fab");
+    if (!fab) return;
+
+    isDownloading = true;
+    fab.classList.remove("zak-expanded");
+    fab.classList.add("zak-downloading");
+
+    const statusEl = document.getElementById("zak-prog-status");
+    const pctEl = document.getElementById("zak-prog-pct");
+    const fillEl = document.getElementById("zak-prog-fill");
+
+    if (statusEl) statusEl.textContent = "⚡ Starting Engine...";
+    if (pctEl) pctEl.textContent = "0%";
+    if (fillEl) fillEl.style.width = "0%";
+
+    chrome.runtime.sendMessage({
+      action: "START_DOWNLOAD",
+      url: detectedVideo.url || window.location.href,
+      quality,
+      audioOnly,
+      title: detectedVideo.title
+    }, response => {
+      if (chrome.runtime.lastError || !response || !response.ok) {
+        const err = response?.error || "Download Failed";
+        if (statusEl) statusEl.textContent = "❌ " + err;
         setTimeout(() => {
-          fabLabel.textContent = "Download";
-          setRingProgress(0);
-          fabBtn.classList.remove("zak-done");
-        }, 4000);
-      } else if (dl.status === "error") {
-        fabLabel.textContent = "❌ Error";
-        setRingProgress(0);
-        fabBtn.classList.remove("zak-busy");
-        isDownloading = false;
-        setTimeout(() => { fabLabel.textContent = "Download"; }, 3000);
+          fab.classList.remove("zak-downloading");
+          isDownloading = false;
+        }, 3500);
       }
-    };
+    });
   }
 
-  function updateFAB(dl) {
-    if (window.__zakUpdateFAB) window.__zakUpdateFAB(dl);
+  // ── Progress Update Handler ───────────────────────────────────────
+  function updateProgress(data) {
+    const fab = document.getElementById("zak-fab");
+    if (!fab) return;
+
+    const statusEl = document.getElementById("zak-prog-status");
+    const pctEl = document.getElementById("zak-prog-pct");
+    const fillEl = document.getElementById("zak-prog-fill");
+    const speedEl = document.getElementById("zak-prog-speed");
+    const etaEl = document.getElementById("zak-prog-eta");
+
+    const pct = Math.round(data.progress || 0);
+
+    if (data.status === "starting") {
+      if (statusEl) statusEl.textContent = "⚡ Initializing...";
+      if (pctEl) pctEl.textContent = "0%";
+      if (fillEl) fillEl.style.width = "5%";
+    } else if (data.status === "downloading") {
+      if (statusEl) statusEl.textContent = "⬇ Downloading...";
+      if (pctEl) pctEl.textContent = pct + "%";
+      if (fillEl) fillEl.style.width = pct + "%";
+      if (speedEl && data.speed) speedEl.textContent = `⚡ ${data.speed}`;
+      if (etaEl && data.eta) etaEl.textContent = `ETA: ${data.eta}`;
+    } else if (data.status === "processing") {
+      if (statusEl) statusEl.textContent = "⚙️ Merging Video...";
+      if (pctEl) pctEl.textContent = "95%";
+      if (fillEl) fillEl.style.width = "95%";
+    } else if (data.status === "done") {
+      if (statusEl) {
+        statusEl.textContent = "✅ Download Complete!";
+        statusEl.classList.add("zak-prog-done");
+      }
+      if (pctEl) pctEl.textContent = "100%";
+      if (fillEl) fillEl.style.width = "100%";
+      if (speedEl) speedEl.textContent = "Saved to Downloads";
+      if (etaEl) etaEl.textContent = "ZDownloader";
+
+      setTimeout(() => {
+        fab.classList.remove("zak-downloading");
+        if (statusEl) statusEl.classList.remove("zak-prog-done");
+        isDownloading = false;
+      }, 4000);
+    } else if (data.status === "error") {
+      if (statusEl) statusEl.textContent = "❌ " + (data.error || "Error");
+      setTimeout(() => {
+        fab.classList.remove("zak-downloading");
+        isDownloading = false;
+      }, 3500);
+    }
   }
 
-  // ── Draggable logic ────────────────────────────────────────────
+  // ── Draggable Implementation ──────────────────────────────────────
   function makeDraggable(el, handle) {
     let startX, startY, startLeft, startTop, dragging = false;
 
     handle.addEventListener("mousedown", e => {
       e.preventDefault();
+      e.stopPropagation();
       dragging = true;
       const rect = el.getBoundingClientRect();
       startX    = e.clientX;
@@ -272,9 +378,9 @@
       let newLeft = startLeft + dx;
       let newTop  = startTop  + dy;
 
-      // Clamp to viewport
-      newLeft = Math.max(8, Math.min(window.innerWidth  - el.offsetWidth  - 8, newLeft));
-      newTop  = Math.max(8, Math.min(window.innerHeight - el.offsetHeight - 8, newTop));
+      // Clamp to viewport boundaries
+      newLeft = Math.max(10, Math.min(window.innerWidth - el.offsetWidth - 10, newLeft));
+      newTop  = Math.max(10, Math.min(window.innerHeight - el.offsetHeight - 10, newTop));
 
       el.style.left = newLeft + "px";
       el.style.top  = newTop  + "px";
@@ -286,9 +392,8 @@
       el.classList.remove("zak-dragging");
       el.style.transition = "";
 
-      // Save position
       try {
-        sessionStorage.setItem("zak_fab_pos", JSON.stringify({
+        sessionStorage.setItem("zak_fab_pos_v4", JSON.stringify({
           top: parseInt(el.style.top),
           left: parseInt(el.style.left)
         }));
@@ -296,10 +401,10 @@
     });
   }
 
-  // ── Init ──────────────────────────────────────────────────────
+  // ── Init & SPA Listeners ──────────────────────────────────────────
   function init() {
     if (!isCtxValid()) return;
-    setTimeout(injectFAB, 600);
+    setTimeout(injectWidget, 500);
   }
 
   if (document.readyState === "loading") {
@@ -308,25 +413,23 @@
     init();
   }
 
-  // YouTube SPA
+  // YouTube SPA finish
   window.addEventListener("yt-navigate-finish", () => {
     const old = document.getElementById("zak-fab");
     if (old) old.remove();
-    window.__zakUpdateFAB = null;
     window.__zakInjected = false;
-    setTimeout(init, 800);
+    setTimeout(init, 700);
   });
 
-  // Generic SPA — watch for URL changes
+  // Generic SPA URL watcher
   let _lastUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== _lastUrl) {
       _lastUrl = location.href;
       const old = document.getElementById("zak-fab");
       if (old) old.remove();
-      window.__zakUpdateFAB = null;
       window.__zakInjected = false;
-      setTimeout(init, 800);
+      setTimeout(init, 700);
     }
   }).observe(document.body || document.documentElement, { subtree: true, childList: true });
 

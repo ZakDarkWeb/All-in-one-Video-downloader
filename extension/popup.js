@@ -352,7 +352,22 @@ function showManualFallback(placeholder) {
   if ($("emptyState")) $("emptyState").style.display = "flex";
   const panel = $("manualPanel");
   if (panel) panel.classList.add("show");
-  if ($("manualUrl")) $("manualUrl").placeholder = placeholder;
+  if ($("manualUrl")) {
+    $("manualUrl").placeholder = placeholder;
+    // Check clipboard for copied video URL
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(text => {
+        if (text && text.startsWith("http") && !$("manualUrl").value) {
+          for (const p of PLATFORMS) {
+            if (p.rx.test(text)) {
+              $("manualUrl").value = text.trim();
+              break;
+            }
+          }
+        }
+      }).catch(() => {});
+    }
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -436,10 +451,25 @@ function renderVideoCard(data, url) {
         cls: "",
         icon: "🎬",
         label: q.label || (q.height + "p"),
-        sub: q.size || "MP4",
+        sub: q.size || "MP4 Video",
         onclick: () => triggerDownload(String(q.height), false)
       }));
     });
+  } else {
+    list.appendChild(makeQBtn({
+      cls: "",
+      icon: "🎬",
+      label: "1080p Full HD",
+      sub: "MP4 Video",
+      onclick: () => triggerDownload("1080", false)
+    }));
+    list.appendChild(makeQBtn({
+      cls: "",
+      icon: "🎬",
+      label: "720p HD",
+      sub: "MP4 Video",
+      onclick: () => triggerDownload("720", false)
+    }));
   }
 
   // Audio
