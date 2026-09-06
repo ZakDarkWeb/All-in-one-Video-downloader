@@ -197,6 +197,46 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.action === "BATCH_ENQUEUE") {
+    const items = msg.items || [];
+    let count = 0;
+    items.forEach(it => {
+      const item = {
+        url: it.url,
+        quality: it.quality || "best",
+        audioOnly: !!it.audioOnly,
+        title: it.title || "Video",
+        thumbnail: it.thumbnail || "",
+        turbo: !!it.turbo
+      };
+      if (!activeDownload || ["done","error",null].includes(activeDownload?.status)) {
+        startDownload(item.url, item.quality, item.audioOnly, item.title, null, null, item.thumbnail, item.turbo);
+      } else {
+        downloadQueue.push(item);
+      }
+      count++;
+    });
+    chrome.runtime.sendMessage({ action: "QUEUE_UPDATE", queue: downloadQueue }).catch(() => {});
+    sendResponse({ ok: true, queued: count });
+    return false;
+  }
+
+  if (msg.action === "DOWNLOAD_URL") {
+    try {
+      chrome.downloads.download({
+        url: msg.url,
+        filename: msg.filename || "ZDownloader/download",
+        saveAs: false
+      }, dlId => {
+        if (chrome.runtime.lastError) sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+        else sendResponse({ ok: true, id: dlId });
+      });
+    } catch (e) {
+      sendResponse({ ok: false, error: e.message });
+    }
+    return true;
+  }
+
   if (msg.action === "GET_ACTIVE_DOWNLOAD") {
     sendResponse({ activeDownload });
     return false;
@@ -210,8 +250,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// ✅ FIX: thumbnail parameter added to function signature
-async function startDownload(url, quality = "best", audioOnly = false, title = "Video", startTime = null, endTime = null, thumbnail = "") {
+// ✅ FIX: thumbnail and turbo parameters in function signature
+async function startDownload(url, quality = "best", audioOnly = false, title = "Video", startTime = null, endTime = null, thumbnail = "", turbo = false) {
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
@@ -222,7 +262,7 @@ async function startDownload(url, quality = "best", audioOnly = false, title = "
   chrome.action.setBadgeBackgroundColor({ color: "#6366f1" });
 
   try {
-    const payload = { url, quality, audio_only: audioOnly };
+    const payload = { url, quality, audio_only: audioOnly, turbo: !!turbo };
     if (startTime) payload.start_time = startTime;
     if (endTime) payload.end_time = endTime;
 

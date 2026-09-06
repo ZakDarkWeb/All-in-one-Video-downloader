@@ -35,10 +35,74 @@
       sendResponse({ url: url || detectedVideo.url || window.location.href });
       return false;
     }
+    if (msg.action === "SCAN_PAGE_MEDIA") {
+      const items = scanPageMedia();
+      sendResponse({ ok: true, items: items });
+      return false;
+    }
     if (msg.action === "PROGRESS_TICK" && msg.data) {
       updateProgress(msg.data);
     }
   });
+
+  // ── Scan All Media on Page ────────────────────────────────────────
+  function scanPageMedia() {
+    const found = [];
+    const seen = new Set();
+
+    function addItem(url, title, plat, thumb) {
+      if (!url || seen.has(url)) return;
+      if (url.startsWith("blob:") || url.startsWith("chrome://") || url.startsWith("edge://")) return;
+      if (!url.startsWith("http")) return;
+      seen.add(url);
+      found.push({
+        url: url,
+        title: (title || "Video").slice(0, 70).trim(),
+        platform: plat || "Media",
+        thumbnail: thumb || ""
+      });
+    }
+
+    // 1. YouTube links
+    document.querySelectorAll('a[href*="/watch?v="], a[href*="/shorts/"]').forEach(a => {
+      let u = a.href.split("&")[0];
+      const title = a.title || a.textContent.trim() || a.getAttribute("aria-label") || "YouTube Video";
+      const img = a.querySelector("img");
+      if (title && title.length > 3) addItem(u, title, "YouTube", img?.src || "");
+    });
+
+    // 2. Pinterest pins
+    document.querySelectorAll('a[href*="/pin/"]').forEach(a => {
+      const img = a.querySelector("img");
+      const title = img?.alt || a.textContent.trim() || "Pinterest Pin";
+      addItem(a.href, title, "Pinterest", img?.src || "");
+    });
+
+    // 3. Instagram reels / posts
+    document.querySelectorAll('a[href*="/reel/"], a[href*="/p/"]').forEach(a => {
+      const img = a.querySelector("img");
+      addItem(a.href, "Instagram Media", "Instagram", img?.src || "");
+    });
+
+    // 4. TikTok links
+    document.querySelectorAll('a[href*="/video/"]').forEach(a => {
+      addItem(a.href, "TikTok Video", "TikTok", "");
+    });
+
+    // 5. HTML5 video elements
+    document.querySelectorAll("video").forEach((v, idx) => {
+      let src = v.currentSrc || v.src;
+      if (!src) {
+        const source = v.querySelector("source");
+        if (source) src = source.src;
+      }
+      if (src && src.startsWith("http")) {
+        addItem(src, `Video Clip #${idx + 1}`, "Web Video", v.poster || "");
+      }
+    });
+
+    return found.slice(0, 30);
+  }
 
   // ── Smart Video Detection ─────────────────────────────────────────
   function detectPlatform() {

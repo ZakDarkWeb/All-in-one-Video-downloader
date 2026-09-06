@@ -539,6 +539,58 @@ body::before{
 .save-ok{font-size:10.5px;color:var(--emerald);text-align:center;display:none;animation:fadeOut 2.5s forwards;}
 @keyframes fadeOut{0%,70%{opacity:1;}100%{opacity:0;}}
 
+/* Video Card Actions */
+.vid-actions-row{display:flex;gap:6px;margin-top:7px;}
+.vid-act-pill{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:4px;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  border-radius:7px;padding:5px 8px;font-size:10px;font-weight:700;
+  color:var(--text2);cursor:pointer;font-family:inherit;transition:all 0.15s;
+}
+.vid-act-pill:hover{background:rgba(255,255,255,0.12);color:#fff;border-color:var(--border2);}
+
+/* Subtitles */
+.subs-section{display:flex;flex-direction:column;gap:6px;}
+.subs-row{display:flex;gap:6px;}
+.subs-select{
+  flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);
+  padding:8px 10px;color:#fff;font-size:11px;font-family:inherit;outline:none;cursor:pointer;
+}
+.subs-btn{
+  background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.35);color:#c4b5fd;
+  border-radius:var(--r-xl);padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:all 0.2s;white-space:nowrap;
+}
+.subs-btn:hover{background:rgba(139,92,246,0.28);color:#fff;}
+.subs-msg{font-size:10px;color:var(--emerald);padding:2px 4px;}
+
+/* Multi-Video Sniffer / Batch */
+.batch-box{
+  background:var(--surface);border:1px solid rgba(0,212,255,0.25);
+  border-radius:var(--r-2xl);overflow:hidden;animation:fadeSlide 0.25s ease;
+}
+.batch-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:rgba(0,212,255,0.06);cursor:pointer;
+}
+.batch-title{font-size:11px;font-weight:800;color:#38bdf8;}
+.btn-batch-all{
+  background:linear-gradient(135deg,#00d4ff,#8b5cf6);color:#fff;border:none;
+  border-radius:6px;padding:4px 10px;font-size:10.5px;font-weight:800;cursor:pointer;
+  font-family:inherit;transition:all 0.2s;
+}
+.btn-batch-all:hover{filter:brightness(1.1);transform:scale(1.02);}
+.batch-list{
+  max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;
+  padding:8px 10px;border-top:1px solid var(--border);
+}
+.batch-item{
+  display:flex;align-items:center;gap:8px;padding:5px 7px;
+  background:rgba(255,255,255,0.02);border:1px solid var(--border);
+  border-radius:6px;font-size:10.5px;
+}
+.batch-item-title{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text1);font-weight:600;}
+
 /* ─── FOOTER ─── */
 .ftr{
   display:flex;align-items:center;justify-content:space-between;
@@ -630,6 +682,14 @@ body::before{
     </div>
     <div class="vid-meta">
       <div class="vid-title" id="vidTitle">Video Title</div>
+      <div class="vid-actions-row">
+        <button class="vid-act-pill" id="saveThumbBtn" title="Download HD Thumbnail Cover">
+          🖼️ Save Thumbnail
+        </button>
+        <button class="vid-act-pill" id="copyLinkBtn" title="Copy Direct Video Link">
+          📋 Copy Link
+        </button>
+      </div>
     </div>
   </div>
 
@@ -654,6 +714,20 @@ body::before{
         <input class="clip-inp" id="clipEnd" placeholder="1:30">
       </div>
       <span class="clip-note">Format: M:SS — Blank = Full Video</span>
+    </div>
+
+    <!-- Subtitles Downloader Section -->
+    <div class="subs-section" id="subsWrap" style="display:none;">
+      <div class="fmt-label">Subtitles &amp; Captions</div>
+      <div class="subs-row">
+        <select class="subs-select" id="subLangSelect">
+          <option value="en">English (en)</option>
+        </select>
+        <button class="subs-btn" id="dlSubBtn">
+          📝 Download .SRT
+        </button>
+      </div>
+      <div class="subs-msg" id="subMsg" style="display:none;"></div>
     </div>
   </div>
 
@@ -696,6 +770,17 @@ body::before{
     <div class="qr-wrap"><canvas id="qrCanvas" width="150" height="150"></canvas></div>
     <div class="qr-hint">Connected to same Wi-Fi network. Scan to play or download on mobile.</div>
     <button class="btn-qr-close" id="qrCloseBtn">✕ Close</button>
+  </div>
+
+  <!-- MULTI-VIDEO PAGE SNIFFER (Batch Media on Page) -->
+  <div class="batch-box" id="pageMediaSection" style="display:none;">
+    <div class="batch-head" id="pageMediaToggle">
+      <div class="batch-title">
+        <span>🎯 Found <strong id="pageMediaCount">0</strong> Videos on Page</span>
+      </div>
+      <button class="btn-batch-all" id="batchDlAllBtn">⚡ Download All</button>
+    </div>
+    <div class="batch-list" id="pageMediaList" style="display:none;"></div>
   </div>
 
   <!-- INSTANT PASTE BOX (Always prominent & accessible) -->
@@ -782,6 +867,14 @@ body::before{
     <div class="sett-row">
       <div><div class="sett-label">Floating Page Button</div><div class="sett-sub">Show download widget on video sites</div></div>
       <label class="toggle"><input type="checkbox" id="settingInPage" checked><span class="toggle-sl"></span></label>
+    </div>
+    <div class="sett-row">
+      <div><div class="sett-label">Completion Sound</div><div class="sett-sub">Play audio chime on finished download</div></div>
+      <label class="toggle"><input type="checkbox" id="settingSound" checked><span class="toggle-sl"></span></label>
+    </div>
+    <div class="sett-row">
+      <div><div class="sett-label">Turbo Mode</div><div class="sett-sub">Multi-threaded aria2c acceleration</div></div>
+      <label class="toggle"><input type="checkbox" id="settingTurbo"><span class="toggle-sl"></span></label>
     </div>
   </div>
 

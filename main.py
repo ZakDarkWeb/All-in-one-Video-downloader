@@ -564,6 +564,12 @@ class DownloadRequest(BaseModel):
     audio_bitrate: str = "320k"
     start_time: str = None
     end_time: str = None
+    turbo: bool = False
+
+
+class SubtitleRequest(BaseModel):
+    url: str
+    lang: str = "en"
 
 
 # ------------------------------------------------------------
@@ -840,6 +846,10 @@ def get_video_info(request: URLRequest):
             "size": format_bytes(sizes[height]),
         })
 
+    # Extract available subtitles / captions
+    subs = list(set(list((information.get("subtitles") or {}).keys()) + list((information.get("automatic_captions") or {}).keys())))
+    sub_langs = sorted([s for s in subs if len(s) <= 10])[:15]
+
     return {
         "title": information.get("title") or "Untitled video",
         "thumbnail": information.get("thumbnail"),
@@ -854,6 +864,7 @@ def get_video_info(request: URLRequest):
             or information.get("extractor")
         ),
         "qualities": qualities,
+        "subtitles": sub_langs,
         "cookies_used": bool(options.get("cookiefile")),
     }
 
@@ -862,7 +873,7 @@ def get_video_info(request: URLRequest):
 # Download worker
 # ------------------------------------------------------------
 
-def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=None, audio_bitrate="320k"):
+def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=None, audio_bitrate="320k", turbo=False):
     job = JOBS[job_id]
     output_template = str(DOWNLOAD_DIR / f"{job_id}.%(ext)s")
 
@@ -1027,6 +1038,10 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
         "postprocessor_hooks": [postprocessor_hook],
         "overwrites": True,
     })
+
+    if turbo and find_aria2c():
+        options["external_downloader"] = "aria2c"
+        options["external_downloader_args"] = ["-x", "8", "-s", "8", "-k", "1M"]
 
     if audio_only:
         options["format"] = (
@@ -1197,7 +1212,8 @@ def start_download(request: DownloadRequest):
             request.audio_only,
             request.start_time,
             request.end_time,
-            request.audio_bitrate
+            request.audio_bitrate,
+            request.turbo
         ),
         daemon=True
     )
@@ -1207,6 +1223,44 @@ def start_download(request: DownloadRequest):
     return {
         "job_id": job_id
     }
+
+
+# ------------------------------------------------------------
+# Subtitles Downloader
+# ------------------------------------------------------------
+
+@app.post("/api/subtitles")
+def download_subtitles(req: SubtitleRequest):
+    url = req.url.strip()
+    lang = req.lang.strip() or "en"
+    if not is_valid_url(url):
+        raise HTTPException(status_code=400, detail="Sahi video URL paste karein.")
+
+    opts = base_options(url)
+    opts.update({
+        "skip_download": True,
+        "writesubtitles": True,
+        "writeautomaticsub": True,
+        "subtitleslangs": [lang],
+        "subtitlesformat": "srt/vtt/best",
+        "outtmpl": str(DOWNLOAD_DIR / "%(title)s.%(ext)s"),
+    })
+
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+        title = info.get("title") or "video"
+        safe = safe_filename(title)
+        
+        sub_files = list(DOWNLOAD_DIR.glob(f"{safe}*.srt")) + list(DOWNLOAD_DIR.glob(f"{safe}*.vtt"))
+        fname = sub_files[-1].name if sub_files else f"{safe}.{lang}.srt"
+        return {
+            "ok": True,
+            "filename": fname,
+            "message": f"Subtitles saved to Downloads: {fname}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=clean_error(e))
 
 
 # ------------------------------------------------------------

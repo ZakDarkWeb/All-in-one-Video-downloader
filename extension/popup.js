@@ -5,8 +5,9 @@ let activeUrl = "";
 let currentVideoData = null;
 let statusPollInterval = null;
 let currentDoneJobId = null;
+let lastChimedJobId = null;
 
-let settings = { quality: "best", autoDownload: false, inPage: true };
+let settings = { quality: "best", autoDownload: false, inPage: true, sound: true, turbo: false };
 
 const PLATFORMS = [
   { name: "YouTube",    rx: /youtu(\.be|be\.com)/i,      icon: "🔴", color: "#ef4444" },
@@ -40,12 +41,16 @@ function applySettingsToUI() {
   if ($("settingQuality")) $("settingQuality").value = settings.quality;
   if ($("settingAutoDownload")) $("settingAutoDownload").checked = !!settings.autoDownload;
   if ($("settingInPage")) $("settingInPage").checked = settings.inPage !== false;
+  if ($("settingSound")) $("settingSound").checked = settings.sound !== false;
+  if ($("settingTurbo")) $("settingTurbo").checked = !!settings.turbo;
 }
 
 async function saveSettings() {
   settings.quality = $("settingQuality")?.value || "best";
   settings.autoDownload = $("settingAutoDownload")?.checked || false;
   settings.inPage = $("settingInPage")?.checked !== false;
+  settings.sound = $("settingSound")?.checked !== false;
+  settings.turbo = !!$("settingTurbo")?.checked;
   try { await chrome.storage.local.set({ zdl_settings: settings }); } catch {}
   const flash = $("saveFlash");
   if (flash) {
@@ -146,6 +151,79 @@ function setupUI() {
   // Web App buttons
   if ($("openWebAppBtn")) $("openWebAppBtn").onclick = () => chrome.tabs.create({ url: "http://127.0.0.1:8000" });
   if ($("openWebAppBtn2")) $("openWebAppBtn2").onclick = () => chrome.tabs.create({ url: "http://127.0.0.1:8000" });
+
+  // Save HD Thumbnail
+  if ($("saveThumbBtn")) {
+    $("saveThumbBtn").onclick = () => {
+      const thumbUrl = currentVideoData?.thumbnail;
+      if (!thumbUrl) return;
+      const title = (currentVideoData?.title || "thumbnail").replace(/[^\w\s-]/g, "").trim().slice(0, 40);
+      chrome.runtime.sendMessage({
+        action: "DOWNLOAD_URL",
+        url: thumbUrl,
+        filename: `ZDownloader/${title}_thumb.jpg`
+      }, res => {
+        const btn = $("saveThumbBtn");
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = res?.ok ? "✅ Saved!" : "❌ Error";
+          setTimeout(() => { btn.textContent = orig; }, 2000);
+        }
+      });
+    };
+  }
+
+  // Copy Direct Link
+  if ($("copyLinkBtn")) {
+    $("copyLinkBtn").onclick = () => {
+      const urlToCopy = activeUrl || window.location.href;
+      if (!urlToCopy) return;
+      navigator.clipboard.writeText(urlToCopy).then(() => {
+        const btn = $("copyLinkBtn");
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = "✅ Copied!";
+          setTimeout(() => { btn.textContent = orig; }, 2000);
+        }
+      });
+    };
+  }
+
+  // Download Subtitles
+  if ($("dlSubBtn")) {
+    $("dlSubBtn").onclick = async () => {
+      const btn = $("dlSubBtn");
+      const msg = $("subMsg");
+      const lang = $("subLangSelect")?.value || "en";
+      btn.textContent = "⏳ Fetching…";
+      btn.disabled = true;
+      if (msg) { msg.style.display = "block"; msg.textContent = "Downloading subtitles…"; msg.style.color = "#94a3b8"; }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/subtitles`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: activeUrl, lang })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          btn.textContent = "✅ .SRT Saved!";
+          if (msg) { msg.textContent = d.message || "Saved to Downloads"; msg.style.color = "#34d399"; }
+          playSuccessChime();
+        } else {
+          btn.textContent = "❌ Failed";
+          if (msg) { msg.textContent = d.detail || "Failed to download subtitles"; msg.style.color = "#f87171"; }
+        }
+      } catch (err) {
+        btn.textContent = "❌ Error";
+        if (msg) { msg.textContent = err.message || "Network error"; msg.style.color = "#f87171"; }
+      }
+      setTimeout(() => {
+        btn.textContent = "📝 Download .SRT";
+        btn.disabled = false;
+      }, 3000);
+    };
+  }
 
   // Thumbnail error
   if ($("thumbImg")) $("thumbImg").onerror = () => showFallbackThumbnail();
@@ -289,6 +367,7 @@ function markOffline() {
 
 // ── Video Detection ───────────────────────────────────────────────
 async function detectAndLoadTabVideo() {
+  scanAndRenderPageMedia();
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.url && !tab.url.startsWith("chrome://") && !tab.url.startsWith("edge://")) {
@@ -485,6 +564,22 @@ function renderVideoCard(data, url) {
   const fw = $("formatsWrap");
   if (fw) fw.classList.add("show");
   if ($("emptyState")) $("emptyState").style.display = "none";
+
+  // Subtitles section
+  const subsWrap = $("subsWrap");
+  const subSelect = $("subLangSelect");
+  if (data.subtitles && data.subtitles.length > 0 && subsWrap && subSelect) {
+    subsWrap.style.display = "flex";
+    subSelect.innerHTML = "";
+    data.subtitles.forEach(lang => {
+      const opt = document.createElement("option");
+      opt.value = lang;
+      opt.textContent = lang.toUpperCase();
+      subSelect.appendChild(opt);
+    });
+  } else if (subsWrap) {
+    subsWrap.style.display = "none";
+  }
 }
 
 function makeQBtn({ cls, icon, label, sub, onclick }) {
@@ -534,7 +629,8 @@ function triggerDownload(quality, audioOnly) {
     title,
     thumbnail,
     startTime,
-    endTime
+    endTime,
+    turbo: !!settings.turbo
   }, response => {
     if (!response) {
       alert("Extension error — try refreshing the page.");
@@ -607,6 +703,11 @@ function renderActiveDownload(dl) {
   if (dl.status === "done") {
     if ($("progressCard")) $("progressCard").classList.remove("show");
     if ($("doneCard")) $("doneCard").classList.add("show");
+
+    if (lastChimedJobId !== dl.jobId) {
+      lastChimedJobId = dl.jobId;
+      playSuccessChime();
+    }
 
     const fname = dl.filename || dl.title || "Video";
     if ($("doneFilename")) $("doneFilename").textContent = fname;
@@ -793,4 +894,103 @@ async function loadDiagnostics() {
 // ── Utility ───────────────────────────────────────────────────────
 function escHtml(str) {
   return (str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Page Media Sniffer & Batch Downloader ─────────────────────────
+async function scanAndRenderPageMedia() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id || tab.url.startsWith("chrome://") || tab.url.startsWith("edge://")) return;
+
+    chrome.tabs.sendMessage(tab.id, { action: "SCAN_PAGE_MEDIA" }, response => {
+      if (chrome.runtime.lastError || !response || !response.items || response.items.length < 2) {
+        if ($("pageMediaSection")) $("pageMediaSection").style.display = "none";
+        return;
+      }
+
+      const items = response.items;
+      const sec = $("pageMediaSection");
+      const cnt = $("pageMediaCount");
+      const list = $("pageMediaList");
+      const allBtn = $("batchDlAllBtn");
+      const toggle = $("pageMediaToggle");
+
+      if (cnt) cnt.textContent = items.length;
+      if (sec) sec.style.display = "block";
+
+      if (toggle && list) {
+        toggle.onclick = (e) => {
+          if (e.target.closest("#batchDlAllBtn")) return;
+          const open = list.style.display === "flex";
+          list.style.display = open ? "none" : "flex";
+        };
+      }
+
+      if (list) {
+        list.innerHTML = "";
+        items.forEach(it => {
+          const row = document.createElement("div");
+          row.className = "batch-item";
+          row.innerHTML = `
+            <span style="font-size:12px;">🎬</span>
+            <span class="batch-item-title" title="${escHtml(it.title)}">${escHtml(it.title)}</span>
+          `;
+          list.appendChild(row);
+        });
+      }
+
+      if (allBtn) {
+        allBtn.onclick = (e) => {
+          e.stopPropagation();
+          allBtn.textContent = "⏳ Queueing…";
+          allBtn.disabled = true;
+          chrome.runtime.sendMessage({
+            action: "BATCH_ENQUEUE",
+            items: items.map(it => ({ url: it.url, title: it.title, turbo: !!settings.turbo }))
+          }, res => {
+            allBtn.textContent = `✅ ${res?.queued || items.length} Queued!`;
+            setTimeout(() => {
+              allBtn.textContent = "⚡ Download All";
+              allBtn.disabled = false;
+            }, 3000);
+          });
+        };
+      }
+    });
+  } catch {}
+}
+
+// ── Audio Success Chime (Web Audio API) ───────────────────────────
+function playSuccessChime() {
+  if (settings.sound === false) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    // Tone 1: 587.33 Hz (D5)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(587.33, now);
+    gain1.gain.setValueAtTime(0.12, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.3);
+
+    // Tone 2: 880.00 Hz (A5)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(880.00, now + 0.12);
+    gain2.gain.setValueAtTime(0.14, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.5);
+  } catch (e) {}
 }
