@@ -144,6 +144,35 @@ function setupUI() {
     };
   }
 
+  // 1-Click Auto-Start Engine (custom protocol handler zdownloader://start)
+  if ($("autoStartEngineBtn")) {
+    $("autoStartEngineBtn").onclick = () => {
+      const btn = $("autoStartEngineBtn");
+      btn.textContent = "⚡ Starting Engine...";
+      btn.style.opacity = "0.75";
+      try {
+        window.location.href = "zdownloader://start";
+      } catch (e) {
+        console.warn("Protocol launch failed:", e);
+      }
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        const ok = await checkServerStatus();
+        if (ok) {
+          clearInterval(poll);
+          btn.textContent = "✅ Connected!";
+          btn.style.opacity = "1";
+          onServerConnected();
+        } else if (attempts >= 8) {
+          clearInterval(poll);
+          btn.textContent = "🚀 1-Click Auto-Start Backend";
+          btn.style.opacity = "1";
+        }
+      }, 1000);
+    };
+  }
+
   // Folder buttons
   if ($("openFolderBtn")) $("openFolderBtn").onclick = openDownloadsFolder;
   if ($("openFolderFooterBtn")) $("openFolderFooterBtn").onclick = openDownloadsFolder;

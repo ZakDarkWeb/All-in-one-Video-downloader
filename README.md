@@ -1,71 +1,76 @@
-# 🚀 ZDownloader by Zak
+# 🚀 ZDownloader PRO by Zak
 **Universal High-Speed Video & Audio Downloader**  
-*(FastAPI Backend + Cyberpunk Web UI + Desktop App + Chrome Extension)*
+*(FastAPI Backend + Cyberpunk Web UI + Desktop App + Chrome Extension MV3)*
 
 Supports **YouTube, Facebook, Pinterest, Instagram, TikTok, Twitter/X, Vimeo**, and 1000+ other websites in high resolutions (4K, 1080p, 720p, MP3 Audio, etc.).
+
+---
+
+## ⚡ 1-Click Master Setup (Recommended)
+
+Ab setup karna aur use karna 100% asaan aur automatic hai!
+
+Simply double-click **`OneClick_Setup.bat`**:
+- ✅ Python check karega (agar na ho to auto-install karega)
+- ✅ Saari dependencies (`yt-dlp` wagera) automatically install karega
+- ✅ Windows Startup mein Silent Background Auto-Start configure karega
+- ✅ Browser 1-Click Protocol (`zdownloader://`) register karega
+- ✅ Desktop par **ZDownloader PRO** shortcut create karega
+- ✅ Background engine (Port 8000) foran start kar dega bina kisi terminal window ke!
 
 ---
 
 ## 📂 Project Structure
 
 - `frontend/` — Cyberpunk dark-mode web application (Instant Download, Bulk Batch Downloader, Video Library & Media Player).
-- `extension/` — Chrome Extension (Vibrant popup UI, Draggable page video detector FAB button, Download Queue).
+- `extension/` — Chrome Extension Manifest V3 (Vibrant popup UI, Draggable FAB button, Sniffer, Subtitle/Thumbnail grabbers).
+- `OneClick_Setup.bat` — 1-Click all-in-one installer and autostart configurator.
+- `setup_autostart.bat` & `remove_autostart.bat` — Windows startup & browser protocol management.
+- `run_silent_backend.vbs` — Hidden background launcher (0 terminal popups).
 - `main.py` — High-performance FastAPI backend powered by `yt-dlp`.
 - `desktop_app.py` — Standalone desktop window app powered by `pywebview`.
 - `ZDownloader_v3.zip` — Ready-to-install Chrome Extension package.
+- `HOW_TO_USE.txt` — Simple Urdu/English guide for end users.
 
 ---
 
-## ⚡ Quick Start Guide (Kaise Run Karein)
+## 🧩 Chrome Extension Install Karein
 
-### 1️⃣ Step 1: Dependencies Install Karein (First time only)
-Agar aap pehli dafa run kar rahe hain:
-- Simply double-click **`install_dependencies.bat`**  
-  *(Yeh automatically `pip install -r requirements.txt` run kar dega)*
-
----
-
-### 2️⃣ Step 2: App Run Karein
-Aapke paas 3 asaan options hain:
-
-* **Option A (Web UI + Browser Auto-Open):**  
-  Double-click **`start.bat`**  
-  *(Backend start hoga aur browser mein `http://localhost:8000` khud open ho jayega)*
-
-* **Option B (Desktop App Window):**  
-  Double-click **`start_app.bat`**  
-  *(Baghair browser ke ek separate clean Desktop Window app khulegi)*
-
-* **Option C (Sirf Backend for Extension):**  
-  Double-click **`start_backend.bat`**  
-  *(Port 8000 par backend chalega)*
-
----
-
-### 3️⃣ Step 3: Chrome Extension Install Karein
-
-1. Google Chrome open karein aur address bar mein type karein:  
+1. Google Chrome open karein aur address bar mein likhein:  
    `chrome://extensions/`
 2. Top-right corner par **Developer mode** ka toggle ON karein.
 3. Top-left par **Load unpacked** button par click karein.
-4. Is project ke andar **`extension`** folder select karein (ya **`ZDownloader_v3.zip`** ko unzip karke wo folder select karein).
-5. ZDownloader Extension ready hai! Browser ke toolbar se pin kar lein.
+4. Is project ke andar **`extension`** folder select karein.
+5. Extensions toolbar se **ZDownloader** ko Pin karein!
+
+> **Note:** Agar backend kabhi band bhi ho jaye, to Extension Popup mein **"🚀 1-Click Auto-Start Backend"** button par click karne se engine browser se hi auto-start ho jata hai!
 
 ---
 
-## 🌟 Key Features
+## 🌟 Powerhouse Features
 
-1. **Smart Video Detection:** YouTube, Pinterest, Facebook par automatic floating download button.
-2. **Quality Selector:** 1080p, 720p, 480p, 360p ya Audio-only (MP3).
-3. **Bulk Downloader:** Ek sath 20+ links paste karein aur one-click batch download karein.
-4. **Built-in Media Player:** Downloaded videos ko app ke andar hi play karein.
-5. **Auto-Updater:** Settings tab se yt-dlp ko 1-click mein latest version par update karein.
-6. **Custom Save Folder:** Downloads ko apni marzi ke folder mein save karein.
+1. **Smart Video Detection & FAB:** YouTube, Pinterest, Facebook par automatic floating download button.
+2. **Multi-Video Sniffer:** Web page par jitni bhi videos mojood hon, ek click mein sab ko detect karta hai.
+3. **HD Thumbnail Downloader:** Single click mein kisi bhi video ka Ultra-HD cover photo download karein.
+4. **Subtitles (.SRT) Downloader:** Video subtitles ko directly `.srt` format mein download karein.
+5. **Direct Download Link Copier:** Direct media CDN stream link copy karein taake IDM ya browser mein paste kar sakein.
+6. **Audio Chime Feedback:** Video download mukammal hone par pleasing audio alert chime bajti hai.
+7. **Turbo Multi-Thread Mode:** Extreme speed ke liye multi-connection chunk downloading.
+8. **Bulk Batch Downloader:** Ek sath 20+ links paste karein aur one-click batch download karein.
+9. **Built-in Media Player:** Downloaded videos ko app ke andar hi play karein.
+10. **Silent Windows Auto-Start:** Har boot par backend chup-chap background mein on rehta hai.
 
 ---
 
 ## 🛠️ Tech Stack
 - **Backend:** Python 3.10+, FastAPI, Uvicorn, yt-dlp, pinterest-downloader
-- **Frontend:** Vanilla HTML5, Modern CSS Glassmorphism, JavaScript ES6
-- **Extension:** Chrome Manifest V3
-- **Desktop:** PyWebView
+- **Frontend:** Vanilla HTML5, Cyberpunk CSS Tokens, JavaScript ES6
+- **Extension:** Chrome Manifest V3 (Service Worker + Content Script + Popup)
+- **Desktop:** PyWebView native window
+- **System Integration:** Windows VBScript WScript.Shell, Registry URL Protocols
+
+---
+
+## 👤 Author
+Developed with ❤️ by **Zak**  
+GitHub: [ZakDarkWeb/All-in-one-Video-downloader](https://github.com/ZakDarkWeb/All-in-one-Video-downloader)

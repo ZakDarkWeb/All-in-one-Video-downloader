@@ -1,57 +1,73 @@
 ================================================================
-          ZDownloader - Universal Video Downloader
-               Asaan Setup Guide (Kaise Chalayein)
+          ZDownloader PRO - Universal Video Downloader
+               Mukammal & Asaan Guide (Kaise Chalayein)
 ================================================================
 
-Agar aapne yeh folder ZIP se download kiya hai, to app chalane 
-ke liye bas yeh 4 asaan steps follow karein:
+Agar aapne yeh project download ya clone kiya hai, to isay setup aur
+use karna intehai asaan hai! Kuch bhi miss nahi hoga.
+
+================================================================
+🚀 TAREEQA 1: "1-Click Master Setup" (Sab Se Behtareen & Asaan!)
+================================================================
+Aapko bar bar manually server on karne ki zaroorat nahi:
+
+1. Folder mein mojood is file par DOUBLE-CLICK karein:
+   👉 OneClick_Setup.bat
+
+Yeh Script Khud Sab Kuch Karegi:
+  ✅ Python check karegi (agar nahi hai to khud install karegi)
+  ✅ Saari zaroori packages (yt-dlp wagera) install karegi
+  ✅ Windows Startup mein Silent Background Launcher set kar degi
+  ✅ Browser se 1-click wake-up protocol (zdownloader://) enable karegi
+  ✅ Aapke Desktop par "ZDownloader PRO" ka shortcut bana degi
+  ✅ Server ko chup-chap background mein start kar degi!
+
+Jab yeh poori ho jaye to bas Chrome Extension load kar lein (Step 3)!
 
 ----------------------------------------------------------------
-STEP 1: Python Check Karein (Agar pehle se nahi hai)
+🔄 AUTO-START & BACKGROUND SYSTEM:
 ----------------------------------------------------------------
-Aapke PC mein Python install hona zaroori hai.
-- Agar nahi hai, to yahan se download karein: https://www.python.org/downloads/
-- (IMPORTANT): Install karte waqt "Add Python to PATH" par zaroor 
-  tick lagayein!
+- Har baar jab aapka PC on hoga, backend chup-chap background mein 
+  bina kisi black CMD window ke khud start ho jayega.
+- Agar kisi wajah se backend band bhi ho, to Chrome Extension ke 
+  andar "🚀 1-Click Auto-Start Backend" button dabane par server 
+  browser se direct on ho jayega!
+- Agar auto-start khatam karna ho: "remove_autostart.bat" chala dein.
 
-----------------------------------------------------------------
-STEP 2: Dependencies Install Karein (Sirf 1-Click!)
-----------------------------------------------------------------
-Folder ke andar mojood is file par DOUBLE-CLICK karein:
---> install_dependencies.bat
+================================================================
+⚡ TAREEQA 2: Manual / Normal Tareeqa (Optional)
+================================================================
+Agar aap khud manual chalana chahte hain:
+1. "install_dependencies.bat" par double-click karein (1 time).
+2. "start.bat" par double-click karein (Web app open hogi http://localhost:8000).
+   Ya "start_app.bat" chala kar Desktop native window open karein.
 
-Ek black window khulegi aur saari zaroori cheezein 1 minute mein 
-khud install ho jayengi. Window close ho jaye to Step 3 par jayein.
+================================================================
+🧩 STEP 3: Chrome Extension Install Karna
+================================================================
+Browser mein YouTube, Facebook, Pinterest, Instagram wagera par 
+direct download karne ke liye:
 
-----------------------------------------------------------------
-STEP 3: App Start Karein aur Use Karein!
-----------------------------------------------------------------
-App chalane ke 2 asaan tareeqay hain:
-
-Tareeqa A (Web App - Recommended):
-- Folder mein "start.bat" par DOUBLE-CLICK karein.
-- Browser mein ZDownloader page (http://localhost:8000) khud khul jayega.
-- Koi bhi YouTube, Facebook, Pinterest, Insta video link paste karein 
-  aur Download kar lein!
-
-Tareeqa B (Desktop Window App):
-- Agar alag Desktop window chahiye to "start_app.bat" par DOUBLE-CLICK karein.
-
-----------------------------------------------------------------
-STEP 4: Chrome Extension Lagana (Optional)
-----------------------------------------------------------------
-Agar aap chahte hain ke browser mein har video par download button aaye:
-1. Google Chrome open karein aur address bar mein likhein:
+1. Google Chrome kholain aur address bar mein likhein:
    chrome://extensions/
-2. Top-right corner par "Developer mode" ko ON karein.
+2. Top-right corner par "Developer mode" toggle ko ON karein.
 3. Top-left par "Load unpacked" button par click karein.
 4. Is project folder ke andar jo "extension" folder hai, usay select karein.
-5. ZDownloader Extension aapke Chrome mein active ho jayegi!
+5. Extensions menu mein ZDownloader ka Pin icon dabayein.
+   Extension activate ho chuki hai!
 
-----------------------------------------------------------------
-SUMMARY (Short Cut):
-Unzip ➔ Double Click 'install_dependencies.bat' ➔ Double Click 'start.bat' ➔ Enjoy!
 ================================================================
-GitHub Repo: https://github.com/ZakDarkWeb/All-in-one-Video-downloader
-Developed by: Zak
+🌟 Naye PRO Features (Sab Kuch Shamil Hai):
+================================================================
+- Multi-Video Sniffer: Page par jitni videos hon sab 1-click scan hoti hain
+- HD Thumbnail Downloader: 1-Click mein ultra HD thumbnail download karein
+- Subtitles (.SRT) Downloader: Video ke subtitles ek click mein save karein
+- Direct Download Link Copier: Copy karke IDM ya browser mein paste karein
+- Audio Chime Notifications: Download complete hone par sweet audio chime
+- Turbo Multi-Thread Engine: Fast downloading speed
+- Dark / Cyberpunk / Glassmorphism UI with Quality Badge selection
+
+================================================================
+Repository: https://github.com/ZakDarkWeb/All-in-one-Video-downloader
+Developed with ❤️ by Zak
 ================================================================
