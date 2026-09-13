@@ -873,6 +873,142 @@
   const mProgCard = document.getElementById('mProgCard');
   const mDoneBox = document.getElementById('mDoneBox');
 
+  // Check if PC Backend is online on load
+  checkBackendStatus();
+
+  async function checkBackendStatus() {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 1200);
+      const r = await fetch('/api/status', { signal: ctrl.signal });
+      if (r.ok) {
+        document.getElementById('mStatusBadge').innerHTML = `<span class="m-dot"></span> By Basit · PC Turbo Online`;
+        return true;
+      }
+    } catch {}
+    document.getElementById('mStatusBadge').innerHTML = `⚡ By Basit · Standalone (Laptop-Free)`;
+    return false;
+  }
+
+  // ── Standalone Direct Video Resolvers (When Laptop is Off) ──
+  async function resolveDirectVideo(url, isAudio) {
+    // 1. TikTok (No watermark HD video & MP3 audio)
+    if (/tiktok\.com/i.test(url)) {
+      const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+      const d = await res.json();
+      if (d && d.code === 0 && d.data) {
+        const directUrl = isAudio ? (d.data.music || d.data.play) : (d.data.play || d.data.wmplay);
+        return {
+          ok: true,
+          title: d.data.title || "TikTok Video",
+          downloadUrl: directUrl,
+          thumbnail: d.data.cover || "",
+          filename: `TikTok_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+        };
+      }
+      throw new Error(d.msg || "TikTok stream nahi mil saka");
+    }
+
+    // 2. Twitter / X
+    if (/twitter\.com|x\.com/i.test(url)) {
+      try {
+        const twRes = await fetch(`https://twitsave.com/info?url=${encodeURIComponent(url)}`);
+        const html = await twRes.text();
+        const match = html.match(/href="(https:\/\/[^"]+\.mp4[^"]*)"/);
+        if (match && match[1]) {
+          return {
+            ok: true,
+            title: "Twitter/X Video",
+            downloadUrl: match[1],
+            filename: `Twitter_${Date.now()}.mp4`
+          };
+        }
+      } catch {}
+    }
+
+    // 3. YouTube (Invidious Public Stream Cluster)
+    const ytMatch = url.match(/(?:youtu\.be\/|watch\?v=|\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      const id = ytMatch[1];
+      const instances = [
+        "https://invidious.nerdvpn.de",
+        "https://inv.tux.pizza",
+        "https://invidious.jing.rocks",
+        "https://vid.puffyan.us"
+      ];
+      for (const inst of instances) {
+        try {
+          const ctrl = new AbortController();
+          setTimeout(() => ctrl.abort(), 4000);
+          const r = await fetch(`${inst}/api/v1/videos/${id}`, { signal: ctrl.signal });
+          if (r.ok) {
+            const data = await r.json();
+            const streams = data.formatStreams || [];
+            if (streams.length > 0) {
+              const best = streams[streams.length - 1];
+              return {
+                ok: true,
+                title: data.title || "YouTube Video",
+                downloadUrl: best.url,
+                thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+                filename: `${(data.title || "video").replace(/[^\w\s-]/g, '').slice(0, 40)}.mp4`
+              };
+            }
+          }
+        } catch {}
+      }
+    }
+
+    // 4. Pinterest
+    if (/pinterest\.com|pin\.it/i.test(url)) {
+      if (url.includes('.mp4') || url.includes('v1.pinimg.com')) {
+        return { ok: true, title: "Pinterest Video", downloadUrl: url, filename: `Pinterest_${Date.now()}.mp4` };
+      }
+    }
+
+    // 5. Direct MP4 / Media Streams
+    if (/\.(mp4|m4v|webm|mov|mp3|m4a)($|\?)/i.test(url)) {
+      const ext = isAudio ? 'mp3' : 'mp4';
+      return {
+        ok: true,
+        title: "Direct Media Stream",
+        downloadUrl: url,
+        filename: `Video_${Date.now()}.${ext}`
+      };
+    }
+
+    throw new Error("Direct extraction support nahi hui. Laptop ko on kar ke check karein.");
+  }
+
+  function onDownloadDoneDirect(result) {
+    document.getElementById('mProgStatus').textContent = `✅ Video Stream Ready!`;
+    document.getElementById('mProgPct').textContent = "100%";
+    document.getElementById('mProgFill').style.width = "100%";
+    mStartDlBtn.disabled = false;
+    mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+
+    document.getElementById('mDoneTitle').textContent = result.title;
+    mDoneBox.classList.add('show');
+
+    const saveBtn = document.getElementById('mSavePhoneBtn');
+    saveBtn.href = result.downloadUrl;
+    saveBtn.setAttribute("download", result.filename || "video.mp4");
+    saveBtn.setAttribute("target", "_blank");
+
+    document.getElementById('mPlayPhoneBtn').onclick = () => {
+      openMobilePlayer(result.downloadUrl, result.title);
+    };
+
+    // Auto trigger mobile browser save
+    const a = document.createElement('a');
+    a.href = result.downloadUrl;
+    a.download = result.filename || "video.mp4";
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 1000);
+  }
+
   mStartDlBtn.onclick = async () => {
     const url = mUrlInput.value.trim();
     if (!url) {
@@ -881,40 +1017,59 @@
     }
 
     mStartDlBtn.disabled = true;
-    mStartDlBtn.innerHTML = `<span>⏳ Analyzing & Starting…</span>`;
+    mStartDlBtn.innerHTML = `<span>⏳ Analyzing Video…</span>`;
     mProgCard.classList.add('show');
     mDoneBox.classList.remove('show');
-    document.getElementById('mProgStatus').textContent = "🚀 Starting Turbo Engine…";
-    document.getElementById('mProgPct').textContent = "0%";
-    document.getElementById('mProgFill').style.width = "0%";
+    document.getElementById('mProgStatus').textContent = "🔍 Checking Engine Mode…";
+    document.getElementById('mProgPct').textContent = "10%";
+    document.getElementById('mProgFill').style.width = "10%";
 
     const isAudio = selectedFormat === "audio";
     const quality = isAudio ? "best" : (selectedFormat === "720" ? "720" : "best");
     const turbo = document.getElementById('mTurboToggle').checked;
 
-    try {
-      const res = await fetch('/api/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          quality,
-          audio_only: isAudio,
-          turbo: turbo
-        })
-      });
+    // Check if PC backend is alive
+    const isBackendAlive = await checkBackendStatus();
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Download failed");
-
-      activeJobId = data.job_id;
-      startPolling(activeJobId);
-
-    } catch (err) {
-      alert("Download error: " + err.message);
-      mStartDlBtn.disabled = false;
-      mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
-      mProgCard.classList.remove('show');
+    if (isBackendAlive) {
+      // 1. Laptop Turbo Mode (When PC is On)
+      document.getElementById('mProgStatus').textContent = "🚀 Starting PC Turbo Engine…";
+      document.getElementById('mProgPct').textContent = "20%";
+      document.getElementById('mProgFill').style.width = "20%";
+      try {
+        const res = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, quality, audio_only: isAudio, turbo: turbo })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Download failed");
+        activeJobId = data.job_id;
+        startPolling(activeJobId);
+      } catch (err) {
+        alert("PC Engine error: " + err.message);
+        mStartDlBtn.disabled = false;
+        mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+        mProgCard.classList.remove('show');
+      }
+    } else {
+      // 2. Standalone Mode (When Laptop is Off — 100% Mobile Free)
+      document.getElementById('mProgStatus').textContent = "🌐 Standalone Mobile Engine (Laptop-Free)…";
+      document.getElementById('mProgPct').textContent = "35%";
+      document.getElementById('mProgFill').style.width = "35%";
+      try {
+        const res = await resolveDirectVideo(url, isAudio);
+        document.getElementById('mProgPct').textContent = "80%";
+        document.getElementById('mProgFill').style.width = "80%";
+        setTimeout(() => {
+          onDownloadDoneDirect(res);
+        }, 500);
+      } catch (err) {
+        alert("Notice: " + err.message);
+        mStartDlBtn.disabled = false;
+        mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+        mProgCard.classList.remove('show');
+      }
     }
   };
 
