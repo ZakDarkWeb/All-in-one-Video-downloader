@@ -70,6 +70,50 @@ function setupContextMenus() {
   });
 }
 
+// ── Dynamic Video Sniffer Badge ────────────────────────────────
+function isSupportedVideoUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  if (url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("about:") || url.startsWith("chrome-extension://")) return false;
+  if (/(youtu\.be|youtube\.com\/(watch|shorts|embed))/i.test(url)) return true;
+  if (/tiktok\.com\//i.test(url)) return true;
+  if (/instagram\.com\/(reel|p|tv)\//i.test(url)) return true;
+  if (/snapchat\.com\/(spotlight|add)/i.test(url)) return true;
+  if (/(twitter\.com|x\.com)\/[^/]+\/status\/\d+/i.test(url)) return true;
+  if (/(facebook\.com\/(watch|reel|.+?\/videos)|fb\.watch)/i.test(url)) return true;
+  if (/(pinterest\.com\/pin|pin\.it)/i.test(url)) return true;
+  if (/reddit\.com\/r\/[^\/]+\/comments\//i.test(url)) return true;
+  return false;
+}
+
+function updateTabBadge(tabId, url) {
+  if (!tabId) return;
+  // If download in progress, do not overwrite download status badge
+  if (activeDownload && !["done", "error", null].includes(activeDownload?.status)) return;
+
+  if (isSupportedVideoUrl(url)) {
+    chrome.action.setBadgeText({ tabId: tabId, text: "🎬" }).catch(() => {});
+    chrome.action.setBadgeBackgroundColor({ tabId: tabId, color: "#00d4ff" }).catch(() => {});
+    chrome.action.setTitle({ tabId: tabId, title: "ZDownloader PRO • Video Detected! Tap to Download or Send to Mobile" }).catch(() => {});
+  } else {
+    chrome.action.setBadgeText({ tabId: tabId, text: "" }).catch(() => {});
+  }
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url || changeInfo.status === "complete") {
+    updateTabBadge(tabId, tab.url);
+  }
+});
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab && tab.url) {
+      updateTabBadge(activeInfo.tabId, tab.url);
+    }
+  } catch {}
+});
+
 async function resolveContextUrl(info, tab) {
   // 1. Ask active tab's content script which element was clicked
   if (tab && tab.id) {

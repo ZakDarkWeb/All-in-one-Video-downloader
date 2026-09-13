@@ -252,6 +252,13 @@ function setupUI() {
     };
   }
 
+  // Send to Phone via QR Code
+  if ($("sendToPhoneBtn")) {
+    $("sendToPhoneBtn").onclick = () => {
+      showSendToPhoneQr(activeUrl);
+    };
+  }
+
   // Download Subtitles
   if ($("dlSubBtn")) {
     $("dlSubBtn").onclick = async () => {
@@ -896,13 +903,34 @@ async function showQrCode() {
   }
 }
 
-async function showMobileAppQr() {
-  await fetchLocalIp();
-  const host = (currentLocalIp && currentLocalIp !== "127.0.0.1") ? currentLocalIp : "127.0.0.1";
-  const appUrl = `http://${host}:8000/mobile`;
+function showSendToPhoneQr(targetUrl) {
+  const urlToShare = targetUrl || activeUrl;
+  if (!urlToShare) return;
+  const pwaUrl = `https://zakdarkweb.github.io/All-in-one-Video-downloader/?url=${encodeURIComponent(urlToShare)}`;
 
   if ($("qrCard")) $("qrCard").classList.add("show");
-  if ($("qrHintText")) $("qrHintText").textContent = "Same Wi-Fi par connect karein. Phone camera se scan karein aur 'Install App' par tap karein!";
+  if ($("qrHintText")) $("qrHintText").textContent = "📱 Mobile camera se scan karein: ZDownloader mobile app par yeh video direct open ho jayegi!";
+  const canvas = $("qrCanvas");
+  if (canvas && window.generateQR) {
+    window.generateQR(pwaUrl, canvas);
+  }
+  if ($("qrUrlInput")) $("qrUrlInput").value = pwaUrl;
+  if ($("copyQrUrlBtn")) {
+    $("copyQrUrlBtn").onclick = () => {
+      navigator.clipboard.writeText(pwaUrl);
+      const btn = $("copyQrUrlBtn");
+      const orig = btn.textContent;
+      btn.textContent = "✅ Copied!";
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    };
+  }
+}
+
+async function showMobileAppQr() {
+  const appUrl = "https://zakdarkweb.github.io/All-in-one-Video-downloader/";
+
+  if ($("qrCard")) $("qrCard").classList.add("show");
+  if ($("qrHintText")) $("qrHintText").textContent = "📱 Phone camera se scan karein aur 'Install App' par tap karein taake Home Screen par lag jaye!";
   const canvas = $("qrCanvas");
   if (canvas && window.generateQR) {
     window.generateQR(appUrl, canvas);
