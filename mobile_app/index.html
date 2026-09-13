@@ -2177,7 +2177,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v4.5_bulk_studio';
+  const APP_VERSION = 'v4.6_fix_engine';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -2544,6 +2544,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       document.getElementById('mProgPct').textContent = "20%";
       document.getElementById('mProgFill').style.width = "20%";
       const apiPrefix = activeBackendUrl || '';
+      try {
         const trimStart = (document.getElementById('mTrimStart')?.value || '').trim();
         const trimEnd = (document.getElementById('mTrimEnd')?.value || '').trim();
         const bodyPayload = { url, quality, audio_only: isAudio, turbo: turbo };

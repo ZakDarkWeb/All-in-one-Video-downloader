@@ -376,6 +376,92 @@ function setupUI() {
       } catch {}
     };
   }
+
+  // ── Bulk Queue Handlers in Extension ──
+  let extBulkFormat = "best";
+  if ($("extBulkInput")) {
+    $("extBulkInput").addEventListener("input", () => {
+      const urls = ($("extBulkInput").value.match(/https?:\/\/[^\s]+/gi) || []);
+      if ($("extBulkCount")) $("extBulkCount").textContent = `${urls.length} link${urls.length === 1 ? '' : 's'}`;
+    });
+  }
+
+  if ($("extBulkPasteBtn")) {
+    $("extBulkPasteBtn").onclick = async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          const prev = $("extBulkInput").value.trim();
+          $("extBulkInput").value = (prev ? prev + "\n" : "") + text.trim();
+          const urls = ($("extBulkInput").value.match(/https?:\/\/[^\s]+/gi) || []);
+          if ($("extBulkCount")) $("extBulkCount").textContent = `${urls.length} links`;
+        }
+      } catch {
+        if ($("extBulkInput")) $("extBulkInput").focus();
+      }
+    };
+  }
+
+  if ($("extBulkSampleBtn")) {
+    $("extBulkSampleBtn").onclick = () => {
+      $("extBulkInput").value = "https://www.youtube.com/shorts/3i_Jm05U03Y\nhttps://www.tiktok.com/@tiktok/video/7106594312292453678\nhttps://www.snapchat.com/spotlight/W7_EDlXWTBiXAEEniNoMPwAAYZGRleXV4a21vAZ9xqM61AZ9xqAK_AAAAAQ";
+      if ($("extBulkCount")) $("extBulkCount").textContent = "3 links";
+    };
+  }
+
+  if ($("extBulkClearBtn")) {
+    $("extBulkClearBtn").onclick = () => {
+      $("extBulkInput").value = "";
+      if ($("extBulkCount")) $("extBulkCount").textContent = "0 links";
+      if ($("extBulkStatusBox")) $("extBulkStatusBox").style.display = "none";
+    };
+  }
+
+  ["extBulkFmtBest", "extBulkFmt720", "extBulkFmtAudio"].forEach(id => {
+    if ($(id)) {
+      $(id).onclick = () => {
+        ["extBulkFmtBest", "extBulkFmt720", "extBulkFmtAudio"].forEach(i => $(i)?.classList.remove("active"));
+        $(id).classList.add("active");
+        extBulkFormat = $(id).dataset.fmt;
+      };
+    }
+  });
+
+  if ($("extBulkStartBtn")) {
+    $("extBulkStartBtn").onclick = async () => {
+      const urls = ($("extBulkInput")?.value.match(/https?:\/\/[^\s]+/gi) || []);
+      if (urls.length === 0) {
+        alert("Pehle kam az kam 1 ya zyada video links paste karein!");
+        return;
+      }
+      const isAudio = extBulkFormat === "audio";
+      const quality = isAudio ? "best" : (extBulkFormat === "720" ? "720" : "best");
+
+      const box = $("extBulkStatusBox");
+      if (box) {
+        box.style.display = "block";
+        box.textContent = `🚀 Adding ${urls.length} videos to download queue…`;
+      }
+
+      chrome.runtime.sendMessage({
+        action: "BATCH_ENQUEUE",
+        items: urls.map(u => ({
+          url: u,
+          quality,
+          audioOnly: isAudio,
+          title: "Batch Video",
+          turbo: settings.turbo !== false
+        }))
+      }, res => {
+        if (box) {
+          box.textContent = `✅ ${urls.length} videos added to background queue! Downloading now…`;
+        }
+        setTimeout(() => {
+          switchToDownloadTab();
+        }, 1200);
+      });
+    };
+  }
 }
 
 // ── Server Status ─────────────────────────────────────────────────

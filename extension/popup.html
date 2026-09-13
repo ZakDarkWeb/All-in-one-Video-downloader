@@ -1197,6 +1197,11 @@ body::before{
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       Download
     </button>
+    <button class="tab" data-tab="panelBulk" id="tabBulk">
+      <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-3 7h4m-4 4h4m-6-4h.01M9 16h.01"/></svg>
+      Bulk Queue
+      <span class="badge on" id="bulkBadge" style="background:#ef4444; font-size:8px; padding:1px 4px;">HOT</span>
+    </button>
     <button class="tab" data-tab="panelHist" id="tabHist">
       <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
       History
@@ -1396,6 +1401,40 @@ body::before{
 
 </div>
 </div><!-- /panelDl -->
+
+<!-- ═══════════ BULK QUEUE PANEL ═══════════ -->
+<div class="panel" id="panelBulk">
+<div class="dl-body">
+  <div style="font-size:11px; font-weight:800; color:var(--text2); text-transform:uppercase; letter-spacing:0.6px; display:flex; justify-content:space-between; align-items:center;">
+    <span>📋 Batch Video Downloader</span>
+    <span id="extBulkCount" style="color:var(--cyan); font-weight:800;">0 links</span>
+  </div>
+
+  <div style="background:rgba(18, 23, 40, 0.7); border:1px solid var(--border); border-radius:var(--r-xl); padding:8px;">
+    <textarea id="extBulkInput" style="width:100%; min-height:115px; background:transparent; border:none; color:#fff; font-family:monospace; font-size:11.5px; line-height:1.5; resize:vertical; outline:none;" placeholder="Paste multiple video links (one per line)...&#10;https://www.youtube.com/watch?v=...&#10;https://www.tiktok.com/@user/video/...&#10;https://www.snapchat.com/spotlight/..."></textarea>
+  </div>
+
+  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+    <button class="btn-done secondary" id="extBulkPasteBtn" style="padding:5px 10px; font-size:10.5px; border-radius:6px; cursor:pointer;">📋 Paste</button>
+    <button class="btn-done secondary" id="extBulkSampleBtn" style="padding:5px 10px; font-size:10.5px; border-radius:6px; cursor:pointer;">💡 3 Samples</button>
+    <button class="btn-done secondary" id="extBulkClearBtn" style="padding:5px 10px; font-size:10.5px; border-radius:6px; cursor:pointer;">🗑️ Clear</button>
+  </div>
+
+  <div style="font-size:10.5px; font-weight:700; color:var(--text3); margin-top:2px;">Select Format:</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+    <button class="fmt-btn best active" id="extBulkFmtBest" data-fmt="best" style="padding:8px 4px; font-size:11px; font-weight:800;">🎬 Best</button>
+    <button class="fmt-btn" id="extBulkFmt720" data-fmt="720" style="padding:8px 4px; font-size:11px; font-weight:800;">📺 720p</button>
+    <button class="fmt-btn audio" id="extBulkFmtAudio" data-fmt="audio" style="padding:8px 4px; font-size:11px; font-weight:800;">🎵 MP3</button>
+  </div>
+
+  <button id="extBulkStartBtn" style="background:var(--grad-main); border:none; color:#070913; font-weight:900; font-size:12px; padding:10px; border-radius:9px; cursor:pointer; font-family:inherit; box-shadow:0 4px 16px rgba(0,212,255,0.35); margin-top:4px;">
+    🚀 Start Bulk Download
+  </button>
+
+  <div id="extBulkStatusBox" style="display:none; font-size:11px; color:#38bdf8; text-align:center; padding:8px; background:rgba(0,212,255,0.1); border-radius:8px; border:1px solid rgba(0,212,255,0.25); line-height:1.4;">
+  </div>
+</div>
+</div><!-- /panelBulk -->
 
 <!-- ═══════════ HISTORY PANEL ═══════════ -->
 <div class="panel" id="panelHist">
