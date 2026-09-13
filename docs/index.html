@@ -4,6 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ZDownloader PRO • By Basit • Mobile App</title>
+<script>
+// Auto-purge old caches once on version update
+const BUILD_VERSION = 'v3.2_hotfix';
+if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
+  localStorage.setItem('zdown_build', BUILD_VERSION);
+  if ('caches' in window) {
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          Promise.all(regs.map(r => r.unregister())).then(() => {
+            window.location.reload(true);
+          });
+        });
+      }
+    });
+  }
+}
+</script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#080c18">
 <meta name="mobile-web-app-capable" content="yes">
@@ -565,12 +583,15 @@
     </div>
     <div class="m-title-wrap">
       <span class="m-title">ZDownloader PRO</span>
-      <span class="m-status"><span class="m-dot"></span> By Basit · Turbo Studio</span>
+      <span class="m-status" id="mStatusBadge"><span class="m-dot"></span> By Basit · Standalone (Laptop-Free)</span>
     </div>
   </div>
-  <button class="m-btn-install" id="btnOpenInstallModal">
-    📲 Install App
-  </button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button id="btnForceRefresh" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#00f2fe;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Refresh & Clear Cache">🔄</button>
+    <button class="m-btn-install" id="btnOpenInstallModal">
+      📲 Install App
+    </button>
+  </div>
 </header>
 
 <div class="m-container">
@@ -877,11 +898,33 @@
   const isLocalBackend = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   let backendAvailable = false;
 
+  function updateStatusBadge(html) {
+    const badge = document.getElementById('mStatusBadge');
+    if (badge) badge.innerHTML = html;
+  }
+
+  const btnForceRefresh = document.getElementById('btnForceRefresh');
+  if (btnForceRefresh) {
+    btnForceRefresh.onclick = async () => {
+      btnForceRefresh.textContent = '⏳';
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const r of regs) await r.unregister();
+      }
+      localStorage.removeItem('zdown_build');
+      window.location.reload(true);
+    };
+  }
+
   checkBackendStatus();
 
   async function checkBackendStatus() {
     if (!isLocalBackend) {
-      document.getElementById('mStatusBadge').innerHTML = `⚡ By Basit · Standalone (Laptop-Free)`;
+      updateStatusBadge(`⚡ By Basit · Standalone (Laptop-Free)`);
       return false;
     }
     try {
@@ -890,12 +933,12 @@
       const r = await fetch('/api/status', { signal: ctrl.signal });
       clearTimeout(t);
       if (r.ok) {
-        document.getElementById('mStatusBadge').innerHTML = `<span class="m-dot"></span> By Basit · PC Turbo Online`;
+        updateStatusBadge(`<span class="m-dot"></span> By Basit · PC Turbo Online`);
         backendAvailable = true;
         return true;
       }
     } catch {}
-    document.getElementById('mStatusBadge').innerHTML = `⚡ By Basit · Standalone (Laptop-Free)`;
+    updateStatusBadge(`⚡ By Basit · Standalone (Laptop-Free)`);
     return false;
   }
 
