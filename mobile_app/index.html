@@ -922,7 +922,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v4.1_youtube';
+  const APP_VERSION = 'v4.2_all_platforms';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -1035,8 +1035,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     // 3. Twitter / X
     if (/twitter\.com|x\.com/i.test(url)) {
       document.getElementById('mProgStatus').textContent = "⚡ Fetching Twitter/X Video…";
-      document.getElementById('mProgPct').textContent = "50%";
-      document.getElementById('mProgFill').style.width = "50%";
+      document.getElementById('mProgPct').textContent = "45%";
+      document.getElementById('mProgFill').style.width = "45%";
       try {
         const twRes = await fetch(`https://twitsave.com/info?url=${encodeURIComponent(url)}`);
         const html = await twRes.text();
@@ -1050,6 +1050,36 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           };
         }
       } catch {}
+
+      try {
+        const target = `https://loader.to/ajax/download.php?button=1&start=1&end=1&format=720&url=${encodeURIComponent(url)}`;
+        const res = await fetch(`https://r.jina.ai/${target}`);
+        if (res.ok) {
+          const text = await res.text();
+          const pMatch = text.match(/"progress_url":\s*"([^"]+)"/);
+          if (pMatch) {
+            const pUrl = pMatch[1].replace(/\\\//g, '/');
+            for (let i = 0; i < 20; i++) {
+              await new Promise(r => setTimeout(r, 1200));
+              try {
+                const pr = await fetch(pUrl);
+                if (pr.ok) {
+                  const pj = await pr.json();
+                  if (pj.download_url) {
+                    return {
+                      ok: true,
+                      title: "Twitter/X Video",
+                      downloadUrl: pj.download_url,
+                      filename: `Twitter_${Date.now()}.mp4`
+                    };
+                  }
+                }
+              } catch {}
+            }
+          }
+        }
+      } catch {}
+      throw new Error("Twitter video link extract nahi ho saka. Link check karein.");
     }
 
     // 4. YouTube (High Speed Multi-Server Engine)
@@ -1114,7 +1144,51 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       throw new Error("YouTube video stream fetch nahi ho saka. Video privacy setting ya link check karein.");
     }
 
-    // 5. Pinterest
+    // 5. Facebook
+    if (/facebook\.com|fb\.watch/i.test(url)) {
+      document.getElementById('mProgStatus').textContent = "⚡ Fetching Facebook Video…";
+      document.getElementById('mProgPct').textContent = "45%";
+      document.getElementById('mProgFill').style.width = "45%";
+
+      try {
+        const target = `https://loader.to/ajax/download.php?button=1&start=1&end=1&format=720&url=${encodeURIComponent(url)}`;
+        const res = await fetch(`https://r.jina.ai/${target}`);
+        if (res.ok) {
+          const text = await res.text();
+          const pMatch = text.match(/"progress_url":\s*"([^"]+)"/);
+          if (pMatch) {
+            const pUrl = pMatch[1].replace(/\\\//g, '/');
+            for (let i = 0; i < 25; i++) {
+              await new Promise(r => setTimeout(r, 1200));
+              try {
+                const pr = await fetch(pUrl);
+                if (pr.ok) {
+                  const pj = await pr.json();
+                  const pct = Math.min(95, 45 + (i * 2));
+                  document.getElementById('mProgPct').textContent = `${pct}%`;
+                  document.getElementById('mProgFill').style.width = `${pct}%`;
+                  document.getElementById('mProgStatus').textContent = pj.text ? `⚡ ${pj.text}…` : "⚡ Processing Facebook Stream…";
+
+                  if (pj.download_url) {
+                    return {
+                      ok: true,
+                      title: "Facebook Video",
+                      downloadUrl: pj.download_url,
+                      filename: `Facebook_${Date.now()}.mp4`
+                    };
+                  }
+                }
+              } catch {}
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Facebook direct extraction error:", err);
+      }
+      throw new Error("Facebook video extract nahi ho saka. Video public privacy setting check karein.");
+    }
+
+    // 6. Pinterest
     if (/pinterest\.com|pin\.it/i.test(url)) {
       if (url.includes('.mp4') || url.includes('v1.pinimg.com')) {
         return { ok: true, title: "Pinterest Video", downloadUrl: url, filename: `Pinterest_${Date.now()}.mp4` };
@@ -1139,7 +1213,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       } catch {}
     }
 
-    // 6. Direct MP4 / Media Streams
+    // 7. Direct MP4 / Media Streams
     if (/\.(mp4|m4v|webm|mov|mp3|m4a)($|\?)/i.test(url)) {
       const ext = isAudio ? 'mp3' : 'mp4';
       return {
@@ -1150,9 +1224,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       };
     }
 
-    // 7. Instagram / Facebook Notice in Standalone Mode
-    if (/instagram\.com/i.test(url) || /facebook\.com|fb\.watch/i.test(url)) {
-      throw new Error("Instagram aur Facebook ke liye PC Turbo Engine zaroori hai (Meta bot security ki wajah se). TikTok, Snapchat, Twitter, YouTube aur Direct MP4 links mobile pe direct chaltay hain!");
+    // 8. Instagram Notice in Standalone Mode
+    if (/instagram\.com/i.test(url)) {
+      throw new Error("Instagram Reels download karne ke liye laptop me Turbo Engine chalana zaroori hai (Meta account security bot protection ki wajah se). TikTok, Snapchat, YouTube, Facebook, Twitter aur Direct MP4 links mobile pe laptop ke baghair 100% direct chalte hain!");
     }
 
     throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
