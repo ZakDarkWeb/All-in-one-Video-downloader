@@ -922,7 +922,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v4.0_snapchat';
+  const APP_VERSION = 'v4.1_youtube';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -1052,41 +1052,66 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       } catch {}
     }
 
-    // 4. YouTube (Invidious Public Stream Cluster)
+    // 4. YouTube (High Speed Multi-Server Engine)
     const ytMatch = url.match(/(?:youtu\.be\/|watch\?v=|\/shorts\/)([a-zA-Z0-9_-]{11})/);
     if (ytMatch && ytMatch[1]) {
-      document.getElementById('mProgStatus').textContent = "⚡ Fetching YouTube Stream…";
-      document.getElementById('mProgPct').textContent = "50%";
-      document.getElementById('mProgFill').style.width = "50%";
       const id = ytMatch[1];
-      const instances = [
-        "https://invidious.nerdvpn.de",
-        "https://inv.tux.pizza",
-        "https://invidious.jing.rocks",
-        "https://vid.puffyan.us"
-      ];
-      for (const inst of instances) {
-        try {
-          const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), 4000);
-          const r = await fetch(`${inst}/api/v1/videos/${id}`, { signal: ctrl.signal });
-          clearTimeout(timer);
-          if (r.ok) {
-            const data = await r.json();
-            const streams = data.formatStreams || [];
-            if (streams.length > 0) {
-              const best = streams[streams.length - 1];
-              return {
-                ok: true,
-                title: data.title || "YouTube Video",
-                downloadUrl: best.url,
-                thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
-                filename: `${(data.title || "video").replace(/[^\w\s-]/g, '').slice(0, 40)}.mp4`
-              };
+      const cleanYtUrl = `https://www.youtube.com/watch?v=${id}`;
+      const ytFormat = isAudio ? 'mp3' : (selectedFormat === '720' ? '720' : '1080');
+
+      document.getElementById('mProgStatus').textContent = `⚡ Fetching YouTube ${isAudio ? 'MP3 Audio' : 'HD Video'}…`;
+      document.getElementById('mProgPct').textContent = "45%";
+      document.getElementById('mProgFill').style.width = "45%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
+
+      try {
+        const initTarget = `https://loader.to/ajax/download.php?button=1&start=1&end=1&format=${ytFormat}&url=${encodeURIComponent(cleanYtUrl)}`;
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 12000);
+        const res = await fetch(`https://r.jina.ai/${initTarget}`, {
+          signal: ctrl.signal,
+          headers: { 'Accept': 'text/plain' }
+        });
+        clearTimeout(timer);
+
+        if (res.ok) {
+          const text = await res.text();
+          const pMatch = text.match(/"progress_url":\s*"([^"]+)"/);
+          const progressUrl = pMatch ? pMatch[1].replace(/\\\//g, '/') : null;
+          const tMatch = text.match(/"title":\s*"([^"]+)"/);
+          const videoTitle = tMatch ? tMatch[1].trim() : "YouTube Video";
+
+          if (progressUrl) {
+            for (let i = 0; i < 30; i++) {
+              await new Promise(r => setTimeout(r, 1200));
+              try {
+                const pRes = await fetch(progressUrl);
+                if (pRes.ok) {
+                  const pj = await pRes.json();
+                  const pct = Math.min(95, 45 + (i * 2));
+                  document.getElementById('mProgPct').textContent = `${pct}%`;
+                  document.getElementById('mProgFill').style.width = `${pct}%`;
+                  document.getElementById('mProgStatus').textContent = pj.text ? `⚡ ${pj.text}…` : "⚡ Processing YouTube Stream…";
+
+                  if (pj.download_url) {
+                    return {
+                      ok: true,
+                      title: videoTitle,
+                      downloadUrl: pj.download_url,
+                      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+                      filename: `${(videoTitle).replace(/[^\w\s-]/g, '').slice(0, 40) || 'YouTube'}_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+                    };
+                  }
+                }
+              } catch {}
             }
           }
-        } catch {}
+        }
+      } catch (err) {
+        console.warn("YouTube loader extraction error:", err);
       }
+
+      throw new Error("YouTube video stream fetch nahi ho saka. Video privacy setting ya link check karein.");
     }
 
     // 5. Pinterest
