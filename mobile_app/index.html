@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v3.2_hotfix';
+const BUILD_VERSION = 'v4.7_smart_clip';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -991,6 +991,200 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     white-space: nowrap; backdrop-filter: blur(12px);
   }
   .m-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* ── Smart Clipboard & Instant Download Bottom Sheet ── */
+  .m-clip-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .m-clip-sheet.show {
+    display: flex;
+  }
+  .m-clip-sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(4, 7, 15, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: fadeInClipSheet 0.22s ease;
+  }
+  .m-clip-sheet-content {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    background: linear-gradient(180deg, #111a33 0%, #090e1c 100%);
+    border: 1px solid rgba(0, 242, 254, 0.45);
+    border-bottom: none;
+    border-radius: 24px 24px 0 0;
+    padding: 16px 20px 28px;
+    box-shadow: 0 -15px 45px rgba(0, 242, 254, 0.25), 0 -5px 25px rgba(0, 0, 0, 0.9);
+    animation: slideUpClipSheet 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 2;
+  }
+  @keyframes slideUpClipSheet {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes fadeInClipSheet {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .m-clip-drag-bar {
+    width: 44px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+    margin: 0 auto 12px;
+  }
+  .m-clip-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .m-clip-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(0, 242, 254, 0.12);
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #00f2fe;
+    letter-spacing: 0.3px;
+  }
+  .m-clip-close-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #94a3b8;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .m-clip-close-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .m-clip-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .m-clip-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+  .m-clip-url-card {
+    background: rgba(5, 8, 18, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .m-clip-url-text {
+    font-size: 12px;
+    color: #38bdf8;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .m-clip-fmt-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .m-clip-fmt-chip {
+    padding: 10px 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .m-clip-fmt-chip.active {
+    background: rgba(0, 242, 254, 0.15);
+    border-color: var(--cyan);
+    color: #fff;
+    box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
+  }
+  .m-clip-fmt-chip-title {
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .m-clip-fmt-chip-sub {
+    font-size: 10px;
+    opacity: 0.75;
+  }
+  .m-clip-btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .m-clip-btn-download {
+    background: var(--cyber-grad);
+    border: none;
+    border-radius: var(--radius-md);
+    color: #070a13;
+    font-weight: 800;
+    font-size: 15px;
+    padding: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 242, 254, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.15s ease;
+  }
+  .m-clip-btn-download:active {
+    transform: scale(0.98);
+  }
+  .m-clip-btn-paste-only {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .m-clip-hint-card {
+    background: rgba(0, 242, 254, 0.06);
+    border: 1px dashed rgba(0, 242, 254, 0.25);
+    border-radius: var(--radius-md);
+    padding: 9px 12px;
+    margin-top: 10px;
+  }
+
 </style>
 </head>
 <body>
@@ -1057,12 +1251,25 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       <div class="m-card">
         <div class="m-input-label">
           <span>Paste Video / Audio Link</span>
-          <span style="color:var(--cyan);">Direct Phone Download</span>
+          <span style="color:var(--cyan); display:flex; align-items:center; gap:5px;" id="mClipStatusPill">
+            <span class="m-dot" style="background:#10b981; box-shadow:0 0 8px #10b981; width:7px; height:7px;"></span>
+            Auto-Detect Active
+          </span>
         </div>
 
         <div class="m-input-wrap">
           <input type="url" class="m-input" id="mUrlInput" placeholder="Paste TikTok, Snapchat, YouTube, X link…" />
           <button class="m-btn-paste" id="mPasteBtn" type="button">📋 Paste</button>
+        </div>
+
+        <!-- Pro Tip for Mobile Clipboard / Share -->
+        <div class="m-clip-hint-card" id="mClipHintBanner">
+          <div style="display:flex; align-items:flex-start; gap:8px;">
+            <span style="font-size:15px; line-height:1;">💡</span>
+            <div style="font-size:11px; line-height:1.45; color:#94a3b8;">
+              <strong style="color:#00f2fe;">Auto-Prompt Feature:</strong> YouTube, TikTok ya Insta me link <span style="color:#fff; font-weight:700;">Copy</span> karke ZDownloader kholein — download prompt khud ba khud pop-up hoga! Ya direct <span style="color:#fff; font-weight:700;">Share ➔ ZDownloader</span> use karein.
+            </div>
+          </div>
         </div>
 
         <!-- Platform Pills -->
@@ -1291,6 +1498,55 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     ⚡ CREATED BY BASIT • ZDOWNLOADER PRO
   </div>
 
+</div>
+
+<!-- Smart Clipboard & Instant Download Bottom Sheet -->
+<div class="m-clip-sheet" id="mClipSheet" role="dialog" aria-modal="true" aria-labelledby="mClipPromptTitle">
+  <div class="m-clip-sheet-backdrop" id="mClipBackdrop"></div>
+  <div class="m-clip-sheet-content">
+    <div class="m-clip-drag-bar"></div>
+    <div class="m-clip-top-row">
+      <div class="m-clip-badge" id="mClipPlatformBadge">
+        <span id="mClipPlatformIcon">⚡</span>
+        <span id="mClipPlatformName">Video Link Detected</span>
+      </div>
+      <button class="m-clip-close-btn" id="btnClipDismiss" type="button" title="Close">✕</button>
+    </div>
+    <div class="m-clip-title" id="mClipPromptTitle">⚡ Copied Link Detected!</div>
+    <div class="m-clip-sub" id="mClipPromptSub">Video link clipboard se detect ho gaya hai. 1-tap me download start karein:</div>
+    
+    <div class="m-clip-url-card">
+      <span style="font-size:14px;">🔗</span>
+      <div class="m-clip-url-text" id="mClipUrlPreview">https://...</div>
+    </div>
+
+    <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:8px;">
+      Select Quality / Format:
+    </div>
+    <div class="m-clip-fmt-selector">
+      <div class="m-clip-fmt-chip active" data-clipfmt="best" id="clipFmtBest">
+        <div class="m-clip-fmt-chip-title">🎬 Best HD</div>
+        <div class="m-clip-fmt-chip-sub">1080p / Max</div>
+      </div>
+      <div class="m-clip-fmt-chip" data-clipfmt="720" id="clipFmt720">
+        <div class="m-clip-fmt-chip-title">📺 720p HD</div>
+        <div class="m-clip-fmt-chip-sub">Fast Size</div>
+      </div>
+      <div class="m-clip-fmt-chip" data-clipfmt="audio" id="clipFmtAudio">
+        <div class="m-clip-fmt-chip-title">🎵 MP3 Audio</div>
+        <div class="m-clip-fmt-chip-sub">320kbps</div>
+      </div>
+    </div>
+
+    <div class="m-clip-btn-row">
+      <button class="m-clip-btn-download" id="btnClipDownloadNow" type="button">
+        <span>⚡ Download Now</span>
+      </button>
+      <button class="m-clip-btn-paste-only" id="btnClipPasteOnly" type="button">
+        📋 Only Paste in Input
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Bottom Navigation Bar (Mobile App Style) -->
@@ -1939,17 +2195,198 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     btnStartBulkDl.onclick = startBulkDownload;
   }
 
-  // ── Paste Button ──
-  document.getElementById('mPasteBtn').onclick = async () => {
+  // ── Smart Clipboard & Auto-Link Watcher ──
+  let lastHandledClipUrl = sessionStorage.getItem('zdown_last_clip') || '';
+  let clipSheetDismissedUrl = '';
+
+  function detectPlatform(url) {
+    if (/youtube\.com|youtu\.be/i.test(url)) return { name: 'YouTube Video', icon: '🔴', color: '#ef4444' };
+    if (/tiktok\.com/i.test(url)) return { name: 'TikTok (No Watermark)', icon: '🎵', color: '#00f2fe' };
+    if (/snapchat\.com/i.test(url)) return { name: 'Snapchat Spotlight', icon: '🟡', color: '#eab308' };
+    if (/instagram\.com/i.test(url)) return { name: 'Instagram Reel/Post', icon: '🟣', color: '#ec4899' };
+    if (/facebook\.com|fb\.watch/i.test(url)) return { name: 'Facebook Video', icon: '🔵', color: '#3b82f6' };
+    if (/twitter\.com|x\.com/i.test(url)) return { name: 'Twitter / X', icon: '⚫', color: '#94a3b8' };
+    if (/pinterest\.com|pin\.it/i.test(url)) return { name: 'Pinterest Video', icon: '📌', color: '#ef4444' };
+    if (/reddit\.com/i.test(url)) return { name: 'Reddit Video', icon: '🟠', color: '#f97316' };
+    if (/dailymotion\.com|dai\.ly/i.test(url)) return { name: 'Dailymotion', icon: '🎬', color: '#06b6d4' };
+    if (/\.(mp4|webm|mov|m4v|mp3|m4a|aac|wav)($|\?)/i.test(url)) return { name: 'Direct Media Stream', icon: '⚡', color: '#10b981' };
+    return { name: 'Web Video', icon: '🎬', color: '#00f2fe' };
+  }
+
+  function extractVideoUrl(text) {
+    if (!text || typeof text !== 'string') return null;
+    const match = text.match(/https?:\/\/[^\s"'>]+/i);
+    if (!match) return null;
+    let clean = match[0].replace(/[),.;!?]+$/, '');
+    const isVideo = /youtube\.com|youtu\.be|tiktok\.com|snapchat\.com|instagram\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|pinterest\.com|pin\.it|reddit\.com|dailymotion\.com|dai\.ly|vimeo\.com|threads\.net|\.(mp4|webm|mov|m4v|mp3|m4a|aac|wav)($|\?)/i.test(clean);
+    return isVideo ? clean : null;
+  }
+
+  function syncClipSheetFormat(fmt) {
+    document.querySelectorAll('.m-clip-fmt-chip').forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.clipfmt === fmt);
+    });
+  }
+
+  function openClipSheet(url, source = 'clipboard') {
+    const meta = detectPlatform(url);
+    const sheet = document.getElementById('mClipSheet');
+    const badgeIcon = document.getElementById('mClipPlatformIcon');
+    const badgeName = document.getElementById('mClipPlatformName');
+    const urlPreview = document.getElementById('mClipUrlPreview');
+    const badgeWrap = document.getElementById('mClipPlatformBadge');
+    const titleEl = document.getElementById('mClipPromptTitle');
+    const subEl = document.getElementById('mClipPromptSub');
+
+    if (badgeIcon) badgeIcon.textContent = meta.icon;
+    if (badgeName) badgeName.textContent = meta.name;
+    if (badgeWrap) {
+      badgeWrap.style.borderColor = meta.color;
+      badgeWrap.style.color = meta.color;
+      badgeWrap.style.background = `${meta.color}20`;
+    }
+    if (urlPreview) urlPreview.textContent = url;
+
+    if (titleEl) {
+      titleEl.innerHTML = source === 'share' ? '📲 Shared Video Detected!' : '⚡ Copied Link Detected!';
+    }
+    if (subEl) {
+      subEl.textContent = source === 'share'
+        ? `${meta.name} share hui hai. Quality select karein aur foran download karein:`
+        : `${meta.name} ka link copy mila hai. Kya aap is video ko download karna chahte hain?`;
+    }
+
+    syncClipSheetFormat(selectedFormat);
+
+    if (sheet) {
+      sheet.classList.add('show');
+      try { navigator.vibrate?.([35, 50, 35]); } catch {}
+    }
+  }
+
+  function closeClipSheet() {
+    const sheet = document.getElementById('mClipSheet');
+    if (sheet) sheet.classList.remove('show');
+  }
+
+  async function checkClipboardForVideoLink(isUserTriggered = false) {
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      if (isUserTriggered) alert("Aapke browser me clipboard reading support nahi hai. Box me direct link paste karein.");
+      return;
+    }
+
     try {
       const text = await navigator.clipboard.readText();
-      if (text) {
-        document.getElementById('mUrlInput').value = text.trim();
+      if (!text || typeof text !== 'string') return;
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      const detectedUrl = extractVideoUrl(trimmed);
+      if (!detectedUrl) {
+        if (isUserTriggered) {
+          mUrlInput.value = trimmed;
+          showToast("📋 Text paste ho gaya");
+        }
+        return;
       }
-    } catch {
-      alert("Clipboard access allow karein ya link direct paste karein.");
+
+      // If user clicked Paste button, always open prompt
+      if (isUserTriggered) {
+        mUrlInput.value = detectedUrl;
+        openClipSheet(detectedUrl, 'clipboard');
+        return;
+      }
+
+      // Passive check: avoid prompting if already dismissed or downloaded
+      if (detectedUrl === clipSheetDismissedUrl || detectedUrl === lastHandledClipUrl) {
+        return;
+      }
+
+      mUrlInput.value = detectedUrl;
+      openClipSheet(detectedUrl, 'clipboard');
+    } catch (err) {
+      if (isUserTriggered) {
+        alert("Clipboard permission allow karein ya box me ungli dabaye rakh kar direct 'Paste' karein.");
+      }
     }
-  };
+  }
+
+  // Format chip clicks inside bottom sheet
+  document.querySelectorAll('.m-clip-fmt-chip').forEach(chip => {
+    chip.onclick = () => {
+      const fmt = chip.dataset.clipfmt;
+      selectedFormat = fmt;
+      syncClipSheetFormat(fmt);
+      document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.fmt === fmt);
+      });
+    };
+  });
+
+  const btnClipDownloadNow = document.getElementById('btnClipDownloadNow');
+  if (btnClipDownloadNow) {
+    btnClipDownloadNow.onclick = () => {
+      const raw = mUrlInput.value.trim();
+      if (!raw) return;
+      lastHandledClipUrl = raw;
+      sessionStorage.setItem('zdown_last_clip', lastHandledClipUrl);
+      closeClipSheet();
+      if (navDl && typeof navDl.click === 'function') navDl.click();
+      if (bulkDlSection) bulkDlSection.style.display = 'none';
+      if (singleDlSection) singleDlSection.style.display = 'flex';
+      mStartDlBtn.click();
+    };
+  }
+
+  const btnClipDismiss = document.getElementById('btnClipDismiss');
+  if (btnClipDismiss) {
+    btnClipDismiss.onclick = () => {
+      clipSheetDismissedUrl = mUrlInput.value.trim();
+      closeClipSheet();
+    };
+  }
+
+  const mClipBackdrop = document.getElementById('mClipBackdrop');
+  if (mClipBackdrop) {
+    mClipBackdrop.onclick = () => {
+      clipSheetDismissedUrl = mUrlInput.value.trim();
+      closeClipSheet();
+    };
+  }
+
+  const btnClipPasteOnly = document.getElementById('btnClipPasteOnly');
+  if (btnClipPasteOnly) {
+    btnClipPasteOnly.onclick = () => {
+      clipSheetDismissedUrl = mUrlInput.value.trim();
+      closeClipSheet();
+      showToast("📋 Link input me paste kar diya gaya!");
+      mUrlInput.focus();
+    };
+  }
+
+  // ── Paste Button ──
+  const mPasteBtn = document.getElementById('mPasteBtn');
+  if (mPasteBtn) {
+    mPasteBtn.onclick = () => {
+      checkClipboardForVideoLink(true);
+    };
+  }
+
+  // Auto-listen to window focus, app resume, and first tap
+  window.addEventListener('focus', () => {
+    setTimeout(() => checkClipboardForVideoLink(false), 300);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      setTimeout(() => checkClipboardForVideoLink(false), 300);
+    }
+  });
+  window.addEventListener('pageshow', () => {
+    setTimeout(() => checkClipboardForVideoLink(false), 500);
+  });
+  document.addEventListener('pointerdown', () => {
+    checkClipboardForVideoLink(false);
+  }, { once: true });
 
   // ── Start Download ──
   const mStartDlBtn = document.getElementById('mStartDlBtn');
@@ -1984,8 +2421,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
         if (mUrlInput) {
           mUrlInput.value = extracted;
-          if (navDl) navDl.click();
-          showToast("📲 Shared link detected! Ready to download.");
+          if (navDl && typeof navDl.click === 'function') navDl.click();
           mUrlInput.style.borderColor = "var(--cyan)";
           mUrlInput.style.boxShadow = "0 0 20px rgba(0, 242, 254, 0.4)";
           setTimeout(() => {
@@ -1996,6 +2432,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           try {
             window.history.replaceState({}, document.title, window.location.pathname);
           } catch {}
+
+          // Auto-prompt instant download sheet
+          openClipSheet(extracted, 'share');
         }
       }
     } catch (e) {
@@ -2177,7 +2616,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v4.6_fix_engine';
+  const APP_VERSION = 'v4.7_smart_clip';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
