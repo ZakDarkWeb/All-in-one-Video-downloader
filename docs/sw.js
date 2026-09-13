@@ -1,5 +1,5 @@
 // ZDownloader Pro Service Worker
-const CACHE_NAME = 'zdownloader-pwa-v2';
+const CACHE_NAME = 'zdownloader-pwa-v3';
 const ASSETS = [
   './',
   'manifest.json',
@@ -28,13 +28,13 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Only handle navigation requests for app shell; network first for APIs and media
+  // Only handle navigation requests for app shell; network first
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/'))
+      fetch(event.request).catch(() => caches.match('./') || caches.match('index.html'))
     );
     return;
   }
-  // Let APIs, files, streams and downloads go directly through network
+  // Let external APIs, scrapers, and downloads pass directly through network
   event.respondWith(fetch(event.request));
 });

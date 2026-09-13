@@ -873,16 +873,25 @@
   const mProgCard = document.getElementById('mProgCard');
   const mDoneBox = document.getElementById('mDoneBox');
 
-  // Check if PC Backend is online on load
+  // Check if PC Backend is online on load (ONLY if running on localhost)
+  const isLocalBackend = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  let backendAvailable = false;
+
   checkBackendStatus();
 
   async function checkBackendStatus() {
+    if (!isLocalBackend) {
+      document.getElementById('mStatusBadge').innerHTML = `⚡ By Basit · Standalone (Laptop-Free)`;
+      return false;
+    }
     try {
       const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 1200);
+      const t = setTimeout(() => ctrl.abort(), 1000);
       const r = await fetch('/api/status', { signal: ctrl.signal });
+      clearTimeout(t);
       if (r.ok) {
         document.getElementById('mStatusBadge').innerHTML = `<span class="m-dot"></span> By Basit · PC Turbo Online`;
+        backendAvailable = true;
         return true;
       }
     } catch {}
@@ -1059,11 +1068,8 @@
     const quality = isAudio ? "best" : (selectedFormat === "720" ? "720" : "best");
     const turbo = document.getElementById('mTurboToggle').checked;
 
-    // Check if PC backend is alive
-    const isBackendAlive = await checkBackendStatus();
-
-    if (isBackendAlive) {
-      // 1. Laptop Turbo Mode (When PC is On)
+    if (isLocalBackend && backendAvailable) {
+      // 1. Laptop Turbo Mode (When PC is On & accessed via localhost)
       document.getElementById('mProgStatus').textContent = "🚀 Starting PC Turbo Engine…";
       document.getElementById('mProgPct').textContent = "20%";
       document.getElementById('mProgFill').style.width = "20%";
@@ -1084,19 +1090,21 @@
         mProgCard.classList.remove('show');
       }
     } else {
-      // 2. Standalone Mode (When Laptop is Off — 100% Mobile Free)
-      document.getElementById('mProgStatus').textContent = "🌐 Standalone Mobile Engine (Laptop-Free)…";
+      // 2. Standalone Mode (Laptop-Free — 100% Mobile Direct)
+      document.getElementById('mProgStatus').textContent = "⚡ Standalone Engine: Resolving Video…";
       document.getElementById('mProgPct').textContent = "35%";
       document.getElementById('mProgFill').style.width = "35%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
       try {
         const res = await resolveDirectVideo(url, isAudio);
-        document.getElementById('mProgPct').textContent = "80%";
-        document.getElementById('mProgFill').style.width = "80%";
+        document.getElementById('mProgPct').textContent = "95%";
+        document.getElementById('mProgFill').style.width = "95%";
+        document.getElementById('mProgStatus').textContent = "🎬 Video Ready!";
         setTimeout(() => {
           onDownloadDoneDirect(res);
-        }, 500);
+        }, 200);
       } catch (err) {
-        alert("Notice: " + err.message);
+        alert("Download Notice: " + err.message);
         mStartDlBtn.disabled = false;
         mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
         mProgCard.classList.remove('show');
