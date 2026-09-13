@@ -1,4 +1,4 @@
-# 🚀 ZDownloader PRO by Zak
+# 🚀 ZDownloader PRO by Basit
 **Universal High-Speed Video & Audio Downloader**  
 *(FastAPI Backend + Cyberpunk Web UI + Desktop App + Chrome Extension MV3)*
 
@@ -72,5 +72,4 @@ Simply double-click **`OneClick_Setup.bat`**:
 ---
 
 ## 👤 Author
-Developed with ❤️ by **Zak**  
-GitHub: [ZakDarkWeb/All-in-one-Video-downloader](https://github.com/ZakDarkWeb/All-in-one-Video-downloader)
+Developed with ❤️ by **Basit**  

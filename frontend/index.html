@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZDownloader Pro • Ultimate Video & Audio Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ZDownloader PRO • By Basit • Ultimate Video & Audio Studio</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#080c18">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icons/icon192.png">
+<link rel="icon" type="image/png" href="/icons/icon128.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -721,6 +728,149 @@
     background: #fff;
     filter: blur(3px);
     opacity: 0.8;
+  }
+
+  .btn-cancel-dl {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-cancel-dl:hover {
+    background: #ef4444;
+    color: #fff;
+    transform: scale(1.03);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  }
+
+  /* Enhanced Player Controls Bar */
+  .player-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--card-border);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .player-toolbar-left, .player-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-player-ctrl {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    padding: 5px 11px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-player-ctrl:hover {
+    background: rgba(0, 242, 254, 0.2);
+    border-color: var(--cyan);
+    color: #fff;
+  }
+  .speed-select {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--card-border);
+    color: var(--cyan);
+    padding: 5px 8px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+  }
+  .player-shortcuts-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .player-shortcuts-hint kbd {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+
+  /* Audio Visualizer Waves */
+  .audio-vis-wrap {
+    width: 100%;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    background: radial-gradient(circle at center, rgba(121, 40, 202, 0.25) 0%, transparent 70%);
+  }
+  .audio-bars-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 60px;
+  }
+  .audio-bar {
+    width: 4px;
+    border-radius: 3px;
+    background: var(--cyber-gradient);
+    animation: waveBar 0.9s ease-in-out infinite alternate;
+  }
+  @keyframes waveBar {
+    0% { height: 10px; opacity: 0.5; }
+    100% { height: 55px; opacity: 1; filter: drop-shadow(0 0 8px #00f2fe); }
+  }
+
+  /* Library Filter Chips */
+  .lib-filters-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .lib-chip {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .lib-chip:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .lib-chip.active {
+    background: rgba(0, 242, 254, 0.15);
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.2);
   }
 
   /* Done Box */
@@ -1672,17 +1822,58 @@
     color: #6ee7b7;
   }
 
+  /* PWA Mobile Banner */
+  .pwa-banner {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13, 20, 38, 0.95);
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 242, 254, 0.25);
+    backdrop-filter: blur(20px);
+    border-radius: 18px;
+    padding: 12px 18px;
+    display: none;
+    align-items: center;
+    gap: 14px;
+    z-index: 9999;
+    max-width: 92vw;
+    animation: pwaSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pwa-banner.show { display: flex; }
+  .pwa-banner-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--cyber-gradient); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .pwa-banner-text { display: flex; flex-direction: column; gap: 2px; }
+  .pwa-banner-title { font-size: 13px; font-weight: 800; color: #fff; }
+  .pwa-banner-sub { font-size: 11px; color: var(--text-secondary); }
+  .pwa-banner-btn { background: var(--cyber-gradient); border: none; color: #080c18; font-weight: 800; font-size: 11.5px; padding: 7px 16px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
+  .pwa-banner-close { background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; padding: 4px; }
+  @keyframes pwaSlideUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
   /* Responsive Rules */
   @media (max-width: 768px) {
-    .top-nav { flex-direction: column; align-items: stretch; }
-    .nav-tabs { overflow-x: auto; justify-content: flex-start; }
+    body { padding: 14px 12px 50px; }
+    .top-nav { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px 14px; }
+    .nav-tabs { overflow-x: auto; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+    .tab-btn { padding: 7px 12px; font-size: 11.5px; white-space: nowrap; }
     .preview-meta-row { flex-direction: column; }
-    .thumb-container { width: 100%; min-width: 100%; height: 200px; }
-    .library-grid { grid-template-columns: 1fr; }
+    .thumb-container { width: 100%; min-width: 100%; height: 190px; }
+    .library-grid { grid-template-columns: 1fr; gap: 14px; }
   }
 </style>
 </head>
 <body>
+
+<!-- PWA Mobile Install Banner -->
+<div class="pwa-banner" id="pwaBanner">
+  <div class="pwa-banner-icon">⚡</div>
+  <div class="pwa-banner-text">
+    <div class="pwa-banner-title">Install ZDownloader App</div>
+    <div class="pwa-banner-sub">Add to Phone Home Screen</div>
+  </div>
+  <button class="pwa-banner-btn" id="pwaInstallBtn">Install</button>
+  <button class="pwa-banner-close" id="pwaCloseBtn">✕</button>
+</div>
 
 <div class="toast-box" id="toasts"></div>
 
@@ -1696,6 +1887,27 @@
     <div class="player-screen-wrap" id="playerMediaWrap">
       <!-- Injected Video or Audio element -->
     </div>
+    <div class="player-toolbar">
+      <div class="player-toolbar-left">
+        <label style="font-size:11px;font-weight:700;color:var(--text-secondary);">Speed:</label>
+        <select class="speed-select" id="playerSpeedSelect" onchange="changePlaybackSpeed(this.value)">
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1.0x (Normal)</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2.0x</option>
+        </select>
+        <button class="btn-player-ctrl" id="playerPipBtn" onclick="togglePlayerPip()" title="Picture-in-Picture">
+          📺 PiP
+        </button>
+      </div>
+      <div class="player-toolbar-right">
+        <span class="player-shortcuts-hint">
+          <kbd>Space</kbd> Play/Pause &nbsp; <kbd>←</kbd><kbd>→</kbd> Seek 5s &nbsp; <kbd>M</kbd> Mute
+        </span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1704,14 +1916,14 @@
   <!-- Top Navigation Bar -->
   <header class="top-nav">
     <a href="#" class="brand" onclick="switchTab('instant'); return false;">
-      <div class="brand-logo-box">
-        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <div class="brand-logo-box" style="background:transparent;box-shadow:none;padding:0;">
+        <img src="/icons/icon128.png" width="38" height="38" style="display:block;border-radius:10px;box-shadow:0 0 16px rgba(0,242,254,0.45);" alt="Logo">
       </div>
       <div class="brand-title-wrap">
         <span class="brand-name">ZDownloader Pro</span>
         <span class="brand-tag">
           <span class="pulse-dot"></span>
-          Turbo Stream Engine
+          Created by Basit • Turbo Engine
         </span>
       </div>
     </a>
@@ -1855,7 +2067,10 @@
             <span class="pulse-dot"></span>
             <span id="singleStatusLabel">Starting stream engine...</span>
           </div>
-          <div class="hud-stats-text" id="singleStatsLabel">0%</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="hud-stats-text" id="singleStatsLabel">0%</div>
+            <button class="btn-cancel-dl" id="singleCancelBtn" onclick="cancelActiveDownload()" title="Cancel Download">🛑 Cancel</button>
+          </div>
         </div>
         <div class="hud-track">
           <div class="hud-bar" id="singleProgressBar"></div>
@@ -1977,9 +2192,16 @@
           <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">
             Manage and stream your downloaded videos and audio offline right inside the browser.
           </p>
+          <div class="lib-filters-row">
+            <button class="lib-chip active" id="chip-all" onclick="setLibFilter('all', this)">All</button>
+            <button class="lib-chip" id="chip-video" onclick="setLibFilter('video', this)">🎬 Videos</button>
+            <button class="lib-chip" id="chip-audio" onclick="setLibFilter('audio', this)">🎵 Audio (MP3)</button>
+            <button class="lib-chip" id="chip-newest" onclick="setLibFilter('newest', this)">⭐ Newest First</button>
+            <button class="lib-chip" id="chip-size" onclick="setLibFilter('size', this)">📉 Largest Size</button>
+          </div>
         </div>
         <div class="library-toolbar">
-          <input type="text" class="search-library-input" id="libSearchInput" placeholder="🔍 Search downloaded files..." oninput="filterLibrary(this.value)">
+          <input type="text" class="search-library-input" id="libSearchInput" placeholder="🔍 Search downloaded files..." oninput="onLibSearch(this.value)">
           <button class="btn-action-soft" onclick="loadLibrary()" title="Refresh files">🔄 Refresh</button>
           <button class="btn-folder-top" onclick="openDownloadsFolder()">📂 Open Explorer</button>
         </div>
@@ -2068,10 +2290,11 @@
 
   <!-- Engine Status Footer -->
   <footer class="footer-engine">
-    <div class="engine-chip online">⚡ Turbo Streams: 8-Chunks Parallel</div>
+    <div class="engine-chip online">⚡ Turbo Streams: 16-Chunks Parallel</div>
     <div class="engine-chip" id="footerFfmpeg">FFmpeg: Checking...</div>
     <div class="engine-chip" id="footerYtdlp">yt-dlp: Ready</div>
     <div class="engine-chip" id="footerCookies">Cookies: Standby</div>
+    <div class="engine-chip" style="color:var(--cyan);font-weight:700;border-color:rgba(0,242,254,0.4);background:rgba(0,242,254,0.08);">👑 Created by Basit</div>
   </footer>
 
 </div>
@@ -2337,11 +2560,107 @@
       if (!res.ok) throw new Error(data.detail || "Download shuru nahi ho saka.");
 
       lastDownloadedJobId = data.job_id;
-      singlePollTimer = setInterval(() => pollSingleJob(data.job_id), 650);
+      trackSingleJob(data.job_id);
     } catch (err) {
       showToast(err.message, "error");
       hud.classList.remove("show");
     }
+  }
+
+  let activeEventSource = null;
+
+  async function cancelActiveDownload() {
+    if (!lastDownloadedJobId) return;
+    try {
+      if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+      }
+      if (singlePollTimer) {
+        clearInterval(singlePollTimer);
+        singlePollTimer = null;
+      }
+      await fetch("/api/cancel/" + lastDownloadedJobId, { method: "POST" });
+      document.getElementById("singleStatusLabel").textContent = "🛑 Download Cancelled";
+      showToast("Download cancel kar di gayi.", "error");
+    } catch {
+      showToast("Cancel request bheji gayi.", "error");
+    }
+  }
+
+  function trackSingleJob(jobId) {
+    if (activeEventSource) {
+      activeEventSource.close();
+      activeEventSource = null;
+    }
+    if (singlePollTimer) {
+      clearInterval(singlePollTimer);
+      singlePollTimer = null;
+    }
+
+    const bar = document.getElementById("singleProgressBar");
+    const statusLabel = document.getElementById("singleStatusLabel");
+    const statsLabel = document.getElementById("singleStatsLabel");
+
+    function updateHud(job) {
+      bar.style.width = (job.progress || 0) + "%";
+      statsLabel.textContent = `${job.progress || 0}% ${job.speed ? '• ' + job.speed : ''}`;
+
+      if (job.status === "starting") {
+        statusLabel.textContent = "⚡ Initializing high-speed streams...";
+      } else if (job.status === "downloading") {
+        statusLabel.textContent = `⚡ Downloading • ${job.progress}%`;
+      } else if (job.status === "processing") {
+        statusLabel.textContent = "⚙️ Merging Video & Audio (FFmpeg Lossless)...";
+      } else if (job.status === "done") {
+        statusLabel.textContent = "✓ Completed!";
+        bar.style.width = "100%";
+        triggerDownload(jobId);
+        document.getElementById("singleDoneBanner").classList.add("show");
+        showToast("Video kamyabi se download ho gayi! 🎉", "success");
+        loadLibrary();
+        return true;
+      } else if (job.status === "cancelled") {
+        statusLabel.textContent = "🛑 Download Cancelled";
+        showToast("Download cancel ho chuki hai.", "error");
+        return true;
+      } else if (job.status === "error") {
+        statusLabel.textContent = "❌ Download Failed";
+        showToast(job.error || "Download error!", "error");
+        return true;
+      }
+      return false;
+    }
+
+    // Try Real-Time SSE Stream First
+    if (window.EventSource) {
+      try {
+        activeEventSource = new EventSource("/api/events/" + jobId);
+        activeEventSource.onmessage = (e) => {
+          try {
+            const job = JSON.parse(e.data);
+            const finished = updateHud(job);
+            if (finished && activeEventSource) {
+              activeEventSource.close();
+              activeEventSource = null;
+            }
+          } catch {}
+        };
+        activeEventSource.onerror = () => {
+          if (activeEventSource) {
+            activeEventSource.close();
+            activeEventSource = null;
+          }
+          if (!singlePollTimer) {
+            singlePollTimer = setInterval(() => pollSingleJob(jobId), 650);
+          }
+        };
+        return;
+      } catch {}
+    }
+
+    // Fallback to polling
+    singlePollTimer = setInterval(() => pollSingleJob(jobId), 650);
   }
 
   async function pollSingleJob(jobId) {
@@ -2358,21 +2677,27 @@
       statsLabel.textContent = `${job.progress || 0}% ${job.speed ? '• ' + job.speed : ''}`;
 
       if (job.status === "starting") {
-        statusLabel.textContent = "⚡ Initializing 8 parallel streams...";
+        statusLabel.textContent = "⚡ Initializing streams...";
       } else if (job.status === "downloading") {
         statusLabel.textContent = `⚡ Downloading • ${job.progress}%`;
       } else if (job.status === "processing") {
-        statusLabel.textContent = "⚙️ Merging Video & Audio (FFmpeg Lossless)...";
+        statusLabel.textContent = "⚙️ Merging Video & Audio...";
       } else if (job.status === "done") {
         clearInterval(singlePollTimer);
+        singlePollTimer = null;
         statusLabel.textContent = "✓ Completed!";
         bar.style.width = "100%";
         triggerDownload(jobId);
         document.getElementById("singleDoneBanner").classList.add("show");
         showToast("Video kamyabi se download ho gayi! 🎉", "success");
-        loadLibrary(); // refresh storage
+        loadLibrary();
+      } else if (job.status === "cancelled") {
+        clearInterval(singlePollTimer);
+        singlePollTimer = null;
+        statusLabel.textContent = "🛑 Download Cancelled";
       } else if (job.status === "error") {
         clearInterval(singlePollTimer);
+        singlePollTimer = null;
         statusLabel.textContent = "❌ Download Failed";
         showToast(job.error || "Download error!", "error");
       }
@@ -2642,14 +2967,39 @@ https://www.youtube.com/watch?v=jNQXAC9IVRw`;
     }
   }
 
-  function filterLibrary(query) {
-    query = query.toLowerCase().trim();
-    if (!query) {
-      renderLibrary(allLibraryFiles);
-      return;
+  let currentLibFilter = "all";
+  let currentLibSearch = "";
+
+  function setLibFilter(type, btnEl) {
+    currentLibFilter = type;
+    document.querySelectorAll(".lib-chip").forEach(b => b.classList.remove("active"));
+    if (btnEl) btnEl.classList.add("active");
+    applyLibraryFilters();
+  }
+
+  function onLibSearch(query) {
+    currentLibSearch = (query || "").toLowerCase().trim();
+    applyLibraryFilters();
+  }
+
+  function applyLibraryFilters() {
+    let list = [...allLibraryFiles];
+
+    if (currentLibSearch) {
+      list = list.filter(f => f.name.toLowerCase().includes(currentLibSearch) || f.ext.toLowerCase().includes(currentLibSearch));
     }
-    const filtered = allLibraryFiles.filter(f => f.name.toLowerCase().includes(query) || f.ext.toLowerCase().includes(query));
-    renderLibrary(filtered);
+
+    if (currentLibFilter === "video") {
+      list = list.filter(f => !f.is_audio);
+    } else if (currentLibFilter === "audio") {
+      list = list.filter(f => f.is_audio);
+    } else if (currentLibFilter === "newest") {
+      list.sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
+    } else if (currentLibFilter === "size") {
+      list.sort((a, b) => (b.raw_size || 0) - (a.raw_size || 0));
+    }
+
+    renderLibrary(list);
   }
 
   function renderLibrary(files) {
@@ -2744,34 +3094,87 @@ https://www.youtube.com/watch?v=jNQXAC9IVRw`;
   // =========================================================================
   // MEDIA PLAYER MODAL
   // =========================================================================
+  let activeMediaEl = null;
+
   function openMediaPlayer(filename) {
     const rawName = decodeURIComponent(filename);
     document.getElementById("playerModalTitle").textContent = `Playing: ${rawName}`;
     const wrap = document.getElementById("playerMediaWrap");
     wrap.innerHTML = "";
 
-    const isAudio = rawName.endsWith(".mp3") || rawName.endsWith(".m4a") || rawName.endsWith(".aac");
+    const isAudio = rawName.endsWith(".mp3") || rawName.endsWith(".m4a") || rawName.endsWith(".aac") || rawName.endsWith(".wav");
     const streamUrl = `/api/stream/${filename}`;
 
+    const speedSelect = document.getElementById("playerSpeedSelect");
+    if (speedSelect) speedSelect.value = "1";
+
     if (isAudio) {
+      const visWrap = document.createElement("div");
+      visWrap.className = "audio-vis-wrap";
+      visWrap.innerHTML = `
+        <div class="audio-bars-container">
+          <div class="audio-bar" style="animation-delay: 0s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.2s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.4s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.1s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.5s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.3s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.6s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.15s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.45s;"></div>
+          <div class="audio-bar" style="animation-delay: 0.25s;"></div>
+        </div>
+        <div style="font-size: 15px; font-weight: 700; color: #fff; text-align: center; max-width: 80%;">🎵 ${rawName}</div>
+      `;
       const audio = document.createElement("audio");
       audio.src = streamUrl;
       audio.controls = true;
       audio.autoplay = true;
-      wrap.appendChild(audio);
+      audio.style.width = "90%";
+      visWrap.appendChild(audio);
+      wrap.appendChild(visWrap);
+      activeMediaEl = audio;
     } else {
       const video = document.createElement("video");
       video.src = streamUrl;
       video.controls = true;
       video.autoplay = true;
       wrap.appendChild(video);
+      activeMediaEl = video;
     }
 
     document.getElementById("playerModal").classList.add("show");
   }
 
+  function changePlaybackSpeed(val) {
+    if (activeMediaEl) {
+      activeMediaEl.playbackRate = parseFloat(val) || 1.0;
+      showToast(`Playback speed: ${val}x`, "success");
+    }
+  }
+
+  async function togglePlayerPip() {
+    if (!activeMediaEl || activeMediaEl.tagName !== "VIDEO") {
+      showToast("Picture-in-Picture sirf video ke liye available hai.", "error");
+      return;
+    }
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await activeMediaEl.requestPictureInPicture();
+      }
+    } catch (e) {
+      showToast("PiP support nahi mila: " + e.message, "error");
+    }
+  }
+
   function closeMediaPlayer() {
     const wrap = document.getElementById("playerMediaWrap");
+    if (activeMediaEl) {
+      activeMediaEl.pause();
+      activeMediaEl = null;
+    }
     wrap.innerHTML = "";
     document.getElementById("playerModal").classList.remove("show");
   }
@@ -2782,7 +3185,32 @@ https://www.youtube.com/watch?v=jNQXAC9IVRw`;
   };
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeMediaPlayer();
+    const modal = document.getElementById("playerModal");
+    if (!modal.classList.contains("show")) return;
+
+    if (e.key === "Escape") {
+      closeMediaPlayer();
+    } else if (e.code === "Space" && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
+      e.preventDefault();
+      if (activeMediaEl) {
+        if (activeMediaEl.paused) activeMediaEl.play();
+        else activeMediaEl.pause();
+      }
+    } else if (e.key === "ArrowLeft" && activeMediaEl) {
+      e.preventDefault();
+      activeMediaEl.currentTime = Math.max(0, activeMediaEl.currentTime - 5);
+    } else if (e.key === "ArrowRight" && activeMediaEl) {
+      e.preventDefault();
+      activeMediaEl.currentTime = Math.min(activeMediaEl.duration || 99999, activeMediaEl.currentTime + 5);
+    } else if ((e.key === "m" || e.key === "M") && activeMediaEl) {
+      e.preventDefault();
+      activeMediaEl.muted = !activeMediaEl.muted;
+      showToast(activeMediaEl.muted ? "Muted 🔇" : "Unmuted 🔊");
+    } else if ((e.key === "f" || e.key === "F") && activeMediaEl && activeMediaEl.tagName === "VIDEO") {
+      e.preventDefault();
+      if (document.fullscreenElement) document.exitFullscreen();
+      else activeMediaEl.requestFullscreen();
+    }
   });
 
   // Open Downloads in File Explorer
@@ -2828,9 +3256,45 @@ https://www.youtube.com/watch?v=jNQXAC9IVRw`;
     setTimeout(() => openMediaPlayer(decodeURIComponent(queryParamPlay)), 300);
   }
 
-  const queryParamTab = params.get("tab");
-  if (queryParamTab) {
-    switchTab(queryParamTab);
+  // =========================================================================
+  // PWA (PROGRESSIVE WEB APP) SERVICE WORKER & INSTALL PROMPT
+  // =========================================================================
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration:', err));
+    });
+  }
+
+  let deferredPrompt = null;
+  const pwaBanner = document.getElementById('pwaBanner');
+  const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+  const pwaCloseBtn = document.getElementById('pwaCloseBtn');
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (pwaBanner && !sessionStorage.getItem('pwa_dismissed')) {
+      pwaBanner.classList.add('show');
+    }
+  });
+
+  if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        pwaBanner.classList.remove('show');
+      }
+      deferredPrompt = null;
+    });
+  }
+
+  if (pwaCloseBtn) {
+    pwaCloseBtn.addEventListener('click', () => {
+      pwaBanner.classList.remove('show');
+      sessionStorage.setItem('pwa_dismissed', 'true');
+    });
   }
 </script>
 </body>

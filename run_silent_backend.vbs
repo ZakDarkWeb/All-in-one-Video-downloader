@@ -9,5 +9,5 @@ strOut = objExec.StdOut.ReadAll()
 
 If InStr(strOut, "LISTENING") = 0 Then
     ' 0 = Hide window completely (run silently in background)
-    WshShell.Run "python -m uvicorn main:app --host 127.0.0.1 --port 8000", 0, False
+    WshShell.Run "python -m uvicorn main:app --host 0.0.0.0 --port 8000", 0, False
 End If

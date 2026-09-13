@@ -16,11 +16,12 @@ aria2c.exe
 *.mkv
 *.mp3
 *.zip
-!ZDownloader_v3.zip
+
 
 # User downloads & private cookies
 downloads/
 cookies/*.txt
+*.db
 
 # Environments & IDE
 .vscode/

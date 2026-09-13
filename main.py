@@ -6,6 +6,7 @@ import time
 import uuid
 import json
 import sys
+import asyncio
 import requests
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -16,10 +17,12 @@ import yt_dlp
 from yt_dlp.version import __version__ as YTDLP_VERSION
 import pinterest_downloader
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel
+
+from db import init_db, db_insert_job, db_update_job, db_get_job, db_get_history, db_delete_record, db_delete_by_filename
 
 
 # ------------------------------------------------------------
@@ -39,13 +42,20 @@ FRONTEND_FILE = DATA_DIR / "frontend" / "index.html"
 if not FRONTEND_FILE.exists():
     FRONTEND_FILE = BUNDLE_DIR / "frontend" / "index.html"
 
+MOBILE_FILE = DATA_DIR / "frontend" / "mobile.html"
+if not MOBILE_FILE.exists():
+    MOBILE_FILE = BUNDLE_DIR / "frontend" / "mobile.html"
+
 DOWNLOAD_DIR = Path.home() / "Downloads" / "ZDownloader"
 COOKIE_DIR = DATA_DIR / "cookies"
 
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 COOKIE_DIR.mkdir(exist_ok=True)
 
+# Thread-safe in-memory jobs store and cancellation signals
 JOBS = {}
+JOBS_LOCK = threading.Lock()
+CANCEL_EVENTS = {}
 
 
 # ------------------------------------------------------------
@@ -57,10 +67,10 @@ def find_aria2c():
     if found:
         return found
 
-    for base in [DATA_DIR, BUNDLE_DIR]:
-        cand = base / "aria2c.exe"
-        if cand.is_file():
-            return str(cand)
+    for base in [DATA_DIR, BUNDLE_DIR, DATA_DIR / "tools", BUNDLE_DIR / "tools"]:
+        for cand in [base / "aria2c.exe", base / "bin" / "aria2c.exe"]:
+            if cand.is_file():
+                return str(cand)
 
     local_app_data = os.environ.get("LOCALAPPDATA", "")
     if local_app_data:
@@ -77,10 +87,10 @@ def find_ffmpeg():
     if found:
         return found
 
-    for base in [DATA_DIR, BUNDLE_DIR]:
-        cand = base / "ffmpeg.exe"
-        if cand.is_file():
-            return str(cand)
+    for base in [DATA_DIR, BUNDLE_DIR, DATA_DIR / "tools", BUNDLE_DIR / "tools"]:
+        for cand in [base / "ffmpeg.exe", base / "bin" / "ffmpeg.exe"]:
+            if cand.is_file():
+                return str(cand)
 
     local_app_data = os.environ.get("LOCALAPPDATA", "")
     if local_app_data:
@@ -417,25 +427,25 @@ def base_options(url):
         "noplaylist": True,
         "playlist_items": "1",
 
-        # High-speed parallel fragments & chunking
+        # High-speed parallel fragments & buffer
         "concurrent_fragment_downloads": 8,
-        "http_chunk_size": 10485760,  # 10MB chunks to avoid bandwidth throttling
         "buffersize": 1048576,        # 1MB buffer
 
         # Speed and retry settings
-        "retries": 3,
-        "fragment_retries": 5,
-        "extractor_retries": 2,
+        "retries": 10,
+        "fragment_retries": 10,
+        "extractor_retries": 3,
         "file_access_retries": 3,
-        "socket_timeout": 20,
+        "socket_timeout": 30,
 
         # IPv4 helps with some SSL/ISP problems
         "source_address": "0.0.0.0",
 
-        # YouTube webpage SSL retries ko skip karta hai
+        # YouTube webpage SSL retries ko skip karta hai aur high-speed client spoof karta hai
         "extractor_args": {
             "youtube": {
-                "player_skip": ["webpage"]
+                "player_client": ["android", "ios", "web"],
+                "player_skip": ["webpage", "configs"]
             }
         },
 
@@ -465,7 +475,7 @@ def base_options(url):
 
 
 # ------------------------------------------------------------
-# Automatic cleanup
+# Automatic cleanup (SAFE: NEVER deletes finished user files!)
 # ------------------------------------------------------------
 
 def cleanup_loop():
@@ -473,35 +483,35 @@ def cleanup_loop():
         try:
             current_time = time.time()
 
+            # ONLY clean up abandoned temporary or partial download fragments older than 3 hours
+            # User's completed videos are NEVER deleted!
+            TEMP_EXTENSIONS = {".part", ".ytdl", ".temp", ".tmp"}
             for file_path in DOWNLOAD_DIR.iterdir():
                 try:
                     if not file_path.is_file():
                         continue
 
-                    job_id = file_path.name.split(".")[0]
-                    job = JOBS.get(job_id)
+                    is_temp = (
+                        file_path.suffix.lower() in TEMP_EXTENSIONS
+                        or any(t in file_path.name.lower() for t in [".part", ".ytdl", ".temp"])
+                    )
 
-                    if job and job.get("status") not in ("done", "error"):
-                        continue
-
-                    # 3 hours old files delete
-                    if current_time - file_path.stat().st_mtime > 10800:
-                        file_path.unlink()
+                    if is_temp and (current_time - file_path.stat().st_mtime > 10800):
+                        file_path.unlink(missing_ok=True)
 
                 except Exception:
                     pass
 
-            old_jobs = []
-
-            for job_id, job in JOBS.items():
-                if (
-                    current_time - job.get("created", current_time) > 10800
-                    and job.get("status") in ("done", "error")
-                ):
-                    old_jobs.append(job_id)
-
-            for job_id in old_jobs:
-                JOBS.pop(job_id, None)
+            # Prune memory jobs older than 6 hours (SQLite keeps long-term history)
+            with JOBS_LOCK:
+                old_jobs = [
+                    job_id for job_id, job in JOBS.items()
+                    if current_time - job.get("created", current_time) > 21600
+                    and job.get("status") in ("done", "error", "cancelled")
+                ]
+                for job_id in old_jobs:
+                    JOBS.pop(job_id, None)
+                    CANCEL_EVENTS.pop(job_id, None)
 
         except Exception:
             pass
@@ -511,6 +521,7 @@ def cleanup_loop():
 
 @asynccontextmanager
 async def lifespan(app):
+    init_db(DATA_DIR)
     threading.Thread(target=cleanup_loop, daemon=True).start()
 
     aria2_exe = find_aria2c()
@@ -564,7 +575,7 @@ class DownloadRequest(BaseModel):
     audio_bitrate: str = "320k"
     start_time: str = None
     end_time: str = None
-    turbo: bool = False
+    turbo: bool = True
 
 
 class SubtitleRequest(BaseModel):
@@ -572,12 +583,25 @@ class SubtitleRequest(BaseModel):
     lang: str = "en"
 
 
+class CookieSyncRequest(BaseModel):
+    domain: str = ""
+    cookies: list[dict] = []
+    netscape: str = ""
+
+
 # ------------------------------------------------------------
 # Frontend
 # ------------------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
-def homepage():
+def homepage(request: Request, desktop: bool = False, mobile: bool = False):
+    ua = request.headers.get("user-agent", "").lower()
+    is_mobile = any(m in ua for m in ["mobile", "android", "iphone", "ipad", "ipod", "webos", "blackberry"])
+
+    if (is_mobile or mobile) and not desktop:
+        if MOBILE_FILE.exists():
+            return HTMLResponse(MOBILE_FILE.read_text(encoding="utf-8"))
+
     if not FRONTEND_FILE.exists():
         return HTMLResponse(
             "<h2>frontend/index.html file nahi mili.</h2>",
@@ -587,6 +611,39 @@ def homepage():
     return HTMLResponse(
         FRONTEND_FILE.read_text(encoding="utf-8")
     )
+
+
+@app.get("/mobile", response_class=HTMLResponse)
+def mobile_view():
+    if MOBILE_FILE.exists():
+        return HTMLResponse(MOBILE_FILE.read_text(encoding="utf-8"))
+    if FRONTEND_FILE.exists():
+        return HTMLResponse(FRONTEND_FILE.read_text(encoding="utf-8"))
+    return HTMLResponse("<h2>Mobile file not found.</h2>", status_code=500)
+
+
+@app.get("/manifest.json")
+def pwa_manifest():
+    manifest_file = DATA_DIR / "frontend" / "manifest.json"
+    if manifest_file.exists():
+        return FileResponse(manifest_file, media_type="application/manifest+json")
+    return HTMLResponse("{}", media_type="application/json")
+
+
+@app.get("/sw.js")
+def pwa_service_worker():
+    sw_file = DATA_DIR / "frontend" / "sw.js"
+    if sw_file.exists():
+        return FileResponse(sw_file, media_type="application/javascript")
+    return HTMLResponse("", media_type="application/javascript")
+
+
+@app.get("/icons/{filename}")
+def pwa_icon(filename: str):
+    icon_file = DATA_DIR / "frontend" / "icons" / Path(filename).name
+    if icon_file.exists():
+        return FileResponse(icon_file, media_type="image/png")
+    raise HTTPException(status_code=404, detail="Icon not found")
 
 
 # ------------------------------------------------------------
@@ -604,6 +661,21 @@ def api_status():
         except Exception:
             pass
 
+    def get_local_ip():
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(('10.255.255.255', 1))
+            ip = s.getsockname()[0]
+        except Exception:
+            try:
+                ip = socket.gethostbyname(socket.gethostname())
+            except Exception:
+                ip = '127.0.0.1'
+        finally:
+            s.close()
+        return ip
+
     return {
         "ok": True,
         "yt_dlp": YTDLP_VERSION,
@@ -613,16 +685,44 @@ def api_status():
         "aria2c": bool(find_aria2c()),
         "cookies": cookies,
         "download_dir": str(DOWNLOAD_DIR),
+        "local_ip": get_local_ip(),
+    }
+
+
+@app.get("/api/local-ip")
+def api_local_ip():
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('10.255.255.255', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        try:
+            ip = socket.gethostbyname(socket.gethostname())
+        except Exception:
+            ip = '127.0.0.1'
+    finally:
+        s.close()
+    return {
+        "ok": True,
+        "local_ip": ip,
+        "port": 8000
     }
 
 
 @app.post("/api/open-downloads")
 def open_downloads():
+    DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
     try:
-        os.startfile(str(DOWNLOAD_DIR))
+        import subprocess
+        subprocess.Popen(["explorer.exe", str(DOWNLOAD_DIR.resolve())])
         return {"ok": True}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+    except Exception:
+        try:
+            os.startfile(str(DOWNLOAD_DIR))
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
 
 @app.post("/api/update-ytdlp")
@@ -873,9 +973,17 @@ def get_video_info(request: URLRequest):
 # Download worker
 # ------------------------------------------------------------
 
-def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=None, audio_bitrate="320k", turbo=False):
-    job = JOBS[job_id]
+def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=None, audio_bitrate="320k", turbo=True):
+    with JOBS_LOCK:
+        job = JOBS.get(job_id, {})
+    cancel_event = CANCEL_EVENTS.get(job_id)
     output_template = str(DOWNLOAD_DIR / f"{job_id}.%(ext)s")
+
+    if cancel_event and cancel_event.is_set():
+        with JOBS_LOCK:
+            job.update({"status": "cancelled", "error": "Download cancelled by user", "speed": "", "eta": ""})
+        db_update_job(job_id, status="cancelled", error="Cancelled by user")
+        return
 
     if "snapchat.com" in url.lower():
         try:
@@ -889,39 +997,72 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
             final_file = DOWNLOAD_DIR / f"{job_id}.mp4"
             with open(final_file, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=1048576):  # 1MB chunks
+                    if cancel_event and cancel_event.is_set():
+                        raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
                     if chunk:
                         f.write(chunk)
                         downloaded += len(chunk)
                         if total_size:
                             pct = round((downloaded / total_size) * 100, 1)
-                            job.update({
-                                "status": "downloading",
-                                "progress": pct,
-                                "speed": "",
-                                "eta": "",
-                            })
+                            with JOBS_LOCK:
+                                job.update({
+                                    "status": "downloading",
+                                    "progress": pct,
+                                    "speed": "",
+                                    "eta": "",
+                                })
             
+            if cancel_event and cancel_event.is_set():
+                raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
+
             final_file = trim_file_if_needed(final_file, start_time, end_time, job_id)
             title = safe_filename(snap_info.get("title") or "Snapchat Video")
             final_file = rename_to_clean_title(final_file, title, DOWNLOAD_DIR)
-            job.update({
-                "status": "done",
-                "progress": 100,
-                "speed": "",
-                "eta": "",
-                "file": str(final_file),
-                "filename": final_file.name,
-                "title": title
-            })
+            stat = final_file.stat()
+            with JOBS_LOCK:
+                job.update({
+                    "status": "done",
+                    "progress": 100,
+                    "speed": "",
+                    "eta": "",
+                    "file": str(final_file),
+                    "filename": final_file.name,
+                    "title": title
+                })
+            db_update_job(
+                job_id,
+                status="done",
+                progress=100,
+                title=title,
+                filename=final_file.name,
+                file_path=str(final_file),
+                raw_size=stat.st_size,
+                file_size=format_bytes(stat.st_size),
+                completed_at=time.time()
+            )
             return
             
+        except yt_dlp.utils.DownloadCancelled:
+            for p in DOWNLOAD_DIR.glob(f"{job_id}.*"):
+                try:
+                    p.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            with JOBS_LOCK:
+                job.update({"status": "cancelled", "error": "Download cancelled by user", "speed": "", "eta": ""})
+            db_update_job(job_id, status="cancelled", error="Cancelled by user")
+            return
+
         except Exception as error:
-            job.update({
-                "status": "error",
-                "error": clean_error(error),
-                "speed": "",
-                "eta": "",
-            })
+            err_msg = clean_error(error)
+            with JOBS_LOCK:
+                job.update({
+                    "status": "error",
+                    "error": err_msg,
+                    "speed": "",
+                    "eta": "",
+                })
+            db_update_job(job_id, status="error", error=err_msg)
             return
 
     if any(d in url.lower() for d in ["pinterest.com", "pin.it"]):
@@ -932,9 +1073,13 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
             ff = find_ffmpeg() or "ffmpeg"
             title = safe_filename(pin_info["title"])
 
+            if cancel_event and cancel_event.is_set():
+                raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
+
             if audio_only:
                 final_file = DOWNLOAD_DIR / f"{job_id}.mp3"
-                job.update({"status": "downloading", "progress": 35, "speed": "Turbo", "eta": ""})
+                with JOBS_LOCK:
+                    job.update({"status": "downloading", "progress": 35, "speed": "Turbo", "eta": ""})
                 cmd = [
                     ff, "-y",
                     "-i", stream_url,
@@ -945,7 +1090,8 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
                 ]
             else:
                 final_file = DOWNLOAD_DIR / f"{job_id}.mp4"
-                job.update({"status": "downloading", "progress": 35, "speed": "Turbo", "eta": ""})
+                with JOBS_LOCK:
+                    job.update({"status": "downloading", "progress": 35, "speed": "Turbo", "eta": ""})
                 cmd = [
                     ff, "-y",
                     "-i", stream_url,
@@ -954,32 +1100,67 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
                     str(final_file)
                 ]
 
-            job.update({"status": "downloading", "progress": 75, "speed": "Merging", "eta": ""})
+            with JOBS_LOCK:
+                job.update({"status": "downloading", "progress": 75, "speed": "Merging", "eta": ""})
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            if cancel_event and cancel_event.is_set():
+                raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
 
             final_file = trim_file_if_needed(final_file, start_time, end_time, job_id)
             title = safe_filename(pin_info.get("title") or "Pinterest Video")
             final_file = rename_to_clean_title(final_file, title, DOWNLOAD_DIR)
-            job.update({
-                "status": "done",
-                "progress": 100,
-                "speed": "",
-                "eta": "",
-                "file": str(final_file),
-                "filename": final_file.name,
-                "title": title
-            })
+            stat = final_file.stat()
+            with JOBS_LOCK:
+                job.update({
+                    "status": "done",
+                    "progress": 100,
+                    "speed": "",
+                    "eta": "",
+                    "file": str(final_file),
+                    "filename": final_file.name,
+                    "title": title
+                })
+            db_update_job(
+                job_id,
+                status="done",
+                progress=100,
+                title=title,
+                filename=final_file.name,
+                file_path=str(final_file),
+                raw_size=stat.st_size,
+                file_size=format_bytes(stat.st_size),
+                completed_at=time.time()
+            )
             return
+
+        except yt_dlp.utils.DownloadCancelled:
+            for p in DOWNLOAD_DIR.glob(f"{job_id}.*"):
+                try:
+                    p.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            with JOBS_LOCK:
+                job.update({"status": "cancelled", "error": "Download cancelled by user", "speed": "", "eta": ""})
+            db_update_job(job_id, status="cancelled", error="Cancelled by user")
+            return
+
         except Exception as error:
-            job.update({
-                "status": "error",
-                "error": clean_error(error),
-                "speed": "",
-                "eta": ""
-            })
+            err_msg = clean_error(error)
+            with JOBS_LOCK:
+                job.update({
+                    "status": "error",
+                    "error": err_msg,
+                    "speed": "",
+                    "eta": ""
+                })
+            db_update_job(job_id, status="error", error=err_msg)
             return
 
     def progress_hook(data):
+        if cancel_event and cancel_event.is_set():
+            raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
+
         if data.get("status") == "downloading":
             total = (
                 data.get("total_bytes")
@@ -989,46 +1170,52 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
 
             downloaded = data.get("downloaded_bytes") or 0
 
-            if total:
-                percentage = round((downloaded / total) * 100, 1)
-                percentage = max(0, min(percentage, 100))
-            else:
-                percentage = job.get("progress", 0)
+            with JOBS_LOCK:
+                if total:
+                    job["total_bytes"] = total
+                    percentage = round((downloaded / total) * 100, 1)
+                    percentage = max(0, min(percentage, 100))
+                else:
+                    percentage = job.get("progress", 0)
 
-            speed = data.get("speed")
-            eta = data.get("eta")
+                speed = data.get("speed")
+                eta = data.get("eta")
 
-            info_dict = data.get("info_dict") or {}
-            if info_dict:
-                if not job.get("title") and info_dict.get("title"):
-                    job["title"] = safe_filename(info_dict.get("title"))
-                if not job.get("thumbnail") and info_dict.get("thumbnail"):
-                    job["thumbnail"] = info_dict.get("thumbnail")
+                info_dict = data.get("info_dict") or {}
+                if info_dict:
+                    if not job.get("title") and info_dict.get("title"):
+                        job["title"] = safe_filename(info_dict.get("title"))
+                    if not job.get("thumbnail") and info_dict.get("thumbnail"):
+                        job["thumbnail"] = info_dict.get("thumbnail")
 
-            job.update({
-                "status": "downloading",
-                "progress": percentage,
-                "speed": (
-                    f"{format_bytes(speed)}/s"
-                    if speed else ""
-                ),
-                "eta": (
-                    f"{int(eta)}s"
-                    if eta is not None else ""
-                ),
-            })
+                job.update({
+                    "status": "downloading",
+                    "progress": percentage,
+                    "speed": (
+                        f"{format_bytes(speed)}/s"
+                        if speed else ""
+                    ),
+                    "eta": (
+                        f"{int(eta)}s"
+                        if eta is not None else ""
+                    ),
+                })
 
         elif data.get("status") == "finished":
-            job.update({
-                "status": "processing",
-                "progress": 100,
-                "speed": "",
-                "eta": "",
-            })
+            with JOBS_LOCK:
+                job.update({
+                    "status": "processing",
+                    "progress": 100,
+                    "speed": "",
+                    "eta": "",
+                })
 
     def postprocessor_hook(data):
+        if cancel_event and cancel_event.is_set():
+            raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
         if data.get("status") == "started":
-            job["status"] = "processing"
+            with JOBS_LOCK:
+                job["status"] = "processing"
 
     options = base_options(url)
 
@@ -1039,9 +1226,23 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
         "overwrites": True,
     })
 
-    if turbo and find_aria2c():
+    is_yt = any(y in url.lower() for y in ["youtube.com", "youtu.be"])
+    aria2_path = find_aria2c()
+    use_aria2 = bool(aria2_path and (turbo or not is_yt))
+
+    if use_aria2:
         options["external_downloader"] = "aria2c"
-        options["external_downloader_args"] = ["-x", "8", "-s", "8", "-k", "1M"]
+        options["external_downloader_args"] = {
+            "aria2c": [
+                "-x", "16",
+                "-s", "16",
+                "-j", "16",
+                "-k", "1M",
+                "--min-split-size=1M",
+                "--file-allocation=none",
+                "--summary-interval=0"
+            ]
+        }
 
     if audio_only:
         options["format"] = (
@@ -1076,19 +1277,67 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
 
         options["merge_output_format"] = "mp4"
 
+    monitor_stop = threading.Event()
+
+    def aria2_progress_monitor():
+        last_bytes = 0
+        last_time = time.time()
+        while not monitor_stop.wait(0.5):
+            try:
+                parts = [
+                    f for f in DOWNLOAD_DIR.glob(f"{job_id}*")
+                    if f.is_file() and (".part" in f.name or f.suffix in (".ytdl", ".temp"))
+                ]
+                if not parts:
+                    continue
+                cur_bytes = sum(f.stat().st_size for f in parts)
+                now = time.time()
+                dt = max(0.2, now - last_time)
+                spd = max(0, (cur_bytes - last_bytes) / dt)
+                last_bytes = cur_bytes
+                last_time = now
+
+                with JOBS_LOCK:
+                    total = job.get("total_bytes") or 0
+                    if total > 0:
+                        pct = round((cur_bytes / total) * 100, 1)
+                        job["progress"] = max(job.get("progress", 0), min(pct, 99.0))
+                        if spd > 0:
+                            eta_sec = max(0, int((total - cur_bytes) / spd))
+                            job["eta"] = f"{eta_sec}s"
+                    elif cur_bytes > 0:
+                        p = job.get("progress", 5)
+                        if p < 92:
+                            job["progress"] = round(p + 1.5, 1)
+
+                    if spd > 0:
+                        job["speed"] = f"{format_bytes(spd)}/s"
+            except Exception:
+                pass
+
+    if use_aria2:
+        threading.Thread(target=aria2_progress_monitor, daemon=True).start()
+
     try:
-        with yt_dlp.YoutubeDL(options) as downloader:
-            information = downloader.extract_info(
-                url,
-                download=True
-            )
+        try:
+            with yt_dlp.YoutubeDL(options) as downloader:
+                information = downloader.extract_info(
+                    url,
+                    download=True
+                )
+        finally:
+            monitor_stop.set()
+
+        if cancel_event and cancel_event.is_set():
+            raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
 
         information = first_video(information)
         if information:
-            if information.get("title"):
-                job["title"] = safe_filename(information.get("title"))
-            if information.get("thumbnail"):
-                job["thumbnail"] = information.get("thumbnail")
+            with JOBS_LOCK:
+                if information.get("title"):
+                    job["title"] = safe_filename(information.get("title"))
+                if information.get("thumbnail"):
+                    job["thumbnail"] = information.get("thumbnail")
 
         allowed_extensions = (
             [".mp3", ".m4a", ".opus", ".ogg", ".webm"]
@@ -1142,24 +1391,55 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
             information.get("title") or "video"
         )
         final_file = rename_to_clean_title(final_file, title, DOWNLOAD_DIR)
+        stat = final_file.stat()
 
-        job.update({
-            "status": "done",
-            "progress": 100,
-            "speed": "",
-            "eta": "",
-            "file": str(final_file),
-            "filename": final_file.name,
-            "title": title
-        })
+        with JOBS_LOCK:
+            job.update({
+                "status": "done",
+                "progress": 100,
+                "speed": "",
+                "eta": "",
+                "file": str(final_file),
+                "filename": final_file.name,
+                "title": title
+            })
+        db_update_job(
+            job_id,
+            status="done",
+            progress=100,
+            title=title,
+            filename=final_file.name,
+            file_path=str(final_file),
+            raw_size=stat.st_size,
+            file_size=format_bytes(stat.st_size),
+            completed_at=time.time()
+        )
+
+    except yt_dlp.utils.DownloadCancelled:
+        for p in DOWNLOAD_DIR.glob(f"{job_id}.*"):
+            try:
+                p.unlink(missing_ok=True)
+            except Exception:
+                pass
+        with JOBS_LOCK:
+            job.update({
+                "status": "cancelled",
+                "error": "Download cancelled by user",
+                "speed": "",
+                "eta": "",
+            })
+        db_update_job(job_id, status="cancelled", error="Cancelled by user")
 
     except Exception as error:
-        job.update({
-            "status": "error",
-            "error": clean_error(error),
-            "speed": "",
-            "eta": "",
-        })
+        err_msg = clean_error(error)
+        with JOBS_LOCK:
+            job.update({
+                "status": "error",
+                "error": err_msg,
+                "speed": "",
+                "eta": "",
+            })
+        db_update_job(job_id, status="error", error=err_msg)
 
 
 # ------------------------------------------------------------
@@ -1195,13 +1475,20 @@ def start_download(request: DownloadRequest):
 
     job_id = uuid.uuid4().hex
 
-    JOBS[job_id] = {
-        "status": "starting",
-        "progress": 0,
-        "speed": "",
-        "eta": "",
-        "created": time.time(),
-    }
+    with JOBS_LOCK:
+        JOBS[job_id] = {
+            "status": "starting",
+            "progress": 0,
+            "speed": "",
+            "eta": "",
+            "created": time.time(),
+            "url": url,
+            "quality": quality,
+            "is_audio": request.audio_only,
+        }
+        CANCEL_EVENTS[job_id] = threading.Event()
+
+    db_insert_job(job_id, url, quality, request.audio_only)
 
     worker = threading.Thread(
         target=download_worker,
@@ -1222,6 +1509,124 @@ def start_download(request: DownloadRequest):
 
     return {
         "job_id": job_id
+    }
+
+
+# ------------------------------------------------------------
+# Cancel download
+# ------------------------------------------------------------
+
+@app.post("/api/cancel/{job_id}")
+def cancel_download(job_id: str):
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+        if not job:
+            job = db_get_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Download job nahi mila.")
+
+        event = CANCEL_EVENTS.get(job_id)
+        if event:
+            event.set()
+
+        if job.get("status") in ("done", "error", "cancelled"):
+            return {"ok": False, "message": f"Job already {job.get('status')}"}
+
+        job.update({
+            "status": "cancelled",
+            "error": "Download cancelled by user",
+            "speed": "",
+            "eta": ""
+        })
+    db_update_job(job_id, status="cancelled", error="Cancelled by user")
+    return {"ok": True, "message": "Download cancel kar di gayi hai."}
+
+
+# ------------------------------------------------------------
+# Real-Time SSE Progress Stream
+# ------------------------------------------------------------
+
+@app.get("/api/events/{job_id}")
+async def stream_progress_events(job_id: str):
+    async def event_generator():
+        start_t = time.time()
+        while time.time() - start_t < 900:  # Max 15 minutes stream
+            with JOBS_LOCK:
+                job = JOBS.get(job_id)
+            if not job:
+                job = db_get_job(job_id)
+            if not job:
+                yield f"event: error\ndata: {json.dumps({'error': 'Job not found'})}\n\n"
+                break
+
+            status = job.get("status")
+            payload = {
+                "status": status,
+                "progress": job.get("progress", 0),
+                "speed": job.get("speed", ""),
+                "eta": job.get("eta", ""),
+                "title": job.get("title", ""),
+                "thumbnail": job.get("thumbnail", ""),
+                "error": job.get("error", ""),
+                "filename": job.get("filename", "")
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
+
+            if status in ("done", "error", "cancelled"):
+                break
+
+            await asyncio.sleep(0.35)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+# ------------------------------------------------------------
+# 1-Click Cookie Sync from Chrome Extension
+# ------------------------------------------------------------
+
+@app.post("/api/sync-cookies")
+def sync_cookies(req: CookieSyncRequest):
+    domain = req.domain.strip().lower()
+    netscape_lines = []
+
+    if req.netscape.strip():
+        netscape_lines = req.netscape.strip().splitlines()
+    elif req.cookies:
+        netscape_lines.append("# Netscape HTTP Cookie File")
+        netscape_lines.append("# Generated by ZDownloader Chrome Extension")
+        for c in req.cookies:
+            c_domain = c.get("domain", "")
+            flag = "TRUE" if c_domain.startswith(".") else "FALSE"
+            path = c.get("path", "/")
+            secure = "TRUE" if c.get("secure") else "FALSE"
+            exp = int(c.get("expirationDate") or time.time() + 86400 * 365)
+            name = c.get("name", "")
+            value = c.get("value", "")
+            netscape_lines.append(f"{c_domain}\t{flag}\t{path}\t{secure}\t{exp}\t{name}\t{value}")
+
+    if not netscape_lines:
+        raise HTTPException(status_code=400, detail="Koi cookies data nahi mila.")
+
+    matched_filename = "cookies.txt"
+    for d, fname in COOKIE_FILES.items():
+        if domain and (domain in d or d in domain):
+            matched_filename = fname
+            break
+
+    target_file = COOKIE_DIR / matched_filename
+    target_file.write_text("\n".join(netscape_lines), encoding="utf-8")
+    return {
+        "ok": True,
+        "filename": matched_filename,
+        "message": f"Cookies successfully synced to {matched_filename}!"
     }
 
 
@@ -1264,12 +1669,15 @@ def download_subtitles(req: SubtitleRequest):
 
 
 # ------------------------------------------------------------
-# Download progress
+# Download progress (HTTP polling fallback)
 # ------------------------------------------------------------
 
 @app.get("/api/progress/{job_id}")
 def get_progress(job_id: str):
-    job = JOBS.get(job_id)
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+    if not job:
+        job = db_get_job(job_id)
 
     if not job:
         raise HTTPException(
@@ -1280,7 +1688,7 @@ def get_progress(job_id: str):
     return {
         key: value
         for key, value in job.items()
-        if key != "file"
+        if key not in ("file", "file_path")
     }
 
 
@@ -1290,7 +1698,10 @@ def get_progress(job_id: str):
 
 @app.get("/api/file/{job_id}")
 def get_downloaded_file(job_id: str):
-    job = JOBS.get(job_id)
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+    if not job:
+        job = db_get_job(job_id)
 
     if not job or job.get("status") != "done":
         raise HTTPException(
@@ -1298,9 +1709,10 @@ def get_downloaded_file(job_id: str):
             detail="File abhi ready nahi hai."
         )
 
-    file_path = Path(job["file"])
+    raw_path = job.get("file") or job.get("file_path", "")
+    file_path = Path(raw_path) if raw_path else None
 
-    if not file_path.exists():
+    if not file_path or not file_path.exists():
         raise HTTPException(
             status_code=404,
             detail="File delete ho chuki hai."
@@ -1485,18 +1897,18 @@ def open_file_in_explorer(filename: str):
     if not file_path.exists():
         file_path = DATA_DIR / "downloads" / clean_name
 
-    if file_path.exists():
+    import subprocess
+    if file_path.exists() and file_path.is_file():
         try:
-            import subprocess
-            subprocess.Popen(f'explorer /select,"{file_path.resolve()}"')
+            subprocess.Popen(["explorer.exe", f"/select,{str(file_path.resolve())}"])
             return {"ok": True}
         except Exception:
-            try:
-                os.startfile(str(DOWNLOAD_DIR))
-                return {"ok": True}
-            except Exception as e:
-                return {"ok": False, "error": str(e)}
-    else:
+            pass
+
+    try:
+        subprocess.Popen(["explorer.exe", str(DOWNLOAD_DIR.resolve())])
+        return {"ok": True}
+    except Exception:
         try:
             os.startfile(str(DOWNLOAD_DIR))
             return {"ok": True}
@@ -1542,5 +1954,6 @@ def delete_file(filename: str):
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
     if deleted:
+        db_delete_by_filename(clean_name)
         return {"ok": True, "message": f"{clean_name} delete ho gayi."}
     raise HTTPException(status_code=404, detail="File nahi mili.")

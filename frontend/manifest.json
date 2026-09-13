@@ -1,0 +1,30 @@
+{
+  "name": "ZDownloader PRO • By Basit",
+  "short_name": "ZDownloader",
+  "description": "Turbo Video & Audio Downloader Studio created by Basit",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080c18",
+  "theme_color": "#080c18",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

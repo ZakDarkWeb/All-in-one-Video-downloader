@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ZDownloader PRO • By Basit • Mobile App</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#080c18">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icons/icon192.png">
+<link rel="icon" type="image/png" href="/icons/icon128.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070a13;
+    --bg-card: rgba(14, 21, 37, 0.82);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(0, 242, 254, 0.35);
+    --cyan: #00f2fe;
+    --blue: #4facfe;
+    --purple: #8b5cf6;
+    --pink: #ec4899;
+    --emerald: #10b981;
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --cyber-grad: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #8b5cf6 100%);
+    --neon-pink: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+    --green-grad: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --radius-xl: 20px;
+    --radius-lg: 14px;
+    --radius-md: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    background-color: var(--bg);
+    background-image: 
+      radial-gradient(circle at 10% 10%, rgba(0, 242, 254, 0.12) 0%, transparent 45%),
+      radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.15) 0%, transparent 45%);
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 90px;
+    overflow-x: hidden;
+  }
+
+  /* ── Top Bar ── */
+  .m-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(7, 10, 19, 0.88);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .m-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .m-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--cyber-grad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 16px rgba(0, 242, 254, 0.4);
+  }
+
+  .m-logo svg { width: 20px; height: 20px; fill: #070a13; }
+
+  .m-title-wrap { display: flex; flex-direction: column; }
+  .m-title { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
+  .m-status { font-size: 10px; color: var(--emerald); font-weight: 700; display: flex; align-items: center; gap: 4px; }
+  .m-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 8px var(--emerald); animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .m-btn-install {
+    background: rgba(0, 242, 254, 0.12);
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    color: var(--cyan);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+  }
+
+  /* ── Page Layout ── */
+  .m-container {
+    padding: 16px;
+    max-width: 540px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Install Callout Banner ── */
+  .m-install-callout {
+    background: linear-gradient(135deg, rgba(0,242,254,0.12) 0%, rgba(139,92,246,0.15) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .m-install-text { font-size: 12px; font-weight: 700; color: #e2e8f0; }
+  .m-install-sub { font-size: 10.5px; color: var(--text-muted); }
+  .m-install-action {
+    background: var(--cyber-grad);
+    border: none;
+    color: #070a13;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 6px 14px;
+    border-radius: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  /* ── Main Input Box ── */
+  .m-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(16px);
+    border-radius: var(--radius-xl);
+    padding: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+
+  .m-input-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .m-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(7, 10, 19, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .m-input-wrap:focus-within {
+    border-color: var(--cyan);
+    box-shadow: 0 0 16px rgba(0, 242, 254, 0.25);
+  }
+
+  .m-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 14px;
+    padding: 10px 12px;
+    font-family: inherit;
+    min-width: 0;
+  }
+
+  .m-btn-paste {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 800;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .m-btn-paste:active { transform: scale(0.95); }
+
+  /* ── Platform Pills ── */
+  .m-platforms {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px 0 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .m-platforms::-webkit-scrollbar { display: none; }
+
+  .m-pill {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ── Format Selectors ── */
+  .m-fmt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .m-fmt-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .m-fmt-btn.active {
+    background: rgba(0, 242, 254, 0.12);
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
+  }
+
+  .m-fmt-icon { font-size: 16px; }
+  .m-fmt-title { font-size: 11.5px; font-weight: 800; color: #fff; }
+  .m-fmt-desc { font-size: 9.5px; color: var(--text-muted); }
+
+  /* ── Turbo Toggle ── */
+  .m-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+
+  .m-toggle-info { display: flex; flex-direction: column; }
+  .m-toggle-title { font-size: 12px; font-weight: 800; color: var(--cyan); display: flex; align-items: center; gap: 5px; }
+  .m-toggle-sub { font-size: 10px; color: var(--text-muted); }
+
+  .m-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+  }
+  .m-switch input { opacity: 0; width: 0; height: 0; }
+  .m-slider {
+    position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.12);
+    border-radius: 24px; transition: .3s;
+  }
+  .m-slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background-color: white; border-radius: 50%; transition: .3s;
+  }
+  input:checked + .m-slider { background: var(--cyber-grad); }
+  input:checked + .m-slider:before { transform: translateX(20px); background: #070a13; }
+
+  /* ── Primary Action Button ── */
+  .m-btn-dl {
+    width: 100%;
+    margin-top: 12px;
+    background: var(--cyber-grad);
+    border: none;
+    color: #070a13;
+    font-weight: 800;
+    font-size: 15px;
+    padding: 14px;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 242, 254, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+  .m-btn-dl:active { transform: scale(0.98); }
+  .m-btn-dl:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ── Progress Card ── */
+  .m-prog-card {
+    display: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glow);
+    border-radius: var(--radius-xl);
+    padding: 16px;
+    flex-direction: column;
+    gap: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+  .m-prog-card.show { display: flex; }
+
+  .m-prog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .m-prog-status { font-size: 13px; font-weight: 800; color: var(--cyan); display: flex; align-items: center; gap: 6px; }
+  .m-prog-pct { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #fff; }
+
+  .m-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .m-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--cyber-grad);
+    border-radius: 10px;
+    transition: width 0.25s ease;
+  }
+
+  .m-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+  }
+
+  /* ── Completed Card & Actions ── */
+  .m-done-box {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .m-done-box.show { display: flex; }
+
+  .m-done-badge {
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .m-done-tick {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--green-grad); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; flex-shrink: 0;
+  }
+  .m-done-title { font-size: 13px; font-weight: 800; color: #fff; line-height: 1.3; }
+  .m-done-sub { font-size: 11px; color: var(--emerald); }
+
+  .m-done-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .m-btn-save-phone {
+    background: var(--green-grad);
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+  }
+
+  .m-btn-play-phone {
+    background: rgba(139, 92, 246, 0.18);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    color: #c4b5fd;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  /* ── Library Tab View ── */
+  .m-library-view {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .m-library-view.active { display: flex; }
+
+  .m-lib-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .m-lib-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .m-lib-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .m-lib-info { display: flex; flex-direction: column; min-width: 0; }
+  .m-lib-name { font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-lib-size { font-size: 10px; color: var(--text-dim); font-family: monospace; }
+
+  .m-lib-acts { display: flex; gap: 6px; flex-shrink: 0; }
+  .m-lib-btn {
+    background: rgba(255,255,255,0.08); border: 1px solid var(--border);
+    border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    color: var(--text); font-size: 13px; cursor: pointer; text-decoration: none;
+  }
+
+  /* ── Bottom Navigation Tab Bar (App Style) ── */
+  .m-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(7, 10, 19, 0.94);
+    backdrop-filter: blur(24px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    height: 64px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .m-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 10.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .m-nav-item.active {
+    color: var(--cyan);
+  }
+  .m-nav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .m-nav-item.active svg { stroke: var(--cyan); filter: drop-shadow(0 0 6px rgba(0,242,254,0.5)); }
+
+  /* ── Install Guide Modal ── */
+  .m-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(10px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .m-modal-backdrop.show { display: flex; }
+
+  .m-modal {
+    background: #0d1426;
+    border: 1px solid var(--border-glow);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    animation: popIn 0.25s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .m-modal-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .m-modal-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; }
+
+  .m-tabs-os { display: flex; gap: 8px; margin-bottom: 14px; }
+  .m-tab-os {
+    flex: 1; padding: 8px; font-size: 12px; font-weight: 800; border-radius: 8px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; text-align: center;
+  }
+  .m-tab-os.active { background: rgba(0,242,254,0.14); border-color: var(--cyan); color: #fff; }
+
+  .m-step { display: flex; gap: 10px; margin-bottom: 12px; font-size: 12px; line-height: 1.4; color: #e2e8f0; }
+  .m-step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--cyber-grad); color: #070a13; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; }
+
+  .m-btn-modal-close {
+    width: 100%; background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: #fff;
+    font-weight: 800; font-size: 13px; padding: 12px; border-radius: var(--radius-md); cursor: pointer; margin-top: 8px;
+  }
+
+  /* ── Video Player Modal ── */
+  .m-player-modal {
+    position: fixed; inset: 0; background: #000; z-index: 300; display: none; flex-direction: column;
+  }
+  .m-player-modal.show { display: flex; }
+  .m-player-top {
+    display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(14,21,37,0.9);
+  }
+  .m-player-video { flex: 1; width: 100%; max-height: 80vh; margin: auto; }
+</style>
+</head>
+<body>
+
+<!-- Top Navigation Header -->
+<header class="m-header">
+  <div class="m-brand">
+    <div class="m-logo" style="background:transparent;box-shadow:none;padding:0;">
+      <img src="/icons/icon128.png" width="36" height="36" style="display:block;border-radius:10px;box-shadow:0 0 14px rgba(0,242,254,0.45);" alt="Logo">
+    </div>
+    <div class="m-title-wrap">
+      <span class="m-title">ZDownloader PRO</span>
+      <span class="m-status"><span class="m-dot"></span> By Basit · Turbo Studio</span>
+    </div>
+  </div>
+  <button class="m-btn-install" id="btnOpenInstallModal">
+    📲 Install App
+  </button>
+</header>
+
+<div class="m-container">
+
+  <!-- Callout Install Notice -->
+  <div class="m-install-callout" id="installCallout">
+    <div>
+      <div class="m-install-text">⚡ Add to Home Screen</div>
+      <div class="m-install-sub">Install as standalone app with 1 tap</div>
+    </div>
+    <button class="m-install-action" id="calloutInstallBtn">Install</button>
+  </div>
+
+  <!-- VIEW 1: DOWNLOADER -->
+  <div id="viewDownload">
+    <div class="m-card">
+      <div class="m-input-label">
+        <span>Paste Video / Audio Link</span>
+        <span style="color:var(--cyan);">Direct Phone Download</span>
+      </div>
+
+      <div class="m-input-wrap">
+        <input type="url" class="m-input" id="mUrlInput" placeholder="Paste YouTube, Reels, TikTok link…" />
+        <button class="m-btn-paste" id="mPasteBtn">📋 Paste</button>
+      </div>
+
+      <!-- Platform Pills -->
+      <div class="m-platforms">
+        <div class="m-pill">🔴 YouTube</div>
+        <div class="m-pill">🟣 Instagram</div>
+        <div class="m-pill">🎵 TikTok</div>
+        <div class="m-pill">🔵 Facebook</div>
+        <div class="m-pill">📌 Pinterest</div>
+        <div class="m-pill">⚫ Twitter/X</div>
+      </div>
+
+      <!-- Format Selection -->
+      <div class="m-fmt-grid">
+        <div class="m-fmt-btn active" data-fmt="best" id="fmtBest">
+          <div class="m-fmt-icon">🎬</div>
+          <div class="m-fmt-title">Best Video</div>
+          <div class="m-fmt-desc">1080p / 4K Max</div>
+        </div>
+        <div class="m-fmt-btn" data-fmt="720" id="fmt720">
+          <div class="m-fmt-icon">📺</div>
+          <div class="m-fmt-title">720p HD</div>
+          <div class="m-fmt-desc">Fast &amp; Small</div>
+        </div>
+        <div class="m-fmt-btn" data-fmt="audio" id="fmtAudio">
+          <div class="m-fmt-icon">🎵</div>
+          <div class="m-fmt-title">MP3 Audio</div>
+          <div class="m-fmt-desc">320 kbps HQ</div>
+        </div>
+      </div>
+
+      <!-- Turbo Multi-Thread Switch -->
+      <div class="m-toggle-row">
+        <div class="m-toggle-info">
+          <span class="m-toggle-title">⚡ 16x Turbo Download Engine</span>
+          <span class="m-toggle-sub">Parallel multi-connection chunking</span>
+        </div>
+        <label class="m-switch">
+          <input type="checkbox" id="mTurboToggle" checked>
+          <span class="m-slider"></span>
+        </label>
+      </div>
+
+      <button class="m-btn-dl" id="mStartDlBtn">
+        <span>⚡ Start Download</span>
+      </button>
+    </div>
+
+    <!-- Live Download Progress Card -->
+    <div class="m-prog-card" id="mProgCard">
+      <div class="m-prog-header">
+        <span class="m-prog-status" id="mProgStatus">🚀 Downloading…</span>
+        <span class="m-prog-pct" id="mProgPct">0%</span>
+      </div>
+      <div class="m-track">
+        <div class="m-fill" id="mProgFill"></div>
+      </div>
+      <div class="m-meta-row">
+        <span id="mProgSpeed">⚡ High Speed</span>
+        <span id="mProgEta">ETA --</span>
+      </div>
+
+      <!-- Download Complete Actions -->
+      <div class="m-done-box" id="mDoneBox">
+        <div class="m-done-badge">
+          <div class="m-done-tick">✓</div>
+          <div>
+            <div class="m-done-title" id="mDoneTitle">Video Downloaded!</div>
+            <div class="m-done-sub">Ready to save or watch on phone</div>
+          </div>
+        </div>
+        <div class="m-done-actions">
+          <a class="m-btn-save-phone" id="mSavePhoneBtn" download>
+            ⬇️ Save to Phone
+          </a>
+          <button class="m-btn-play-phone" id="mPlayPhoneBtn">
+            ▶ Play Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: LIBRARY / SAVED VIDEOS -->
+  <div class="m-library-view" id="viewLibrary">
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <h3 style="font-size:16px; font-weight:800;">📁 Videos on PC</h3>
+      <button class="m-btn-paste" id="mRefreshLibBtn" style="padding:4px 10px; font-size:11px;">🔄 Refresh</button>
+    </div>
+    <div id="mLibList" style="display:flex; flex-direction:column; gap:8px;">
+      <!-- Populated via JS -->
+      <div style="text-align:center; padding:30px; color:var(--text-dim); font-size:13px;">Loading videos…</div>
+    </div>
+  </div>
+
+  <div style="text-align:center; padding: 20px 0 10px; font-size: 11px; font-weight: 800; color: rgba(148, 163, 184, 0.6); letter-spacing: 1px;">
+    ⚡ CREATED BY BASIT • ZDOWNLOADER PRO
+  </div>
+
+</div>
+
+<!-- Bottom Navigation Bar (Mobile App Style) -->
+<nav class="m-bottom-nav">
+  <button class="m-nav-item active" id="navDl">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span>Downloader</span>
+  </button>
+  <button class="m-nav-item" id="navLib">
+    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>Library</span>
+  </button>
+  <button class="m-nav-item" id="navInstall">
+    <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+    <span>Install App</span>
+  </button>
+</nav>
+
+<!-- Install Instructions Modal (Android & iPhone) -->
+<div class="m-modal-backdrop" id="mInstallModal">
+  <div class="m-modal">
+    <div class="m-modal-title">
+      <span>📲 Install ZDownloader App</span>
+    </div>
+    <div class="m-modal-desc">
+      <strong>ZDownloader PRO Mobile Studio</strong> — Created by Basit.<br>
+      Apne mobile phone ki Home Screen par ZDownloader App ka icon add karein taake yeh bilkul asli app ki tarah open ho:
+    </div>
+
+    <div class="m-tabs-os">
+      <button class="m-tab-os active" id="tabAndroid">🤖 Android (Chrome)</button>
+      <button class="m-tab-os" id="tabIos">🍎 iPhone (Safari)</button>
+    </div>
+
+    <div id="instAndroid">
+      <div class="m-step">
+        <div class="m-step-num">1</div>
+        <div>Chrome browser ke upar top-right mein <strong>3 dots (⋮)</strong> menu par tap karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">2</div>
+        <div>Menu mein <strong>"Add to Home screen"</strong> ya <strong>"Install app"</strong> par click karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">3</div>
+        <div><strong>"Install"</strong> confirm karein. ZDownloader ka icon home screen par lag jayega!</div>
+      </div>
+    </div>
+
+    <div id="instIos" style="display:none;">
+      <div class="m-step">
+        <div class="m-step-num">1</div>
+        <div>Safari browser ke neechay <strong>Share button</strong> (square with arrow ↑) par tap karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">2</div>
+        <div>List ko scroll kar ke <strong>"Add to Home Screen"</strong> par click karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">3</div>
+        <div>Top right mein <strong>"Add"</strong> dabayein — Done!</div>
+      </div>
+    </div>
+
+    <button class="m-btn-modal-close" id="btnCloseInstallModal">Samajh Aa Gaya ✓</button>
+  </div>
+</div>
+
+<!-- Mobile Player Modal -->
+<div class="m-player-modal" id="mPlayerModal">
+  <div class="m-player-top">
+    <span id="mPlayerTitle" style="font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Video Player</span>
+    <button id="mClosePlayerBtn" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+  </div>
+  <video class="m-player-video" id="mVideoPlayer" controls playsinline></video>
+</div>
+
+<script>
+  let selectedFormat = "best";
+  let activeJobId = null;
+  let pollTimer = null;
+  let deferredPrompt = null;
+
+  // ── PWA Installation Support ──
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installCallout').style.display = 'flex';
+  });
+
+  document.getElementById('calloutInstallBtn').onclick = triggerInstall;
+  document.getElementById('btnOpenInstallModal').onclick = triggerInstall;
+  document.getElementById('navInstall').onclick = () => showInstallModal();
+
+  function triggerInstall() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+    } else {
+      showInstallModal();
+    }
+  }
+
+  function showInstallModal() {
+    document.getElementById('mInstallModal').classList.add('show');
+  }
+
+  document.getElementById('btnCloseInstallModal').onclick = () => {
+    document.getElementById('mInstallModal').classList.remove('show');
+  };
+
+  document.getElementById('tabAndroid').onclick = () => {
+    document.getElementById('tabAndroid').classList.add('active');
+    document.getElementById('tabIos').classList.remove('active');
+    document.getElementById('instAndroid').style.display = 'block';
+    document.getElementById('instIos').style.display = 'none';
+  };
+
+  document.getElementById('tabIos').onclick = () => {
+    document.getElementById('tabIos').classList.add('active');
+    document.getElementById('tabAndroid').classList.remove('active');
+    document.getElementById('instIos').style.display = 'block';
+    document.getElementById('instAndroid').style.display = 'none';
+  };
+
+  // ── Navigation Tabs ──
+  const navDl = document.getElementById('navDl');
+  const navLib = document.getElementById('navLib');
+  const viewDownload = document.getElementById('viewDownload');
+  const viewLibrary = document.getElementById('viewLibrary');
+
+  navDl.onclick = () => {
+    navDl.classList.add('active');
+    navLib.classList.remove('active');
+    viewDownload.style.display = 'block';
+    viewLibrary.classList.remove('active');
+  };
+
+  navLib.onclick = () => {
+    navLib.classList.add('active');
+    navDl.classList.remove('active');
+    viewDownload.style.display = 'none';
+    viewLibrary.classList.add('active');
+    loadLibrary();
+  };
+
+  // ── Format Selection ──
+  document.querySelectorAll('.m-fmt-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.m-fmt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedFormat = btn.dataset.fmt;
+    };
+  });
+
+  // ── Paste Button ──
+  document.getElementById('mPasteBtn').onclick = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        document.getElementById('mUrlInput').value = text.trim();
+      }
+    } catch {
+      alert("Clipboard access allow karein ya link direct paste karein.");
+    }
+  };
+
+  // ── Start Download ──
+  const mStartDlBtn = document.getElementById('mStartDlBtn');
+  const mUrlInput = document.getElementById('mUrlInput');
+  const mProgCard = document.getElementById('mProgCard');
+  const mDoneBox = document.getElementById('mDoneBox');
+
+  mStartDlBtn.onclick = async () => {
+    const url = mUrlInput.value.trim();
+    if (!url) {
+      alert("Pehle koi video link paste karein!");
+      return;
+    }
+
+    mStartDlBtn.disabled = true;
+    mStartDlBtn.innerHTML = `<span>⏳ Analyzing & Starting…</span>`;
+    mProgCard.classList.add('show');
+    mDoneBox.classList.remove('show');
+    document.getElementById('mProgStatus').textContent = "🚀 Starting Turbo Engine…";
+    document.getElementById('mProgPct').textContent = "0%";
+    document.getElementById('mProgFill').style.width = "0%";
+
+    const isAudio = selectedFormat === "audio";
+    const quality = isAudio ? "best" : (selectedFormat === "720" ? "720" : "best");
+    const turbo = document.getElementById('mTurboToggle').checked;
+
+    try {
+      const res = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url,
+          quality,
+          audio_only: isAudio,
+          turbo: turbo
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Download failed");
+
+      activeJobId = data.job_id;
+      startPolling(activeJobId);
+
+    } catch (err) {
+      alert("Download error: " + err.message);
+      mStartDlBtn.disabled = false;
+      mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+      mProgCard.classList.remove('show');
+    }
+  };
+
+  function startPolling(jobId) {
+    if (pollTimer) clearInterval(pollTimer);
+
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/progress/${jobId}`);
+        if (!res.ok) return;
+        const job = await res.json();
+
+        const pct = Math.min(100, Math.max(0, job.progress || 0));
+        document.getElementById('mProgPct').textContent = `${Math.round(pct)}%`;
+        document.getElementById('mProgFill').style.width = `${pct}%`;
+        document.getElementById('mProgSpeed').textContent = job.speed ? `⚡ ${job.speed}` : "Turbo Speed";
+        document.getElementById('mProgEta').textContent = job.eta ? `⏳ ${job.eta}` : "";
+
+        if (job.status === "downloading") {
+          document.getElementById('mProgStatus').textContent = `🚀 Downloading… ${Math.round(pct)}%`;
+        } else if (job.status === "processing") {
+          document.getElementById('mProgStatus').textContent = `⚙️ Processing & Merging…`;
+        } else if (job.status === "done") {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          onDownloadDone(job);
+        } else if (job.status === "error") {
+          clearInterval(pollTimer);
+          alert("Error: " + (job.error || "Download failed"));
+          mStartDlBtn.disabled = false;
+          mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+        }
+      } catch {}
+    }, 600);
+  }
+
+  function onDownloadDone(job) {
+    document.getElementById('mProgStatus').textContent = `✅ Download Complete!`;
+    document.getElementById('mProgPct').textContent = "100%";
+    document.getElementById('mProgFill').style.width = "100%";
+    mStartDlBtn.disabled = false;
+    mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+
+    const title = job.title || job.filename || "Video";
+    document.getElementById('mDoneTitle').textContent = title;
+    mDoneBox.classList.add('show');
+
+    // Save to phone direct link
+    const saveBtn = document.getElementById('mSavePhoneBtn');
+    saveBtn.href = `/api/file/${job.id}`;
+    saveBtn.setAttribute("download", job.filename || `${job.id}.mp4`);
+
+    // Play now button
+    document.getElementById('mPlayPhoneBtn').onclick = () => {
+      openMobilePlayer(`/api/file/${job.id}`, title);
+    };
+
+    // Auto trigger mobile download save
+    saveBtn.click();
+  }
+
+  // ── Library / History ──
+  async function loadLibrary() {
+    const list = document.getElementById('mLibList');
+    list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim);">Loading videos from PC…</div>';
+
+    try {
+      const res = await fetch('/api/history');
+      const data = await res.json();
+      const files = data.files || [];
+
+      if (files.length === 0) {
+        list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim);">Abhi koi video download nahi hui.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      files.forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'm-lib-item';
+        const isAudio = f.name.match(/\.(mp3|m4a|aac|wav)$/i);
+        item.innerHTML = `
+          <div class="m-lib-left">
+            <div class="m-lib-icon">${isAudio ? '🎵' : '🎬'}</div>
+            <div class="m-lib-info">
+              <div class="m-lib-name">${f.name}</div>
+              <div class="m-lib-size">${f.size || 'Saved on PC'}</div>
+            </div>
+          </div>
+          <div class="m-lib-acts">
+            <a class="m-lib-btn" href="${f.stream_url}" download title="Download to Phone">⬇️</a>
+            <button class="m-lib-btn btn-play" title="Play">▶</button>
+          </div>
+        `;
+
+        item.querySelector('.btn-play').onclick = () => {
+          openMobilePlayer(f.stream_url, f.name);
+        };
+
+        list.appendChild(item);
+      });
+
+    } catch {
+      list.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">PC offline ya unreachable hai.</div>';
+    }
+  }
+
+  document.getElementById('mRefreshLibBtn').onclick = loadLibrary;
+
+  // ── Video Player ──
+  function openMobilePlayer(src, title) {
+    const modal = document.getElementById('mPlayerModal');
+    const player = document.getElementById('mVideoPlayer');
+    document.getElementById('mPlayerTitle').textContent = title;
+    player.src = src;
+    modal.classList.add('show');
+    player.play().catch(() => {});
+  }
+
+  document.getElementById('mClosePlayerBtn').onclick = () => {
+    const modal = document.getElementById('mPlayerModal');
+    const player = document.getElementById('mVideoPlayer');
+    player.pause();
+    player.src = '';
+    modal.classList.remove('show');
+  };
+</script>
+</body>
+</html>

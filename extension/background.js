@@ -2,6 +2,7 @@ const API_BASE = "http://127.0.0.1:8000";
 
 let activeDownload = null;
 let pollTimer = null;
+let _lastDoneNotifId = null; // BUG FIX: track done notif ID at top level
 
 // ── Download Queue ─────────────────────────────────────────────
 let downloadQueue = []; // [{url, quality, audioOnly, title, thumbnail}]
@@ -15,6 +16,14 @@ function startNextInQueue() {
       .catch(() => {});
   }, 800);
 }
+
+// BUG FIX: Notification button listener at TOP LEVEL (not inside pollJob).
+// Previously it was added inside pollJob on every completion → listener leak.
+chrome.notifications.onButtonClicked.addListener((nId, btnIdx) => {
+  if (nId === _lastDoneNotifId && btnIdx === 0) {
+    fetch(`${API_BASE}/api/open-downloads`, { method: "POST" }).catch(() => {});
+  }
+});
 
 // Setup Rich Context Menus
 chrome.runtime.onInstalled.addListener(setupContextMenus);
@@ -41,6 +50,22 @@ function setupContextMenus() {
       id: "zak-dl-page",
       title: "⚡ Download Video from this Page",
       contexts: ["page"]
+    });
+
+    // 4. Open Side Panel
+    if (chrome.sidePanel) {
+      chrome.contextMenus.create({
+        id: "zak-open-sidepanel",
+        title: "📑 Open ZDownloader Side Panel",
+        contexts: ["all"]
+      });
+    }
+
+    // 5. Sync Browser Session Cookies
+    chrome.contextMenus.create({
+      id: "zak-sync-cookies",
+      title: "🍪 Sync Session Cookies with Backend",
+      contexts: ["all"]
     });
   });
 }
@@ -81,6 +106,30 @@ function isValidDownloadUrl(url) {
 }
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === "zak-open-sidepanel") {
+    if (chrome.sidePanel && tab && tab.windowId) {
+      chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
+    }
+    return;
+  }
+
+  if (info.menuItemId === "zak-sync-cookies") {
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: "ZDownloader Cookie Sync",
+      message: "Syncing cookies with backend..."
+    });
+    const res = await syncAllCookies();
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: "ZDownloader Cookie Sync",
+      message: res.ok ? `✅ ${res.message}` : `⚠️ ${res.message}`
+    });
+    return;
+  }
+
   const isAudio = info.menuItemId === "zak-dl-audio";
   const targetUrl = await resolveContextUrl(info, tab);
 
@@ -88,7 +137,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     chrome.notifications.create({
       type: "basic",
       iconUrl: "icons/icon128.png",
-      title: "ZDownloader (Zak)",
+      title: "ZDownloader • By Basit",
       message: "⚠️ Video link detect nahi ho saka. Video ko click karke open karein aur dobara try karein."
     });
     return;
@@ -100,7 +149,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   chrome.notifications.create({
     type: "basic",
     iconUrl: "icons/icon128.png",
-    title: "ZDownloader (Zak)",
+    title: "ZDownloader • By Basit",
     message: `⚡ Started: ${isAudio ? "MP3 Audio" : "Video"} is downloading in background...`
   });
 
@@ -125,7 +174,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       chrome.notifications.create({
         type: "basic",
         iconUrl: "icons/icon128.png",
-        title: "ZDownloader (Zak)",
+        title: "ZDownloader • By Basit",
         message: "⚡ Quick download starting..."
       });
       const thumb = getThumbnailForUrl(tab.url);
@@ -207,7 +256,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         audioOnly: !!it.audioOnly,
         title: it.title || "Video",
         thumbnail: it.thumbnail || "",
-        turbo: !!it.turbo
+        turbo: it.turbo !== false
       };
       if (!activeDownload || ["done","error",null].includes(activeDownload?.status)) {
         startDownload(item.url, item.quality, item.audioOnly, item.title, null, null, item.thumbnail, item.turbo);
@@ -248,10 +297,38 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ ok: true });
     return false;
   }
+
+  if (msg.action === "SYNC_COOKIES") {
+    syncAllCookies()
+      .then(res => sendResponse(res))
+      .catch(err => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
+  if (msg.action === "CANCEL_DOWNLOAD") {
+    const jId = activeDownload ? (activeDownload.jobId || activeDownload.job_id) : null;
+    if (jId) {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      fetch(`${API_BASE}/api/cancel/${jId}`, { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+          activeDownload = null;
+          chrome.action.setBadgeText({ text: "" });
+          sendResponse({ ok: true, data });
+        })
+        .catch(err => sendResponse({ ok: false, error: err.message }));
+      return true;
+    }
+    sendResponse({ ok: false, message: "No active download to cancel" });
+    return false;
+  }
 });
 
 // ✅ FIX: thumbnail and turbo parameters in function signature
-async function startDownload(url, quality = "best", audioOnly = false, title = "Video", startTime = null, endTime = null, thumbnail = "", turbo = false) {
+async function startDownload(url, quality = "best", audioOnly = false, title = "Video", startTime = null, endTime = null, thumbnail = "", turbo = true) {
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
@@ -262,7 +339,7 @@ async function startDownload(url, quality = "best", audioOnly = false, title = "
   chrome.action.setBadgeBackgroundColor({ color: "#6366f1" });
 
   try {
-    const payload = { url, quality, audio_only: audioOnly, turbo: !!turbo };
+    const payload = { url, quality, audio_only: audioOnly, turbo: turbo !== false };
     if (startTime) payload.start_time = startTime;
     if (endTime) payload.end_time = endTime;
 
@@ -386,6 +463,7 @@ async function pollJob(jobId) {
 
       // System notification with action button
       const notifId = "zdl-done-" + Date.now();
+      _lastDoneNotifId = notifId; // BUG FIX: store at top level for listener
       chrome.notifications.create(notifId, {
         type: "basic",
         iconUrl: "icons/icon128.png",
@@ -395,12 +473,7 @@ async function pollJob(jobId) {
         buttons: [{ title: "📁 Open Folder" }]
       });
 
-      // Handle notification click → open folder
-      chrome.notifications.onButtonClicked.addListener((nId, btnIdx) => {
-        if (nId === notifId && btnIdx === 0) {
-          fetch(`${API_BASE}/api/open-downloads`, { method: "POST" }).catch(() => {});
-        }
-      });
+      // NOTE: onButtonClicked is handled by the top-level listener above.
 
       // Start next in queue
       startNextInQueue();
@@ -422,6 +495,9 @@ async function pollJob(jobId) {
         message: job.error || "Download could not be completed."
       });
 
+      // BUG FIX: start next queued item even after error
+      startNextInQueue();
+
       setTimeout(() => {
         chrome.action.setBadgeText({ text: "" });
       }, 4000);
@@ -437,4 +513,50 @@ function sanitizeFilename(name) {
   let clean = name.replace(/[^\x20-\x7E]/g, " ").replace(/[\\/*?:"<>|]/g, "_").replace(/\s+/g, " ").trim();
   if (!clean || clean === ".mp4" || clean === ".mp3") clean = "video" + (name.slice(name.lastIndexOf(".")) || ".mp4");
   return clean;
+}
+
+// ── 1-Click Cookie Sync Helper ──────────────────────────────────
+async function syncAllCookies() {
+  const domains = [
+    { name: "YouTube", domain: "youtube.com" },
+    { name: "Instagram", domain: "instagram.com" },
+    { name: "Facebook", domain: "facebook.com" },
+    { name: "TikTok", domain: "tiktok.com" },
+    { name: "Twitter / X", domain: "twitter.com" },
+    { name: "Pinterest", domain: "pinterest.com" }
+  ];
+
+  const results = [];
+  for (const item of domains) {
+    try {
+      const cookies = await chrome.cookies.getAll({ domain: item.domain });
+      if (cookies && cookies.length > 0) {
+        const res = await fetch(`${API_BASE}/api/sync-cookies`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: item.domain,
+            cookies: cookies.map(c => ({
+              domain: c.domain,
+              path: c.path,
+              secure: c.secure,
+              expirationDate: c.expirationDate,
+              name: c.name,
+              value: c.value
+            }))
+          })
+        });
+        if (res.ok) {
+          results.push(`${item.name} (${cookies.length})`);
+        }
+      }
+    } catch (e) {
+      console.warn(`Cookie sync failed for ${item.domain}:`, e);
+    }
+  }
+
+  if (results.length === 0) {
+    return { ok: false, message: "Koi active cookies nahi mile. Pehle browser mein website par login karein." };
+  }
+  return { ok: true, message: `Synced: ${results.join(", ")}` };
 }

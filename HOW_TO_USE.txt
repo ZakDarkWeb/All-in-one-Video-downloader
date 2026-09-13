@@ -68,6 +68,5 @@ direct download karne ke liye:
 - Dark / Cyberpunk / Glassmorphism UI with Quality Badge selection
 
 ================================================================
-Repository: https://github.com/ZakDarkWeb/All-in-one-Video-downloader
-Developed with ❤️ by Zak
+Developed with ❤️ by Basit
 ================================================================

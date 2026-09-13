@@ -68,7 +68,7 @@ def main():
 
     # Create Native Desktop App Window
     window = webview.create_window(
-        title="Zak Video Downloader",
+        title="ZDownloader PRO • By Basit",
         url=url,
         width=1220,
         height=840,

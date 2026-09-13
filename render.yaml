@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: zdownloader-pro
+    env: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/status

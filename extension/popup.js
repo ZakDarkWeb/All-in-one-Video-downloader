@@ -7,7 +7,7 @@ let statusPollInterval = null;
 let currentDoneJobId = null;
 let lastChimedJobId = null;
 
-let settings = { quality: "best", autoDownload: false, inPage: true, sound: true, turbo: false };
+let settings = { quality: "best", autoDownload: false, inPage: true, sound: true, turbo: true };
 
 const PLATFORMS = [
   { name: "YouTube",    rx: /youtu(\.be|be\.com)/i,      icon: "🔴", color: "#ef4444" },
@@ -40,17 +40,15 @@ async function loadSettings() {
 function applySettingsToUI() {
   if ($("settingQuality")) $("settingQuality").value = settings.quality;
   if ($("settingAutoDownload")) $("settingAutoDownload").checked = !!settings.autoDownload;
-  if ($("settingInPage")) $("settingInPage").checked = settings.inPage !== false;
   if ($("settingSound")) $("settingSound").checked = settings.sound !== false;
-  if ($("settingTurbo")) $("settingTurbo").checked = !!settings.turbo;
+  if ($("settingTurbo")) $("settingTurbo").checked = settings.turbo !== false;
 }
 
 async function saveSettings() {
   settings.quality = $("settingQuality")?.value || "best";
   settings.autoDownload = $("settingAutoDownload")?.checked || false;
-  settings.inPage = $("settingInPage")?.checked !== false;
   settings.sound = $("settingSound")?.checked !== false;
-  settings.turbo = !!$("settingTurbo")?.checked;
+  settings.turbo = $("settingTurbo") ? $("settingTurbo").checked : true;
   try { await chrome.storage.local.set({ zdl_settings: settings }); } catch {}
   const flash = $("saveFlash");
   if (flash) {
@@ -144,17 +142,52 @@ function setupUI() {
     };
   }
 
+  // 1-Click Cookie Sync Button
+  const syncBtn = $("syncCookiesBtn");
+  if (syncBtn) {
+    syncBtn.onclick = () => {
+      syncBtn.classList.add("syncing");
+      syncBtn.innerHTML = "<span>⏳</span><span>Syncing…</span>";
+      chrome.runtime.sendMessage({ action: "SYNC_COOKIES" }, (response) => {
+        syncBtn.classList.remove("syncing");
+        if (response && response.ok) {
+          syncBtn.innerHTML = "<span>✅</span><span>Synced!</span>";
+          setTimeout(() => { syncBtn.innerHTML = "<span>🍪</span><span>Sync</span>"; }, 2500);
+        } else {
+          syncBtn.innerHTML = "<span>⚠️</span><span>Failed</span>";
+          setTimeout(() => { syncBtn.innerHTML = "<span>🍪</span><span>Sync</span>"; }, 2500);
+        }
+      });
+    };
+  }
+
   // 1-Click Auto-Start Engine (custom protocol handler zdownloader://start)
   if ($("autoStartEngineBtn")) {
     $("autoStartEngineBtn").onclick = () => {
       const btn = $("autoStartEngineBtn");
       btn.textContent = "⚡ Starting Engine...";
       btn.style.opacity = "0.75";
+
       try {
-        window.location.href = "zdownloader://start";
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = "zdownloader://start";
+        document.body.appendChild(iframe);
+        setTimeout(() => { try { iframe.remove(); } catch {} }, 2000);
       } catch (e) {
-        console.warn("Protocol launch failed:", e);
+        console.warn("Iframe launch failed:", e);
       }
+
+      try {
+        chrome.tabs.create({ url: "zdownloader://start", active: false }, tab => {
+          if (tab && tab.id) {
+            setTimeout(() => { try { chrome.tabs.remove(tab.id); } catch {} }, 2000);
+          }
+        });
+      } catch (e) {
+        console.warn("Tab launch failed:", e);
+      }
+
       let attempts = 0;
       const poll = setInterval(async () => {
         attempts++;
@@ -164,7 +197,7 @@ function setupUI() {
           btn.textContent = "✅ Connected!";
           btn.style.opacity = "1";
           onServerConnected();
-        } else if (attempts >= 8) {
+        } else if (attempts >= 10) {
           clearInterval(poll);
           btn.textContent = "🚀 1-Click Auto-Start Backend";
           btn.style.opacity = "1";
@@ -177,7 +210,8 @@ function setupUI() {
   if ($("openFolderBtn")) $("openFolderBtn").onclick = openDownloadsFolder;
   if ($("openFolderFooterBtn")) $("openFolderFooterBtn").onclick = openDownloadsFolder;
 
-  // Web App buttons
+  // Web App & Mobile App buttons
+  if ($("openMobileAppBtn")) $("openMobileAppBtn").onclick = showMobileAppQr;
   if ($("openWebAppBtn")) $("openWebAppBtn").onclick = () => chrome.tabs.create({ url: "http://127.0.0.1:8000" });
   if ($("openWebAppBtn2")) $("openWebAppBtn2").onclick = () => chrome.tabs.create({ url: "http://127.0.0.1:8000" });
 
@@ -265,6 +299,19 @@ function setupUI() {
     });
   }
 
+  // Cancel Download Button
+  if ($("cancelDlBtn")) {
+    $("cancelDlBtn").onclick = () => {
+      const btn = $("cancelDlBtn");
+      btn.textContent = "⏳ Cancelling…";
+      chrome.runtime.sendMessage({ action: "CANCEL_DOWNLOAD" }, () => {
+        btn.textContent = "🛑 Cancel";
+        if ($("progressCard")) $("progressCard").classList.remove("show");
+        document.querySelectorAll(".fmt-btn").forEach(b => b.disabled = false);
+      });
+    };
+  }
+
   // QR buttons
   if ($("showQrBtn")) $("showQrBtn").onclick = showQrCode;
   if ($("qrCloseBtn")) $("qrCloseBtn").onclick = () => { if ($("qrCard")) $("qrCard").classList.remove("show"); };
@@ -327,6 +374,7 @@ function setupUI() {
 
 // ── Server Status ─────────────────────────────────────────────────
 function onServerConnected() {
+  fetchLocalIp();
   chrome.runtime.sendMessage({ action: "GET_ACTIVE_DOWNLOAD" }, response => {
     if (response && response.activeDownload &&
         ["downloading","starting","processing"].includes(response.activeDownload.status)) {
@@ -659,7 +707,7 @@ function triggerDownload(quality, audioOnly) {
     thumbnail,
     startTime,
     endTime,
-    turbo: !!settings.turbo
+    turbo: settings.turbo !== false
   }, response => {
     if (!response) {
       alert("Extension error — try refreshing the page.");
@@ -749,6 +797,24 @@ function renderActiveDownload(dl) {
       };
     }
 
+    if ($("openFolderBtn")) {
+      $("openFolderBtn").onclick = async () => {
+        const btn = $("openFolderBtn");
+        const orig = btn.textContent;
+        btn.textContent = "📂 Opening…";
+        try {
+          if (dl.filename) {
+            await fetch(`${API_BASE}/api/open-file/${encodeURIComponent(dl.filename)}`, { method: "POST" });
+          } else {
+            await fetch(`${API_BASE}/api/open-downloads`, { method: "POST" });
+          }
+        } catch {
+          await fetch(`${API_BASE}/api/open-downloads`, { method: "POST" }).catch(() => {});
+        }
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      };
+    }
+
     document.querySelectorAll(".fmt-btn").forEach(b => b.disabled = false);
     refreshHistBadge();
 
@@ -783,16 +849,74 @@ function setupMessageListener() {
 
 // ── Open Folder ───────────────────────────────────────────────────
 async function openDownloadsFolder() {
-  try { await fetch(`${API_BASE}/api/open-downloads`, { method: "POST" }); } catch {}
+  const btn = $("openFolderFooterBtn") || $("openFolderBtn");
+  const orig = btn ? btn.textContent : "";
+  if (btn) btn.textContent = "📂 Opening…";
+  try {
+    await fetch(`${API_BASE}/api/open-downloads`, { method: "POST" });
+  } catch {}
+  if (btn) setTimeout(() => { btn.textContent = orig; }, 1500);
 }
 
-// ── QR Code ───────────────────────────────────────────────────────
-function showQrCode() {
+// ── QR Code & Mobile Sharing ───────────────────────────────────────
+let currentLocalIp = "127.0.0.1";
+
+async function fetchLocalIp() {
+  try {
+    const res = await fetch(`${API_BASE}/api/local-ip`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.local_ip && data.local_ip !== "127.0.0.1") {
+        currentLocalIp = data.local_ip;
+      }
+    }
+  } catch {}
+}
+
+async function showQrCode() {
   if (!currentDoneJobId) return;
-  const streamUrl = `${API_BASE}/api/file/${currentDoneJobId}`;
+  await fetchLocalIp();
+  const host = (currentLocalIp && currentLocalIp !== "127.0.0.1") ? currentLocalIp : "127.0.0.1";
+  const streamUrl = `http://${host}:8000/api/file/${currentDoneJobId}`;
+
   if ($("qrCard")) $("qrCard").classList.add("show");
   const canvas = $("qrCanvas");
-  if (canvas && window.generateQR) window.generateQR(streamUrl, canvas);
+  if (canvas && window.generateQR) {
+    window.generateQR(streamUrl, canvas);
+  }
+  if ($("qrUrlInput")) $("qrUrlInput").value = streamUrl;
+  if ($("copyQrUrlBtn")) {
+    $("copyQrUrlBtn").onclick = () => {
+      navigator.clipboard.writeText(streamUrl);
+      const btn = $("copyQrUrlBtn");
+      const orig = btn.textContent;
+      btn.textContent = "✅ Copied!";
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    };
+  }
+}
+
+async function showMobileAppQr() {
+  await fetchLocalIp();
+  const host = (currentLocalIp && currentLocalIp !== "127.0.0.1") ? currentLocalIp : "127.0.0.1";
+  const appUrl = `http://${host}:8000/mobile`;
+
+  if ($("qrCard")) $("qrCard").classList.add("show");
+  if ($("qrHintText")) $("qrHintText").textContent = "Same Wi-Fi par connect karein. Phone camera se scan karein aur 'Install App' par tap karein!";
+  const canvas = $("qrCanvas");
+  if (canvas && window.generateQR) {
+    window.generateQR(appUrl, canvas);
+  }
+  if ($("qrUrlInput")) $("qrUrlInput").value = appUrl;
+  if ($("copyQrUrlBtn")) {
+    $("copyQrUrlBtn").onclick = () => {
+      navigator.clipboard.writeText(appUrl);
+      const btn = $("copyQrUrlBtn");
+      const orig = btn.textContent;
+      btn.textContent = "✅ Copied!";
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    };
+  }
 }
 
 // ── History Tab ───────────────────────────────────────────────────
@@ -854,12 +978,25 @@ function renderHistoryList(files) {
     row.querySelector(".play").onclick = () =>
       chrome.tabs.create({ url: `${API_BASE}/?play=${encodeURIComponent(f.name)}` });
 
-    row.querySelector(".qr").onclick = () => {
+    row.querySelector(".qr").onclick = async () => {
       switchToDownloadTab();
       if ($("qrCard")) $("qrCard").classList.add("show");
       if ($("doneCard")) $("doneCard").classList.remove("show");
+      await fetchLocalIp();
+      const host = (currentLocalIp && currentLocalIp !== "127.0.0.1") ? currentLocalIp : "127.0.0.1";
+      const streamUrl = `http://${host}:8000${f.stream_url}`;
       const canvas = $("qrCanvas");
-      if (canvas && window.generateQR) window.generateQR(`${API_BASE}${f.stream_url}`, canvas);
+      if (canvas && window.generateQR) window.generateQR(streamUrl, canvas);
+      if ($("qrUrlInput")) $("qrUrlInput").value = streamUrl;
+      if ($("copyQrUrlBtn")) {
+        $("copyQrUrlBtn").onclick = () => {
+          navigator.clipboard.writeText(streamUrl);
+          const btn = $("copyQrUrlBtn");
+          const orig = btn.textContent;
+          btn.textContent = "✅ Copied!";
+          setTimeout(() => { btn.textContent = orig; }, 2000);
+        };
+      }
     };
 
     row.querySelector(".folder").onclick = async () => {
@@ -975,7 +1112,7 @@ async function scanAndRenderPageMedia() {
           allBtn.disabled = true;
           chrome.runtime.sendMessage({
             action: "BATCH_ENQUEUE",
-            items: items.map(it => ({ url: it.url, title: it.title, turbo: !!settings.turbo }))
+            items: items.map(it => ({ url: it.url, title: it.title, turbo: settings.turbo !== false }))
           }, res => {
             allBtn.textContent = `✅ ${res?.queued || items.length} Queued!`;
             setTimeout(() => {
