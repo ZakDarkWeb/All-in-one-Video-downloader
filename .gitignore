@@ -16,6 +16,8 @@ aria2c.exe
 *.mkv
 *.mp3
 *.zip
+!docs/zdownloader_extension.zip
+!frontend/zdownloader_extension.zip
 
 
 # User downloads & private cookies

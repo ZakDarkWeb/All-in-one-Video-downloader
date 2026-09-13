@@ -638,7 +638,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     <button id="btnWifiModal" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#c084fc;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Laptop Turbo Link (Wi-Fi)">📶</button>
     <button id="btnForceRefresh" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#00f2fe;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Refresh & Clear Cache">🔄</button>
     <button class="m-btn-install" id="btnOpenInstallModal">
-      📲 Install App
+      🧩 Get Extension &amp; Apps
     </button>
   </div>
 </header>
@@ -677,6 +677,22 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         <div class="m-pill">📌 Pinterest</div>
         <div class="m-pill">🟣 Instagram</div>
         <div class="m-pill">🔵 Facebook</div>
+      </div>
+
+      <!-- Ecosystem Quick Access Badges -->
+      <div style="display:flex; gap:6px; margin: 12px 0 4px; overflow-x:auto; padding-bottom:2px;">
+        <button id="quickExtBtn" type="button" style="background:rgba(0,242,254,0.12); border:1px solid rgba(0,242,254,0.35); color:#00f2fe; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+          🧩 Chrome Extension (.ZIP)
+        </button>
+        <button id="quickAndroidBtn" type="button" style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); color:#10b981; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+          🤖 Android App
+        </button>
+        <button id="quickIosBtn" type="button" style="background:rgba(244,114,182,0.12); border:1px solid rgba(244,114,182,0.35); color:#f472b6; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+          🍎 iPhone
+        </button>
+        <button id="quickPcBtn" type="button" style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.35); color:#c4b5fd; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+          💻 PC Desktop
+        </button>
       </div>
 
       <!-- Format Selection -->
@@ -782,28 +798,61 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     <span>Library</span>
   </button>
   <button class="m-nav-item" id="navInstall">
-    <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-    <span>Install App</span>
+    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    <span>Apps &amp; Extension</span>
   </button>
 </nav>
 
-<!-- Install Instructions Modal (Android & iPhone) -->
+<!-- Install Instructions Modal (Chrome Extension, Android, iPhone & PC) -->
 <div class="m-modal-backdrop" id="mInstallModal">
-  <div class="m-modal">
+  <div class="m-modal" style="max-height:85vh; overflow-y:auto;">
     <div class="m-modal-title">
-      <span>📲 Install ZDownloader App</span>
+      <span>📲 ZDownloader Apps &amp; Extension Hub</span>
     </div>
     <div class="m-modal-desc">
-      <strong>ZDownloader PRO Mobile Studio</strong> — Created by Basit.<br>
-      Apne mobile phone ki Home Screen par ZDownloader App ka icon add karein taake yeh bilkul asli app ki tarah open ho:
+      <strong>ZDownloader PRO</strong> — Created by Basit.<br>
+      Apni device ke mutabiq app ya extension select karein (100% Free &amp; Unlimited):
     </div>
 
-    <div class="m-tabs-os">
-      <button class="m-tab-os active" id="tabAndroid">🤖 Android (Chrome)</button>
+    <div class="m-tabs-os" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:14px;">
+      <button class="m-tab-os active" id="tabExt">🧩 Chrome Extension</button>
+      <button class="m-tab-os" id="tabAndroid">🤖 Android (PWA)</button>
       <button class="m-tab-os" id="tabIos">🍎 iPhone (Safari)</button>
+      <button class="m-tab-os" id="tabPc">💻 Windows PC</button>
     </div>
 
-    <div id="instAndroid">
+    <!-- TAB 1: CHROME EXTENSION -->
+    <div id="instExt">
+      <div style="background:rgba(0,242,254,0.08); border:1px solid rgba(0,242,254,0.3); border-radius:var(--radius-md); padding:14px; margin-bottom:14px; text-align:center;">
+        <div style="font-size:14px; font-weight:800; color:#fff; margin-bottom:4px;">⚡ ZDownloader Chrome Extension (MV3)</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Automatic IDM Download Buttons on YouTube, TikTok, Insta &amp; 4K Sniffer</div>
+        <a href="zdownloader_extension.zip" download="zdownloader_pro_extension.zip" style="background:linear-gradient(135deg,#00d4ff,#8b5cf6);color:#fff;font-weight:800;font-size:13.5px;padding:12px 18px;border-radius:10px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;box-shadow:0 4px 18px rgba(0,212,255,0.35);">
+          ⬇️ Download Extension (.ZIP)
+        </a>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">1</div>
+        <div>Upar button se <strong>.ZIP file download</strong> karein aur usay Right-Click kar ke <strong>"Extract All..."</strong> (Unzip) karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">2</div>
+        <div>Chrome browser mein new tab open karein aur address bar mein <strong>chrome://extensions</strong> enter karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">3</div>
+        <div>Top-right corner par <strong>"Developer mode"</strong> ka toggle switch ON karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">4</div>
+        <div>Top-left par <strong>"Load unpacked"</strong> button dabayein aur extract shuda folder select karein — Done!</div>
+      </div>
+      <div style="font-size:11px; color:#38bdf8; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:8px 10px; margin-top:8px; line-height:1.4;">
+        ✨ <strong>Feature:</strong> Extension install hote hi har YouTube/TikTok video par automatic IDM-style download button aur toolbar sniffer active ho jayega!
+      </div>
+    </div>
+
+    <!-- TAB 2: ANDROID -->
+    <div id="instAndroid" style="display:none;">
       <div class="m-step">
         <div class="m-step-num">1</div>
         <div>Chrome browser ke upar top-right mein <strong>3 dots (⋮)</strong> menu par tap karein.</div>
@@ -814,10 +863,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       </div>
       <div class="m-step">
         <div class="m-step-num">3</div>
-        <div><strong>"Install"</strong> confirm karein. ZDownloader ka icon home screen par lag jayega!</div>
+        <div><strong>"Install"</strong> confirm karein. ZDownloader ka icon home screen par lag jayega aur full-screen chalega!</div>
       </div>
     </div>
 
+    <!-- TAB 3: IPHONE -->
     <div id="instIos" style="display:none;">
       <div class="m-step">
         <div class="m-step-num">1</div>
@@ -833,7 +883,30 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       </div>
     </div>
 
-    <button class="m-btn-modal-close" id="btnCloseInstallModal">Samajh Aa Gaya ✓</button>
+    <!-- TAB 4: WINDOWS PC -->
+    <div id="instPc" style="display:none;">
+      <div style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.3); border-radius:var(--radius-md); padding:14px; margin-bottom:14px; text-align:center;">
+        <div style="font-size:14px; font-weight:800; color:#fff; margin-bottom:4px;">💻 ZDownloader Windows Desktop App</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">16x Turbo aria2c Multi-Thread Engine • 4K/8K Media Studio</div>
+        <a href="https://github.com/ZakDarkWeb/All-in-one-Video-downloader/archive/refs/heads/main.zip" target="_blank" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;font-weight:800;font-size:13.5px;padding:12px 18px;border-radius:10px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;box-shadow:0 4px 18px rgba(139,92,246,0.35);">
+          ⬇️ Download Desktop App (ZIP)
+        </a>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">1</div>
+        <div>Upar diye link se complete package zip download karein aur extract karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">2</div>
+        <div>Folder mein <strong>start_app.bat</strong> par double-click karein.</div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">3</div>
+        <div>Desktop app launch ho jayegi aur same Wi-Fi par mobile phone ke sath 16x Turbo speed link bhi activate ho jayegi!</div>
+      </div>
+    </div>
+
+    <button class="m-btn-modal-close" id="btnCloseInstallModal">Band Karein ✓</button>
   </div>
 </div>
 
@@ -901,40 +974,69 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     document.getElementById('installCallout').style.display = 'flex';
   });
 
-  document.getElementById('calloutInstallBtn').onclick = triggerInstall;
-  document.getElementById('btnOpenInstallModal').onclick = triggerInstall;
-  document.getElementById('navInstall').onclick = () => showInstallModal();
-
-  function triggerInstall() {
+  document.getElementById('calloutInstallBtn').onclick = () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
     } else {
-      showInstallModal();
+      showInstallModal('android');
+    }
+  };
+  document.getElementById('btnOpenInstallModal').onclick = () => showInstallModal('ext');
+  document.getElementById('navInstall').onclick = () => showInstallModal('ext');
+
+  const tabExt = document.getElementById('tabExt');
+  const tabAndroid = document.getElementById('tabAndroid');
+  const tabIos = document.getElementById('tabIos');
+  const tabPc = document.getElementById('tabPc');
+
+  const instExt = document.getElementById('instExt');
+  const instAndroid = document.getElementById('instAndroid');
+  const instIos = document.getElementById('instIos');
+  const instPc = document.getElementById('instPc');
+
+  function selectInstallTab(target) {
+    [tabExt, tabAndroid, tabIos, tabPc].forEach(t => { if (t) t.classList.remove('active'); });
+    [instExt, instAndroid, instIos, instPc].forEach(i => { if (i) i.style.display = 'none'; });
+
+    if (target === 'ext' && tabExt && instExt) {
+      tabExt.classList.add('active');
+      instExt.style.display = 'block';
+    } else if (target === 'android' && tabAndroid && instAndroid) {
+      tabAndroid.classList.add('active');
+      instAndroid.style.display = 'block';
+    } else if (target === 'ios' && tabIos && instIos) {
+      tabIos.classList.add('active');
+      instIos.style.display = 'block';
+    } else if (target === 'pc' && tabPc && instPc) {
+      tabPc.classList.add('active');
+      instPc.style.display = 'block';
     }
   }
 
-  function showInstallModal() {
-    document.getElementById('mInstallModal').classList.add('show');
+  if (tabExt) tabExt.onclick = () => selectInstallTab('ext');
+  if (tabAndroid) tabAndroid.onclick = () => selectInstallTab('android');
+  if (tabIos) tabIos.onclick = () => selectInstallTab('ios');
+  if (tabPc) tabPc.onclick = () => selectInstallTab('pc');
+
+  function showInstallModal(initialTab = 'ext') {
+    selectInstallTab(initialTab);
+    const m = document.getElementById('mInstallModal');
+    if (m) m.classList.add('show');
   }
 
   document.getElementById('btnCloseInstallModal').onclick = () => {
     document.getElementById('mInstallModal').classList.remove('show');
   };
 
-  document.getElementById('tabAndroid').onclick = () => {
-    document.getElementById('tabAndroid').classList.add('active');
-    document.getElementById('tabIos').classList.remove('active');
-    document.getElementById('instAndroid').style.display = 'block';
-    document.getElementById('instIos').style.display = 'none';
-  };
-
-  document.getElementById('tabIos').onclick = () => {
-    document.getElementById('tabIos').classList.add('active');
-    document.getElementById('tabAndroid').classList.remove('active');
-    document.getElementById('instIos').style.display = 'block';
-    document.getElementById('instAndroid').style.display = 'none';
-  };
+  const quickExtBtn = document.getElementById('quickExtBtn');
+  if (quickExtBtn) quickExtBtn.onclick = () => showInstallModal('ext');
+  const quickAndroidBtn = document.getElementById('quickAndroidBtn');
+  if (quickAndroidBtn) quickAndroidBtn.onclick = () => showInstallModal('android');
+  const quickIosBtn = document.getElementById('quickIosBtn');
+  if (quickIosBtn) quickIosBtn.onclick = () => showInstallModal('ios');
+  const quickPcBtn = document.getElementById('quickPcBtn');
+  if (quickPcBtn) quickPcBtn.onclick = () => showInstallModal('pc');
 
   // ── Navigation Tabs ──
   const navDl = document.getElementById('navDl');

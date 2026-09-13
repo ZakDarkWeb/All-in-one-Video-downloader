@@ -213,7 +213,6 @@ function setupUI() {
   // Web App & Mobile App buttons
   if ($("openMobileAppBtn")) $("openMobileAppBtn").onclick = showMobileAppQr;
   if ($("openWebAppBtn")) $("openWebAppBtn").onclick = () => chrome.tabs.create({ url: "http://127.0.0.1:8000" });
-  if ($("openWebAppBtn2")) $("openWebAppBtn2").onclick = () => chrome.tabs.create({ url: "http://127.0.0.1:8000" });
 
   // Save HD Thumbnail
   if ($("saveThumbBtn")) {
