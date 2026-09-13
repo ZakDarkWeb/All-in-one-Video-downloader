@@ -614,18 +614,19 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       </div>
 
       <div class="m-input-wrap">
-        <input type="url" class="m-input" id="mUrlInput" placeholder="Paste YouTube, Reels, TikTok link…" />
+        <input type="url" class="m-input" id="mUrlInput" placeholder="Paste TikTok, Snapchat, YouTube, X link…" />
         <button class="m-btn-paste" id="mPasteBtn">📋 Paste</button>
       </div>
 
       <!-- Platform Pills -->
       <div class="m-platforms">
         <div class="m-pill">🔴 YouTube</div>
-        <div class="m-pill">🟣 Instagram</div>
         <div class="m-pill">🎵 TikTok</div>
-        <div class="m-pill">🔵 Facebook</div>
-        <div class="m-pill">📌 Pinterest</div>
+        <div class="m-pill">🟡 Snapchat</div>
         <div class="m-pill">⚫ Twitter/X</div>
+        <div class="m-pill">📌 Pinterest</div>
+        <div class="m-pill">🟣 Instagram</div>
+        <div class="m-pill">🔵 Facebook</div>
       </div>
 
       <!-- Format Selection -->
@@ -801,7 +802,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   // ── PWA Installation Support ──
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
 
@@ -920,6 +921,17 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     };
   }
 
+  // Auto cache purge when app version updates
+  const APP_VERSION = 'v4.0_snapchat';
+  try {
+    if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
+      localStorage.setItem('zdown_app_ver', APP_VERSION);
+      if ('caches' in window) {
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+      }
+    }
+  } catch {}
+
   checkBackendStatus();
 
   async function checkBackendStatus() {
@@ -979,7 +991,48 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       throw new Error("TikTok server respond nahi kar raha. Kuch second baad dobara koshish karein.");
     }
 
-    // 2. Twitter / X
+    // 2. Snapchat (Spotlight & Stories)
+    if (/snapchat\.com/i.test(url)) {
+      document.getElementById('mProgStatus').textContent = "⚡ Extracting Snapchat Video…";
+      document.getElementById('mProgPct').textContent = "50%";
+      document.getElementById('mProgFill').style.width = "50%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Decoding CDN…";
+
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 12000);
+        const res = await fetch(`https://r.jina.ai/${url}`, {
+          signal: ctrl.signal,
+          headers: { 'Accept': 'text/plain' }
+        });
+        clearTimeout(timer);
+
+        if (res.ok) {
+          const text = await res.text();
+          const titleMatch = text.match(/^Title:\s*(.+)$/m);
+          const title = (titleMatch && titleMatch[1]) ? titleMatch[1].trim() : "Snapchat Spotlight Video";
+
+          // Find CDN direct video link (sc-cdn.net or bolt-gcdn)
+          const videoMatch = text.match(/\[Video[^\]]*\]\((https:\/\/[^)]*(?:sc-cdn\.net|bolt-gcdn)[^)]+)\)/i) ||
+                             text.match(/(https:\/\/[^\s\)\"\'\<\>]+(?:sc-cdn\.net|bolt-gcdn)[^\s\)\"\'\<\>]+)/i);
+
+          if (videoMatch && videoMatch[1]) {
+            const directUrl = videoMatch[1].replace(/&amp;/g, '&');
+            return {
+              ok: true,
+              title: title,
+              downloadUrl: directUrl,
+              filename: `${(title || 'Snapchat').replace(/[^\w\s-]/g, '').slice(0, 40) || 'Snapchat'}_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("Snapchat direct extraction error:", err);
+      }
+      throw new Error("Snapchat video extract nahi ho saka. Link check karein.");
+    }
+
+    // 3. Twitter / X
     if (/twitter\.com|x\.com/i.test(url)) {
       document.getElementById('mProgStatus').textContent = "⚡ Fetching Twitter/X Video…";
       document.getElementById('mProgPct').textContent = "50%";
@@ -999,7 +1052,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       } catch {}
     }
 
-    // 3. YouTube (Invidious Public Stream Cluster)
+    // 4. YouTube (Invidious Public Stream Cluster)
     const ytMatch = url.match(/(?:youtu\.be\/|watch\?v=|\/shorts\/)([a-zA-Z0-9_-]{11})/);
     if (ytMatch && ytMatch[1]) {
       document.getElementById('mProgStatus').textContent = "⚡ Fetching YouTube Stream…";
@@ -1036,14 +1089,32 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       }
     }
 
-    // 4. Pinterest
+    // 5. Pinterest
     if (/pinterest\.com|pin\.it/i.test(url)) {
       if (url.includes('.mp4') || url.includes('v1.pinimg.com')) {
         return { ok: true, title: "Pinterest Video", downloadUrl: url, filename: `Pinterest_${Date.now()}.mp4` };
       }
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
+        const res = await fetch(`https://r.jina.ai/${url}`, { signal: ctrl.signal });
+        clearTimeout(timer);
+        if (res.ok) {
+          const text = await res.text();
+          const pinMatch = text.match(/(https:\/\/[^\s\)\"\'\<\>]+v1\.pinimg\.com\/videos\/[^\s\)\"\'\<\>]+)/i);
+          if (pinMatch && pinMatch[1]) {
+            return {
+              ok: true,
+              title: "Pinterest Video",
+              downloadUrl: pinMatch[1].replace(/&amp;/g, '&'),
+              filename: `Pinterest_${Date.now()}.mp4`
+            };
+          }
+        }
+      } catch {}
     }
 
-    // 5. Direct MP4 / Media Streams
+    // 6. Direct MP4 / Media Streams
     if (/\.(mp4|m4v|webm|mov|mp3|m4a)($|\?)/i.test(url)) {
       const ext = isAudio ? 'mp3' : 'mp4';
       return {
@@ -1052,6 +1123,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         downloadUrl: url,
         filename: `Video_${Date.now()}.${ext}`
       };
+    }
+
+    // 7. Instagram / Facebook Notice in Standalone Mode
+    if (/instagram\.com/i.test(url) || /facebook\.com|fb\.watch/i.test(url)) {
+      throw new Error("Instagram aur Facebook ke liye PC Turbo Engine zaroori hai (Meta bot security ki wajah se). TikTok, Snapchat, Twitter, YouTube aur Direct MP4 links mobile pe direct chaltay hain!");
     }
 
     throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
@@ -1076,6 +1152,18 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     document.getElementById('mPlayPhoneBtn').onclick = () => {
       openMobilePlayer(result.downloadUrl, result.title);
     };
+
+    // Save to local storage library for offline view
+    try {
+      const history = JSON.parse(localStorage.getItem('zdown_history') || '[]');
+      history.unshift({
+        name: result.title || result.filename || "Downloaded Video",
+        stream_url: result.downloadUrl,
+        size: "Direct HD",
+        date: new Date().toLocaleDateString()
+      });
+      localStorage.setItem('zdown_history', JSON.stringify(history.slice(0, 30)));
+    } catch {}
 
     // Auto trigger mobile browser save
     const a = document.createElement('a');
@@ -1216,47 +1304,57 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   // ── Library / History ──
   async function loadLibrary() {
     const list = document.getElementById('mLibList');
-    list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim);">Loading videos from PC…</div>';
+    list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim);">Videos load ho rahi hain…</div>';
 
-    try {
-      const res = await fetch('/api/history');
-      const data = await res.json();
-      const files = data.files || [];
-
-      if (files.length === 0) {
-        list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim);">Abhi koi video download nahi hui.</div>';
+    if (isLocalBackend && backendAvailable) {
+      try {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        const files = data.files || [];
+        renderLibItems(list, files);
         return;
-      }
-
-      list.innerHTML = '';
-      files.forEach(f => {
-        const item = document.createElement('div');
-        item.className = 'm-lib-item';
-        const isAudio = f.name.match(/\.(mp3|m4a|aac|wav)$/i);
-        item.innerHTML = `
-          <div class="m-lib-left">
-            <div class="m-lib-icon">${isAudio ? '🎵' : '🎬'}</div>
-            <div class="m-lib-info">
-              <div class="m-lib-name">${f.name}</div>
-              <div class="m-lib-size">${f.size || 'Saved on PC'}</div>
-            </div>
-          </div>
-          <div class="m-lib-acts">
-            <a class="m-lib-btn" href="${f.stream_url}" download title="Download to Phone">⬇️</a>
-            <button class="m-lib-btn btn-play" title="Play">▶</button>
-          </div>
-        `;
-
-        item.querySelector('.btn-play').onclick = () => {
-          openMobilePlayer(f.stream_url, f.name);
-        };
-
-        list.appendChild(item);
-      });
-
-    } catch {
-      list.innerHTML = '<div style="text-align:center; padding:20px; color:#ef4444;">PC offline ya unreachable hai.</div>';
+      } catch {}
     }
+    renderLocalLib(list);
+  }
+
+  function renderLocalLib(list) {
+    try {
+      const files = JSON.parse(localStorage.getItem('zdown_history') || '[]');
+      renderLibItems(list, files);
+    } catch {
+      list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim);">Abhi koi video download nahi hui.</div>';
+    }
+  }
+
+  function renderLibItems(list, files) {
+    if (!files || files.length === 0) {
+      list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim);">Abhi koi video download nahi hui.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    files.forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'm-lib-item';
+      const isAudio = (f.name || '').match(/\.(mp3|m4a|aac|wav)$/i);
+      item.innerHTML = `
+        <div class="m-lib-left">
+          <div class="m-lib-icon">${isAudio ? '🎵' : '🎬'}</div>
+          <div class="m-lib-info">
+            <div class="m-lib-name">${f.name || 'Video'}</div>
+            <div class="m-lib-size">${f.size || f.date || 'Saved'}</div>
+          </div>
+        </div>
+        <div class="m-lib-acts">
+          <a class="m-lib-btn" href="${f.stream_url}" download="${f.name || 'video.mp4'}" target="_blank" title="Download">⬇️</a>
+          <button class="m-lib-btn btn-play" title="Play">▶</button>
+        </div>
+      `;
+      item.querySelector('.btn-play').onclick = () => {
+        openMobilePlayer(f.stream_url, f.name || 'Video');
+      };
+      list.appendChild(item);
+    });
   }
 
   document.getElementById('mRefreshLibBtn').onclick = loadLibrary;
@@ -1278,13 +1376,6 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     player.src = '';
     modal.classList.remove('show');
   };
-
-  // Register PWA Service Worker for Mobile Install
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    });
-  }
 </script>
 </body>
 </html>
