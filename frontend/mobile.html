@@ -894,23 +894,44 @@
   async function resolveDirectVideo(url, isAudio) {
     // 1. TikTok (No watermark HD video & MP3 audio)
     if (/tiktok\.com/i.test(url)) {
-      const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
-      const d = await res.json();
-      if (d && d.code === 0 && d.data) {
-        const directUrl = isAudio ? (d.data.music || d.data.play) : (d.data.play || d.data.wmplay);
-        return {
-          ok: true,
-          title: d.data.title || "TikTok Video",
-          downloadUrl: directUrl,
-          thumbnail: d.data.cover || "",
-          filename: `TikTok_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
-        };
+      document.getElementById('mProgStatus').textContent = "⚡ Fetching TikTok HD (No Watermark)…";
+      document.getElementById('mProgPct').textContent = "50%";
+      document.getElementById('mProgFill').style.width = "50%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
+
+      const endpoints = [
+        `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
+        `https://tikwm.com/api/?url=${encodeURIComponent(url)}`
+      ];
+
+      for (const ep of endpoints) {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 6000);
+          const res = await fetch(ep, { signal: ctrl.signal });
+          clearTimeout(timer);
+          if (!res.ok) continue;
+          const d = await res.json();
+          if (d && d.code === 0 && d.data) {
+            const directUrl = isAudio ? (d.data.music || d.data.play) : (d.data.play || d.data.wmplay);
+            return {
+              ok: true,
+              title: d.data.title || "TikTok Video",
+              downloadUrl: directUrl,
+              thumbnail: d.data.cover || "",
+              filename: `TikTok_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+            };
+          }
+        } catch {}
       }
-      throw new Error(d.msg || "TikTok stream nahi mil saka");
+      throw new Error("TikTok server respond nahi kar raha. Kuch second baad dobara koshish karein.");
     }
 
     // 2. Twitter / X
     if (/twitter\.com|x\.com/i.test(url)) {
+      document.getElementById('mProgStatus').textContent = "⚡ Fetching Twitter/X Video…";
+      document.getElementById('mProgPct').textContent = "50%";
+      document.getElementById('mProgFill').style.width = "50%";
       try {
         const twRes = await fetch(`https://twitsave.com/info?url=${encodeURIComponent(url)}`);
         const html = await twRes.text();
@@ -929,6 +950,9 @@
     // 3. YouTube (Invidious Public Stream Cluster)
     const ytMatch = url.match(/(?:youtu\.be\/|watch\?v=|\/shorts\/)([a-zA-Z0-9_-]{11})/);
     if (ytMatch && ytMatch[1]) {
+      document.getElementById('mProgStatus').textContent = "⚡ Fetching YouTube Stream…";
+      document.getElementById('mProgPct').textContent = "50%";
+      document.getElementById('mProgFill').style.width = "50%";
       const id = ytMatch[1];
       const instances = [
         "https://invidious.nerdvpn.de",
@@ -939,8 +963,9 @@
       for (const inst of instances) {
         try {
           const ctrl = new AbortController();
-          setTimeout(() => ctrl.abort(), 4000);
+          const timer = setTimeout(() => ctrl.abort(), 4000);
           const r = await fetch(`${inst}/api/v1/videos/${id}`, { signal: ctrl.signal });
+          clearTimeout(timer);
           if (r.ok) {
             const data = await r.json();
             const streams = data.formatStreams || [];
@@ -977,13 +1002,14 @@
       };
     }
 
-    throw new Error("Direct extraction support nahi hui. Laptop ko on kar ke check karein.");
+    throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
   }
 
   function onDownloadDoneDirect(result) {
-    document.getElementById('mProgStatus').textContent = `✅ Video Stream Ready!`;
+    document.getElementById('mProgStatus').textContent = `✅ Video Download Ready!`;
     document.getElementById('mProgPct').textContent = "100%";
     document.getElementById('mProgFill').style.width = "100%";
+    document.getElementById('mProgSpeed').textContent = "⚡ Fast Download";
     mStartDlBtn.disabled = false;
     mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
 
@@ -1010,19 +1036,24 @@
   }
 
   mStartDlBtn.onclick = async () => {
-    const url = mUrlInput.value.trim();
-    if (!url) {
+    const raw = mUrlInput.value.trim();
+    if (!raw) {
       alert("Pehle koi video link paste karein!");
       return;
     }
+
+    // Clean URL in case share text was pasted (e.g. from TikTok share)
+    const urlMatch = raw.match(/https?:\/\/[^\s]+/i);
+    const url = urlMatch ? urlMatch[0] : raw;
 
     mStartDlBtn.disabled = true;
     mStartDlBtn.innerHTML = `<span>⏳ Analyzing Video…</span>`;
     mProgCard.classList.add('show');
     mDoneBox.classList.remove('show');
     document.getElementById('mProgStatus').textContent = "🔍 Checking Engine Mode…";
-    document.getElementById('mProgPct').textContent = "10%";
-    document.getElementById('mProgFill').style.width = "10%";
+    document.getElementById('mProgPct').textContent = "15%";
+    document.getElementById('mProgFill').style.width = "15%";
+    document.getElementById('mProgSpeed').textContent = "⚡ Initializing…";
 
     const isAudio = selectedFormat === "audio";
     const quality = isAudio ? "best" : (selectedFormat === "720" ? "720" : "best");
