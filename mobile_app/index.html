@@ -74,19 +74,29 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(7, 10, 19, 0.88);
+    background: rgba(7, 10, 19, 0.92);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
-    padding: 12px 16px;
+    width: 100%;
+    padding: 0 16px;
+  }
+
+  .m-header-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+    min-height: 62px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
   }
 
   .m-brand {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
   }
 
   .m-logo {
@@ -98,16 +108,62 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     align-items: center;
     justify-content: center;
     box-shadow: 0 0 16px rgba(0, 242, 254, 0.4);
+    flex-shrink: 0;
   }
 
   .m-logo svg { width: 20px; height: 20px; fill: #070a13; }
 
   .m-title-wrap { display: flex; flex-direction: column; }
-  .m-title { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
-  .m-status { font-size: 10px; color: var(--emerald); font-weight: 700; display: flex; align-items: center; gap: 4px; }
-  .m-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 8px var(--emerald); animation: pulse 2s infinite; }
+  .m-title { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; white-space: nowrap; }
+  .m-status { font-size: 10px; color: var(--emerald); font-weight: 700; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .m-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 8px var(--emerald); animation: pulse 2s infinite; flex-shrink: 0; }
 
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Desktop Top Navigation Tabs */
+  .m-desktop-tabs {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 4px 6px;
+    border-radius: 24px;
+  }
+
+  .m-desk-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .m-desk-tab:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .m-desk-tab.active {
+    color: #070a13;
+    background: var(--cyber-grad);
+    font-weight: 800;
+    box-shadow: 0 0 14px rgba(0, 242, 254, 0.35);
+  }
+
+  .m-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+  }
 
   .m-btn-install {
     background: rgba(0, 242, 254, 0.12);
@@ -115,22 +171,338 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     color: var(--cyan);
     font-size: 11px;
     font-weight: 800;
-    padding: 6px 12px;
+    padding: 7px 12px;
     border-radius: 20px;
     display: flex;
     align-items: center;
     gap: 5px;
     cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+
+  .m-btn-install:hover {
+    background: rgba(0, 242, 254, 0.22);
+    box-shadow: 0 0 14px rgba(0, 242, 254, 0.4);
   }
 
   /* ── Page Layout ── */
   .m-container {
     padding: 16px 16px 140px 16px;
-    max-width: 540px;
+    max-width: 560px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    transition: max-width 0.25s ease;
+  }
+
+  @media (min-width: 768px) {
+    .m-desktop-tabs { display: flex; }
+    .m-container {
+      max-width: 920px;
+      padding: 24px 20px 80px 20px;
+    }
+  }
+
+  /* ── Mode Switcher (Single vs Bulk) ── */
+  .m-mode-switcher {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: rgba(13, 20, 38, 0.85);
+    border: 1px solid var(--border);
+    padding: 5px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .m-mode-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: all 0.2s ease;
+  }
+
+  .m-mode-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .m-mode-btn.active {
+    background: var(--cyber-grad);
+    color: #070a13;
+    font-weight: 800;
+    box-shadow: 0 2px 14px rgba(0, 242, 254, 0.35);
+  }
+
+  .m-badge-hot {
+    background: #ef4444;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  }
+
+  /* ── Bulk Downloader Styles ── */
+  .m-bulk-textarea-wrap {
+    position: relative;
+    background: rgba(7, 10, 19, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-lg);
+    padding: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .m-bulk-textarea-wrap:focus-within {
+    border-color: var(--cyan);
+    box-shadow: 0 0 18px rgba(0, 242, 254, 0.3);
+  }
+
+  .m-bulk-textarea {
+    width: 100%;
+    min-height: 125px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace, -apple-system, sans-serif;
+    font-size: 12.5px;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    padding: 6px;
+  }
+
+  .m-bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .m-btn-mini {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.18s;
+  }
+  .m-btn-mini:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(0, 242, 254, 0.4);
+  }
+
+  /* ── Bulk Queue Item Rows ── */
+  .m-bulk-queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .m-queue-item {
+    background: rgba(13, 20, 38, 0.7);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: all 0.2s ease;
+  }
+
+  .m-queue-item.resolving {
+    border-color: var(--cyan);
+    background: rgba(0, 242, 254, 0.06);
+    box-shadow: 0 0 14px rgba(0, 242, 254, 0.15);
+  }
+
+  .m-queue-item.done {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(16, 185, 129, 0.05);
+  }
+
+  .m-queue-item.error {
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.05);
+  }
+
+  .m-queue-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .m-queue-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .m-queue-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .m-queue-url {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .m-queue-sub {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .m-queue-status-pill {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+
+  .m-queue-status-pill.queued {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+  }
+
+  .m-queue-status-pill.resolving {
+    background: rgba(0, 242, 254, 0.18);
+    color: var(--cyan);
+    animation: pulse 1.4s infinite;
+  }
+
+  .m-queue-status-pill.done {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--emerald);
+  }
+
+  .m-queue-status-pill.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+
+  .m-queue-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .m-btn-save-mini {
+    background: rgba(0, 242, 254, 0.12);
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    color: var(--cyan);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+  }
+  .m-btn-save-mini:hover {
+    background: var(--cyan);
+    color: #070a13;
+  }
+
+  /* ── Lossless Video Trimmer (Cut Clip) ── */
+  .m-trimmer-wrap {
+    margin-top: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .m-trimmer-header {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    transition: background 0.18s;
+  }
+  .m-trimmer-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .m-badge-opt {
+    background: rgba(0, 242, 254, 0.12);
+    color: var(--cyan);
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 242, 254, 0.3);
+  }
+
+  .m-trimmer-body {
+    padding: 12px 14px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(7, 10, 19, 0.4);
+  }
+
+  .m-trim-input {
+    width: 100%;
+    background: rgba(7, 10, 19, 0.8);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #fff;
+    font-size: 13px;
+    font-family: monospace;
+    outline: none;
+    transition: border 0.18s;
+  }
+  .m-trim-input:focus {
+    border-color: var(--cyan);
   }
 
   /* ── Install Callout Banner ── */
@@ -625,21 +997,32 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
 <!-- Top Navigation Header -->
 <header class="m-header">
-  <div class="m-brand">
-    <div class="m-logo" style="background:transparent;box-shadow:none;padding:0;">
-      <img src="icons/icon128.png" width="36" height="36" style="display:block;border-radius:10px;box-shadow:0 0 14px rgba(0,242,254,0.45);" alt="ZDownloader">
+  <div class="m-header-inner">
+    <div class="m-brand">
+      <div class="m-logo" style="background:transparent;box-shadow:none;padding:0;">
+        <img src="icons/icon128.png" width="36" height="36" style="display:block;border-radius:10px;box-shadow:0 0 14px rgba(0,242,254,0.45);" alt="ZDownloader">
+      </div>
+      <div class="m-title-wrap">
+        <span class="m-title">ZDownloader PRO</span>
+        <span class="m-status" id="mStatusBadge" style="cursor:pointer;" title="Tap to connect Laptop Turbo Engine (Wi-Fi)"><span class="m-dot"></span> By Basit · Standalone (Laptop-Free)</span>
+      </div>
     </div>
-    <div class="m-title-wrap">
-      <span class="m-title">ZDownloader PRO</span>
-      <span class="m-status" id="mStatusBadge" style="cursor:pointer;" title="Tap to connect Laptop Turbo Engine (Wi-Fi)"><span class="m-dot"></span> By Basit · Standalone (Laptop-Free)</span>
+
+    <!-- Desktop Navigation Tabs (Visible on >= 768px screens) -->
+    <nav class="m-desktop-tabs">
+      <button class="m-desk-tab active" id="deskTabSingle" type="button">⚡ Single Link</button>
+      <button class="m-desk-tab" id="deskTabBulk" type="button">📋 Bulk Queue</button>
+      <button class="m-desk-tab" id="deskTabLib" type="button">📂 Library</button>
+      <button class="m-desk-tab" id="deskTabApps" type="button">🧩 Apps Hub</button>
+    </nav>
+
+    <div class="m-header-actions">
+      <button id="btnWifiModal" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#c084fc;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Laptop Turbo Link (Wi-Fi)">📶</button>
+      <button id="btnForceRefresh" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#00f2fe;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Refresh & Clear Cache">🔄</button>
+      <button class="m-btn-install" id="btnOpenInstallModal">
+        🧩 Get Apps
+      </button>
     </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:7px;">
-    <button id="btnWifiModal" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#c084fc;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Laptop Turbo Link (Wi-Fi)">📶</button>
-    <button id="btnForceRefresh" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#00f2fe;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Refresh & Clear Cache">🔄</button>
-    <button class="m-btn-install" id="btnOpenInstallModal">
-      🧩 Get Extension &amp; Apps
-    </button>
   </div>
 </header>
 <div id="mToast" class="m-toast"></div>
@@ -657,113 +1040,236 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   <!-- VIEW 1: DOWNLOADER -->
   <div id="viewDownload">
-    <div class="m-card">
-      <div class="m-input-label">
-        <span>Paste Video / Audio Link</span>
-        <span style="color:var(--cyan);">Direct Phone Download</span>
-      </div>
 
-      <div class="m-input-wrap">
-        <input type="url" class="m-input" id="mUrlInput" placeholder="Paste TikTok, Snapchat, YouTube, X link…" />
-        <button class="m-btn-paste" id="mPasteBtn">📋 Paste</button>
-      </div>
-
-      <!-- Platform Pills -->
-      <div class="m-platforms">
-        <div class="m-pill">🔴 YouTube</div>
-        <div class="m-pill">🎵 TikTok</div>
-        <div class="m-pill">🟡 Snapchat</div>
-        <div class="m-pill">⚫ Twitter/X</div>
-        <div class="m-pill">📌 Pinterest</div>
-        <div class="m-pill">🟣 Instagram</div>
-        <div class="m-pill">🔵 Facebook</div>
-      </div>
-
-      <!-- Ecosystem Quick Access Badges -->
-      <div style="display:flex; gap:6px; margin: 12px 0 4px; overflow-x:auto; padding-bottom:2px;">
-        <button id="quickExtBtn" type="button" style="background:rgba(0,242,254,0.12); border:1px solid rgba(0,242,254,0.35); color:#00f2fe; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
-          🧩 Chrome Extension (.ZIP)
-        </button>
-        <button id="quickAndroidBtn" type="button" style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); color:#10b981; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
-          🤖 Android App
-        </button>
-        <button id="quickIosBtn" type="button" style="background:rgba(244,114,182,0.12); border:1px solid rgba(244,114,182,0.35); color:#f472b6; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
-          🍎 iPhone
-        </button>
-        <button id="quickPcBtn" type="button" style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.35); color:#c4b5fd; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
-          💻 PC Desktop
-        </button>
-      </div>
-
-      <!-- Format Selection -->
-      <div class="m-fmt-grid">
-        <div class="m-fmt-btn active" data-fmt="best" id="fmtBest">
-          <div class="m-fmt-icon">🎬</div>
-          <div class="m-fmt-title">Best Video</div>
-          <div class="m-fmt-desc">1080p / 4K Max</div>
-        </div>
-        <div class="m-fmt-btn" data-fmt="720" id="fmt720">
-          <div class="m-fmt-icon">📺</div>
-          <div class="m-fmt-title">720p HD</div>
-          <div class="m-fmt-desc">Fast &amp; Small</div>
-        </div>
-        <div class="m-fmt-btn" data-fmt="audio" id="fmtAudio">
-          <div class="m-fmt-icon">🎵</div>
-          <div class="m-fmt-title">MP3 Audio</div>
-          <div class="m-fmt-desc">320 kbps HQ</div>
-        </div>
-      </div>
-
-      <!-- Turbo Multi-Thread Switch -->
-      <div class="m-toggle-row">
-        <div class="m-toggle-info">
-          <span class="m-toggle-title">⚡ 16x Turbo Download Engine</span>
-          <span class="m-toggle-sub">Parallel multi-connection chunking</span>
-        </div>
-        <label class="m-switch">
-          <input type="checkbox" id="mTurboToggle" checked>
-          <span class="m-slider"></span>
-        </label>
-      </div>
-
-      <button class="m-btn-dl" id="mStartDlBtn">
-        <span>⚡ Start Download</span>
+    <!-- Mode Switcher (Single Link vs Bulk Queue) -->
+    <div class="m-mode-switcher">
+      <button class="m-mode-btn active" id="modeSingleBtn" type="button">
+        <span>⚡ Single Link Downloader</span>
+      </button>
+      <button class="m-mode-btn" id="modeBulkBtn" type="button">
+        <span class="m-badge-hot">HOT</span>
+        <span>📋 Bulk &amp; Multi-Link Queue</span>
       </button>
     </div>
 
-    <!-- Live Download Progress Card -->
-    <div class="m-prog-card" id="mProgCard">
-      <div class="m-prog-header">
-        <span class="m-prog-status" id="mProgStatus">🚀 Downloading…</span>
-        <span class="m-prog-pct" id="mProgPct">0%</span>
-      </div>
-      <div class="m-track">
-        <div class="m-fill" id="mProgFill"></div>
-      </div>
-      <div class="m-meta-row">
-        <span id="mProgSpeed">⚡ High Speed</span>
-        <span id="mProgEta">ETA --</span>
-      </div>
+    <!-- SECTION A: SINGLE DOWNLOADER -->
+    <div id="singleDlSection" style="display:flex; flex-direction:column; gap:16px; margin-top:14px;">
+      <div class="m-card">
+        <div class="m-input-label">
+          <span>Paste Video / Audio Link</span>
+          <span style="color:var(--cyan);">Direct Phone Download</span>
+        </div>
 
-      <!-- Download Complete Actions -->
-      <div class="m-done-box" id="mDoneBox">
-        <div class="m-done-badge">
-          <div class="m-done-tick">✓</div>
-          <div>
-            <div class="m-done-title" id="mDoneTitle">Video Downloaded!</div>
-            <div class="m-done-sub">Ready to save or watch on phone</div>
+        <div class="m-input-wrap">
+          <input type="url" class="m-input" id="mUrlInput" placeholder="Paste TikTok, Snapchat, YouTube, X link…" />
+          <button class="m-btn-paste" id="mPasteBtn" type="button">📋 Paste</button>
+        </div>
+
+        <!-- Platform Pills -->
+        <div class="m-platforms">
+          <div class="m-pill">🔴 YouTube</div>
+          <div class="m-pill">🎵 TikTok</div>
+          <div class="m-pill">🟡 Snapchat</div>
+          <div class="m-pill">⚫ Twitter/X</div>
+          <div class="m-pill">📌 Pinterest</div>
+          <div class="m-pill">🟣 Instagram</div>
+          <div class="m-pill">🔵 Facebook</div>
+        </div>
+
+        <!-- Ecosystem Quick Access Badges -->
+        <div style="display:flex; gap:6px; margin: 12px 0 4px; overflow-x:auto; padding-bottom:2px;">
+          <button id="quickExtBtn" type="button" style="background:rgba(0,242,254,0.12); border:1px solid rgba(0,242,254,0.35); color:#00f2fe; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+            🧩 Chrome Extension (.ZIP)
+          </button>
+          <button id="quickAndroidBtn" type="button" style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); color:#10b981; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+            🤖 Android App
+          </button>
+          <button id="quickIosBtn" type="button" style="background:rgba(244,114,182,0.12); border:1px solid rgba(244,114,182,0.35); color:#f472b6; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+            🍎 iPhone
+          </button>
+          <button id="quickPcBtn" type="button" style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.35); color:#c4b5fd; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
+            💻 PC Desktop
+          </button>
+        </div>
+
+        <!-- Format Selection -->
+        <div class="m-fmt-grid">
+          <div class="m-fmt-btn active" data-fmt="best" id="fmtBest">
+            <div class="m-fmt-icon">🎬</div>
+            <div class="m-fmt-title">Best Video</div>
+            <div class="m-fmt-desc">1080p / 4K Max</div>
+          </div>
+          <div class="m-fmt-btn" data-fmt="720" id="fmt720">
+            <div class="m-fmt-icon">📺</div>
+            <div class="m-fmt-title">720p HD</div>
+            <div class="m-fmt-desc">Fast &amp; Small</div>
+          </div>
+          <div class="m-fmt-btn" data-fmt="audio" id="fmtAudio">
+            <div class="m-fmt-icon">🎵</div>
+            <div class="m-fmt-title">MP3 Audio</div>
+            <div class="m-fmt-desc">320 kbps HQ</div>
           </div>
         </div>
-        <div class="m-done-hint" id="mDoneHint" style="font-size:11.5px; color:#38bdf8; text-align:center; padding: 9px 12px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); border-radius: 10px; line-height: 1.4;">
-          📥 <strong>Notification check karein:</strong> Video aapke phone me download ho rahi hai. Dobara save ya play karne ke liye:
+
+        <!-- Lossless Video Trimmer (Cut Specific Clip) -->
+        <div class="m-trimmer-wrap">
+          <div class="m-trimmer-header" id="mTrimmerToggle">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span>✂️</span>
+              <span style="font-weight:700; font-size:12px; color:#fff;">Lossless Video Trimmer (Cut Clip)</span>
+              <span class="m-badge-opt">Optional</span>
+            </div>
+            <span id="mTrimmerArrow" style="font-size:11px; color:var(--text-muted); transition:transform 0.2s;">▼</span>
+          </div>
+          <div class="m-trimmer-body" id="mTrimmerBody" style="display:none;">
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px; line-height:1.4;">
+              Video ka specific hissa cut karke download karein (e.g. 00:15 to 01:00). Poori video ke liye khali chhor dein:
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div>
+                <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">Start Time (MM:SS)</label>
+                <input type="text" id="mTrimStart" placeholder="00:00" class="m-trim-input" />
+              </div>
+              <div>
+                <label style="font-size:10.5px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">End Time (MM:SS)</label>
+                <input type="text" id="mTrimEnd" placeholder="01:30" class="m-trim-input" />
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="m-done-actions">
-          <a class="m-btn-save-phone" id="mSavePhoneBtn" download>
-            ⬇️ Save / Download Video to Gallery
-          </a>
-          <button class="m-btn-play-phone" id="mPlayPhoneBtn">
-            🎬 Play Video Inside ZDownloader
-          </button>
+
+        <!-- Turbo Multi-Thread Switch -->
+        <div class="m-toggle-row">
+          <div class="m-toggle-info">
+            <span class="m-toggle-title">⚡ 16x Turbo Download Engine</span>
+            <span class="m-toggle-sub">Parallel multi-connection chunking</span>
+          </div>
+          <label class="m-switch">
+            <input type="checkbox" id="mTurboToggle" checked>
+            <span class="m-slider"></span>
+          </label>
+        </div>
+
+        <button class="m-btn-dl" id="mStartDlBtn" type="button">
+          <span>⚡ Start Download</span>
+        </button>
+      </div>
+
+      <!-- Live Download Progress Card -->
+      <div class="m-prog-card" id="mProgCard">
+        <div class="m-prog-header">
+          <span class="m-prog-status" id="mProgStatus">🚀 Downloading…</span>
+          <span class="m-prog-pct" id="mProgPct">0%</span>
+        </div>
+        <div class="m-track">
+          <div class="m-fill" id="mProgFill"></div>
+        </div>
+        <div class="m-meta-row">
+          <span id="mProgSpeed">⚡ High Speed</span>
+          <span id="mProgEta">ETA --</span>
+        </div>
+
+        <!-- Download Complete Actions -->
+        <div class="m-done-box" id="mDoneBox">
+          <div class="m-done-badge">
+            <div class="m-done-tick">✓</div>
+            <div>
+              <div class="m-done-title" id="mDoneTitle">Video Downloaded!</div>
+              <div class="m-done-sub">Ready to save or watch on phone</div>
+            </div>
+          </div>
+          <div class="m-done-hint" id="mDoneHint" style="font-size:11.5px; color:#38bdf8; text-align:center; padding: 9px 12px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); border-radius: 10px; line-height: 1.4;">
+            📥 <strong>Notification check karein:</strong> Video aapke device me download ho rahi hai. Dobara save ya play karne ke liye:
+          </div>
+          <div class="m-done-actions">
+            <a class="m-btn-save-phone" id="mSavePhoneBtn" download>
+              ⬇️ Save / Download Video to Gallery
+            </a>
+            <button class="m-btn-play-phone" id="mPlayPhoneBtn" type="button">
+              🎬 Play Video Inside ZDownloader
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION B: BULK & MULTI-LINK DOWNLOADER -->
+    <div id="bulkDlSection" style="display:none; flex-direction:column; gap:16px; margin-top:14px;">
+      <div class="m-card">
+        <div class="m-input-label">
+          <span>📋 Paste Multiple Video Links (One per line)</span>
+          <span id="mBulkLineCount" style="color:var(--cyan); font-weight:800;">0 links</span>
+        </div>
+
+        <div class="m-bulk-textarea-wrap">
+          <textarea id="mBulkInput" class="m-bulk-textarea" rows="6" placeholder="Paste multiple links (one per line)...&#10;https://www.youtube.com/watch?v=...&#10;https://www.tiktok.com/@user/video/...&#10;https://www.snapchat.com/spotlight/...&#10;https://x.com/..."></textarea>
+        </div>
+
+        <!-- Bulk Quick Actions -->
+        <div class="m-bulk-actions-bar">
+          <button class="m-btn-mini" id="mBulkPasteBtn" type="button">📋 Paste Clipboard</button>
+          <button class="m-btn-mini" id="mBulkSampleBtn" type="button">💡 Load 3 Sample Links</button>
+          <button class="m-btn-mini" id="mBulkClearBtn" type="button">🗑️ Clear</button>
+        </div>
+
+        <!-- Bulk Format Selection -->
+        <div class="m-fmt-label" style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-top:14px; margin-bottom:8px;">
+          Select Batch Format:
+        </div>
+        <div class="m-fmt-grid">
+          <div class="m-fmt-btn m-bulk-fmt active" data-bulkfmt="best" id="bulkFmtBest">
+            <div class="m-fmt-icon">🎬</div>
+            <div class="m-fmt-title">Best Video</div>
+            <div class="m-fmt-desc">1080p / 4K Max</div>
+          </div>
+          <div class="m-fmt-btn m-bulk-fmt" data-bulkfmt="720" id="bulkFmt720">
+            <div class="m-fmt-icon">📺</div>
+            <div class="m-fmt-title">720p HD</div>
+            <div class="m-fmt-desc">Fast &amp; Small</div>
+          </div>
+          <div class="m-fmt-btn m-bulk-fmt" data-bulkfmt="audio" id="bulkFmtAudio">
+            <div class="m-fmt-icon">🎵</div>
+            <div class="m-fmt-title">MP3 Audio</div>
+            <div class="m-fmt-desc">320 kbps HQ</div>
+          </div>
+        </div>
+
+        <button class="m-btn-dl" id="btnStartBulkDl" type="button" style="margin-top:14px;">
+          <span>🚀 Start Bulk Download Queue</span>
+        </button>
+      </div>
+
+      <!-- Bulk Progress HUD Card -->
+      <div class="m-prog-card" id="mBulkProgCard" style="display:none;">
+        <div class="m-prog-header">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="m-dot" style="background:#00f2fe; box-shadow:0 0 8px #00f2fe;"></span>
+            <span class="m-prog-status" id="mBulkProgStatus">Processing Queue…</span>
+          </div>
+          <span class="m-prog-pct" id="mBulkProgPct">0%</span>
+        </div>
+        <div class="m-track">
+          <div class="m-fill" id="mBulkProgFill" style="width:0%;"></div>
+        </div>
+        <div class="m-meta-row">
+          <span id="mBulkStatsText">0 of 0 Completed</span>
+          <span id="mBulkSpeedText">⚡ High Speed Engine</span>
+        </div>
+
+        <!-- Bulk Queue Items List -->
+        <div class="m-bulk-queue-list" id="mBulkQueueList">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Bulk Complete Done Banner -->
+        <div class="m-done-box" id="mBulkDoneBox" style="margin-top:14px; display:none;">
+          <div class="m-done-badge">
+            <div class="m-done-tick">🎉</div>
+            <div>
+              <div class="m-done-title" id="mBulkDoneTitle">All Videos Downloaded Successfully!</div>
+              <div class="m-done-sub">Check your downloads or offline library below</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1038,17 +1544,79 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   const quickPcBtn = document.getElementById('quickPcBtn');
   if (quickPcBtn) quickPcBtn.onclick = () => showInstallModal('pc');
 
-  // ── Navigation Tabs ──
+  // ── Navigation Tabs (Mobile Bottom Nav & Desktop Top Nav) ──
   const navDl = document.getElementById('navDl');
   const navLib = document.getElementById('navLib');
   const viewDownload = document.getElementById('viewDownload');
   const viewLibrary = document.getElementById('viewLibrary');
+
+  const deskTabSingle = document.getElementById('deskTabSingle');
+  const deskTabBulk = document.getElementById('deskTabBulk');
+  const deskTabLib = document.getElementById('deskTabLib');
+  const deskTabApps = document.getElementById('deskTabApps');
+
+  const modeSingleBtn = document.getElementById('modeSingleBtn');
+  const modeBulkBtn = document.getElementById('modeBulkBtn');
+  const singleDlSection = document.getElementById('singleDlSection');
+  const bulkDlSection = document.getElementById('bulkDlSection');
+
+  function updateNavState(activeTab) {
+    [deskTabSingle, deskTabBulk, deskTabLib, deskTabApps].forEach(t => { if (t) t.classList.remove('active'); });
+    if (activeTab === 'single' && deskTabSingle) deskTabSingle.classList.add('active');
+    if (activeTab === 'bulk' && deskTabBulk) deskTabBulk.classList.add('active');
+    if (activeTab === 'lib' && deskTabLib) deskTabLib.classList.add('active');
+    if (activeTab === 'apps' && deskTabApps) deskTabApps.classList.add('active');
+  }
+
+  function switchToSingleMode() {
+    if (modeSingleBtn) modeSingleBtn.classList.add('active');
+    if (modeBulkBtn) modeBulkBtn.classList.remove('active');
+    if (singleDlSection) singleDlSection.style.display = 'flex';
+    if (bulkDlSection) bulkDlSection.style.display = 'none';
+    if (viewDownload) viewDownload.style.display = 'block';
+    if (viewLibrary) viewLibrary.classList.remove('active');
+    if (navDl) navDl.classList.add('active');
+    if (navLib) navLib.classList.remove('active');
+    updateNavState('single');
+  }
+
+  function switchToBulkMode() {
+    if (modeBulkBtn) modeBulkBtn.classList.add('active');
+    if (modeSingleBtn) modeSingleBtn.classList.remove('active');
+    if (bulkDlSection) bulkDlSection.style.display = 'flex';
+    if (singleDlSection) singleDlSection.style.display = 'none';
+    if (viewDownload) viewDownload.style.display = 'block';
+    if (viewLibrary) viewLibrary.classList.remove('active');
+    if (navDl) navDl.classList.add('active');
+    if (navLib) navLib.classList.remove('active');
+    updateNavState('bulk');
+    updateBulkCount();
+  }
+
+  if (modeSingleBtn) modeSingleBtn.onclick = switchToSingleMode;
+  if (modeBulkBtn) modeBulkBtn.onclick = switchToBulkMode;
+
+  if (deskTabSingle) deskTabSingle.onclick = switchToSingleMode;
+  if (deskTabBulk) deskTabBulk.onclick = switchToBulkMode;
+  if (deskTabLib) deskTabLib.onclick = () => {
+    if (navLib) navLib.click();
+    updateNavState('lib');
+  };
+  if (deskTabApps) deskTabApps.onclick = () => {
+    showInstallModal('ext');
+    updateNavState('apps');
+  };
 
   navDl.onclick = () => {
     navDl.classList.add('active');
     navLib.classList.remove('active');
     viewDownload.style.display = 'block';
     viewLibrary.classList.remove('active');
+    if (bulkDlSection && bulkDlSection.style.display === 'flex') {
+      updateNavState('bulk');
+    } else {
+      updateNavState('single');
+    }
   };
 
   navLib.onclick = () => {
@@ -1056,17 +1624,320 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     navDl.classList.remove('active');
     viewDownload.style.display = 'none';
     viewLibrary.classList.add('active');
+    updateNavState('lib');
     loadLibrary();
   };
 
-  // ── Format Selection ──
-  document.querySelectorAll('.m-fmt-btn').forEach(btn => {
+  // ── Single Link Format Selection ──
+  document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(btn => {
     btn.onclick = () => {
-      document.querySelectorAll('.m-fmt-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedFormat = btn.dataset.fmt;
     };
   });
+
+  // ── Lossless Video Trimmer Toggle ──
+  const mTrimmerToggle = document.getElementById('mTrimmerToggle');
+  const mTrimmerBody = document.getElementById('mTrimmerBody');
+  const mTrimmerArrow = document.getElementById('mTrimmerArrow');
+  if (mTrimmerToggle && mTrimmerBody) {
+    mTrimmerToggle.onclick = () => {
+      const isVisible = mTrimmerBody.style.display === 'block';
+      mTrimmerBody.style.display = isVisible ? 'none' : 'block';
+      if (mTrimmerArrow) {
+        mTrimmerArrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+      }
+    };
+  }
+
+  // ── Bulk Downloader Logic & State ──
+  let selectedBulkFormat = 'best';
+  const mBulkInput = document.getElementById('mBulkInput');
+  const mBulkLineCount = document.getElementById('mBulkLineCount');
+  const mBulkPasteBtn = document.getElementById('mBulkPasteBtn');
+  const mBulkSampleBtn = document.getElementById('mBulkSampleBtn');
+  const mBulkClearBtn = document.getElementById('mBulkClearBtn');
+  const btnStartBulkDl = document.getElementById('btnStartBulkDl');
+
+  function updateBulkCount() {
+    if (!mBulkInput || !mBulkLineCount) return;
+    const text = mBulkInput.value;
+    const urls = (text.match(/https?:\/\/[^\s]+/gi) || []);
+    mBulkLineCount.textContent = `${urls.length} link${urls.length === 1 ? '' : 's'} detected`;
+  }
+
+  if (mBulkInput) {
+    mBulkInput.addEventListener('input', updateBulkCount);
+  }
+
+  if (mBulkPasteBtn) {
+    mBulkPasteBtn.onclick = async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          if (mBulkInput.value.trim()) {
+            mBulkInput.value += '\n' + text.trim();
+          } else {
+            mBulkInput.value = text.trim();
+          }
+          updateBulkCount();
+          showToast("📋 Clipboard content added to batch list!");
+        }
+      } catch {
+        alert("Clipboard access allow karein ya link direct paste karein.");
+      }
+    };
+  }
+
+  if (mBulkSampleBtn) {
+    mBulkSampleBtn.onclick = () => {
+      const samples = [
+        "https://www.youtube.com/shorts/3i_Jm05U03Y",
+        "https://www.tiktok.com/@tiktok/video/7106594312292453678",
+        "https://www.snapchat.com/spotlight/W7_EDlXWTBiXAEEniNoMPwAAYZGRleXV4a21vAZ9xqM61AZ9xqAK_AAAAAQ"
+      ];
+      mBulkInput.value = samples.join('\n');
+      updateBulkCount();
+      showToast("💡 3 Sample video links loaded!");
+    };
+  }
+
+  if (mBulkClearBtn) {
+    mBulkClearBtn.onclick = () => {
+      mBulkInput.value = '';
+      updateBulkCount();
+      const progCard = document.getElementById('mBulkProgCard');
+      if (progCard) progCard.style.display = 'none';
+      const queueList = document.getElementById('mBulkQueueList');
+      if (queueList) queueList.innerHTML = '';
+      showToast("🗑️ Batch list cleared");
+    };
+  }
+
+  // Bulk Format Picker Click Listeners
+  document.querySelectorAll('.m-bulk-fmt').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.m-bulk-fmt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedBulkFormat = btn.dataset.bulkfmt;
+    };
+  });
+
+  // Bulk Queue Execution Engine
+  let isBulkRunning = false;
+  async function startBulkDownload() {
+    if (isBulkRunning) {
+      showToast("⏳ Batch queue pehle se chal rahi hai...");
+      return;
+    }
+    const raw = (mBulkInput.value || '').trim();
+    const urls = (raw.match(/https?:\/\/[^\s]+/gi) || []);
+    if (urls.length === 0) {
+      alert("Pehle kam az kam 1 ya zyada video links paste karein!");
+      return;
+    }
+
+    isBulkRunning = true;
+    const btn = document.getElementById('btnStartBulkDl');
+    btn.disabled = true;
+    btn.innerHTML = `<span>⏳ Processing ${urls.length} Links…</span>`;
+
+    const progCard = document.getElementById('mBulkProgCard');
+    progCard.style.display = 'block';
+    const queueList = document.getElementById('mBulkQueueList');
+    queueList.innerHTML = '';
+    const doneBox = document.getElementById('mBulkDoneBox');
+    if (doneBox) doneBox.style.display = 'none';
+
+    const isAudio = selectedBulkFormat === 'audio';
+    const quality = isAudio ? 'best' : (selectedBulkFormat === '720' ? '720' : 'best');
+
+    // Build Queue Data
+    const queue = urls.map((u, idx) => {
+      let platform = "Media";
+      let icon = "🎬";
+      if (/youtube\.com|youtu\.be/i.test(u)) { platform = "YouTube"; icon = "🔴"; }
+      else if (/tiktok\.com/i.test(u)) { platform = "TikTok"; icon = "🎵"; }
+      else if (/snapchat\.com/i.test(u)) { platform = "Snapchat"; icon = "🟡"; }
+      else if (/twitter\.com|x\.com/i.test(u)) { platform = "Twitter/X"; icon = "⚫"; }
+      else if (/instagram\.com/i.test(u)) { platform = "Instagram"; icon = "🟣"; }
+      else if (/facebook\.com|fb\.watch/i.test(u)) { platform = "Facebook"; icon = "🔵"; }
+      else if (/pinterest\.com|pin\.it/i.test(u)) { platform = "Pinterest"; icon = "📌"; }
+
+      return {
+        id: idx,
+        url: u,
+        platform,
+        icon,
+        formatText: isAudio ? 'MP3 Audio' : (quality === '720' ? '720p HD' : 'Best Video'),
+        status: 'queued',
+        title: `${platform} Video #${idx + 1}`,
+        downloadUrl: null,
+        error: null
+      };
+    });
+
+    // Render Queue Items in UI
+    queue.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'm-queue-item';
+      el.id = `qItem_${item.id}`;
+      el.innerHTML = `
+        <div class="m-queue-left">
+          <div class="m-queue-badge">${item.icon}</div>
+          <div class="m-queue-info">
+            <div class="m-queue-url" title="${item.url}">${item.url}</div>
+            <div class="m-queue-sub">
+              <span>${item.platform}</span>
+              <span>•</span>
+              <span>${item.formatText}</span>
+            </div>
+          </div>
+        </div>
+        <div class="m-queue-actions">
+          <span class="m-queue-status-pill queued" id="qStatus_${item.id}">⏳ Queued</span>
+          <a class="m-btn-save-mini" id="qSave_${item.id}" style="display:none;" target="_blank" download>⬇️ Save</a>
+        </div>
+      `;
+      queueList.appendChild(el);
+    });
+
+    let completedCount = 0;
+    const total = queue.length;
+
+    function updateBulkProgress(statusText) {
+      const pct = Math.round((completedCount / total) * 100);
+      document.getElementById('mBulkProgPct').textContent = `${pct}%`;
+      document.getElementById('mBulkProgFill').style.width = `${pct}%`;
+      document.getElementById('mBulkStatsText').textContent = `${completedCount} of ${total} Completed`;
+      if (statusText) document.getElementById('mBulkProgStatus').textContent = statusText;
+    }
+
+    updateBulkProgress(`Starting batch queue (0/${total})…`);
+
+    // Process each item sequentially
+    for (let i = 0; i < total; i++) {
+      const item = queue[i];
+      const itemRow = document.getElementById(`qItem_${item.id}`);
+      const statusPill = document.getElementById(`qStatus_${item.id}`);
+      const saveBtn = document.getElementById(`qSave_${item.id}`);
+
+      if (itemRow) itemRow.className = 'm-queue-item resolving';
+      if (statusPill) {
+        statusPill.className = 'm-queue-status-pill resolving';
+        statusPill.textContent = '⚡ Resolving…';
+      }
+      updateBulkProgress(`Processing (${i + 1}/${total}): ${item.platform}…`);
+
+      try {
+        let result = null;
+        if ((isLocalBackend || activeBackendUrl) && backendAvailable) {
+          // PC Turbo Engine
+          const apiPrefix = activeBackendUrl || '';
+          const res = await fetch(`${apiPrefix}/api/download`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: item.url, quality, audio_only: isAudio, turbo: true })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "PC download failed");
+          // Poll until done (up to 40s)
+          const jobId = data.job_id;
+          for (let p = 0; p < 45; p++) {
+            await new Promise(r => setTimeout(r, 1000));
+            const pr = await fetch(`${apiPrefix}/api/progress/${jobId}`);
+            if (pr.ok) {
+              const pj = await pr.json();
+              if (pj.status === 'done') {
+                result = {
+                  title: pj.title || pj.filename || item.title,
+                  downloadUrl: `${apiPrefix}/api/file/${jobId}`,
+                  filename: pj.filename || `video_${jobId}.${isAudio ? 'mp3' : 'mp4'}`
+                };
+                break;
+              } else if (pj.status === 'error') {
+                throw new Error(pj.error || "Download failed");
+              }
+            }
+          }
+          if (!result) throw new Error("Timeout waiting for PC backend");
+        } else {
+          // Standalone Mode (Laptop-Free / Direct Scrapers)
+          result = await resolveDirectVideo(item.url, isAudio);
+        }
+
+        if (result && result.downloadUrl) {
+          item.status = 'done';
+          item.downloadUrl = result.downloadUrl;
+          item.title = result.title || item.title;
+
+          if (itemRow) itemRow.className = 'm-queue-item done';
+          if (statusPill) {
+            statusPill.className = 'm-queue-status-pill done';
+            statusPill.textContent = '✅ Done';
+          }
+          if (saveBtn) {
+            saveBtn.style.display = 'inline-flex';
+            saveBtn.href = result.downloadUrl;
+            saveBtn.setAttribute('download', result.filename || `video_${i + 1}.${isAudio ? 'mp3' : 'mp4'}`);
+          }
+
+          // Trigger automatic browser download
+          const a = document.createElement('a');
+          a.href = result.downloadUrl;
+          a.download = result.filename || `video_${i + 1}.${isAudio ? 'mp3' : 'mp4'}`;
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => a.remove(), 1000);
+
+          // Save to local storage history
+          try {
+            const history = JSON.parse(localStorage.getItem('zdown_history') || '[]');
+            history.unshift({
+              name: result.title || item.title,
+              stream_url: result.downloadUrl,
+              size: item.formatText,
+              date: new Date().toLocaleDateString()
+            });
+            localStorage.setItem('zdown_history', JSON.stringify(history.slice(0, 50)));
+          } catch {}
+        } else {
+          throw new Error("Could not extract download URL");
+        }
+      } catch (err) {
+        console.warn(`Bulk item ${i + 1} error:`, err);
+        item.status = 'error';
+        item.error = err.message || "Failed";
+        if (itemRow) itemRow.className = 'm-queue-item error';
+        if (statusPill) {
+          statusPill.className = 'm-queue-status-pill error';
+          statusPill.textContent = '❌ Failed';
+          statusPill.title = err.message || "Failed";
+        }
+      }
+
+      completedCount++;
+      updateBulkProgress();
+
+      // Delay between items to avoid browser popup blocker or rate limit
+      if (i < total - 1) {
+        await new Promise(r => setTimeout(r, 1200));
+      }
+    }
+
+    isBulkRunning = false;
+    btn.disabled = false;
+    btn.innerHTML = `<span>🚀 Start Bulk Download Queue</span>`;
+    document.getElementById('mBulkProgStatus').textContent = `🎉 Batch Completed! (${completedCount}/${total})`;
+    if (doneBox) doneBox.style.display = 'flex';
+    showToast(`🎉 Bulk download complete! ${completedCount} items processed.`);
+  }
+
+  if (btnStartBulkDl) {
+    btnStartBulkDl.onclick = startBulkDownload;
+  }
 
   // ── Paste Button ──
   document.getElementById('mPasteBtn').onclick = async () => {
@@ -1306,7 +2177,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v4.4_pro_ecosystem';
+  const APP_VERSION = 'v4.5_bulk_studio';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -1673,11 +2544,16 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       document.getElementById('mProgPct').textContent = "20%";
       document.getElementById('mProgFill').style.width = "20%";
       const apiPrefix = activeBackendUrl || '';
-      try {
+        const trimStart = (document.getElementById('mTrimStart')?.value || '').trim();
+        const trimEnd = (document.getElementById('mTrimEnd')?.value || '').trim();
+        const bodyPayload = { url, quality, audio_only: isAudio, turbo: turbo };
+        if (trimStart) bodyPayload.start_time = trimStart;
+        if (trimEnd) bodyPayload.end_time = trimEnd;
+
         const res = await fetch(`${apiPrefix}/api/download`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, quality, audio_only: isAudio, turbo: turbo })
+          body: JSON.stringify(bodyPayload)
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Download failed");
