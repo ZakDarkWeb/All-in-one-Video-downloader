@@ -1,5 +1,5 @@
 // ZDownloader Pro Service Worker
-const CACHE_NAME = 'zdownloader-pwa-v5.6-save-perfect';
+const CACHE_NAME = 'zdownloader-pwa-v5.7-device-save-fixed';
 const ASSETS = [
   './',
   'manifest.json',
