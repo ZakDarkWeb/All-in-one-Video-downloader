@@ -8,7 +8,7 @@
   <title>ZDownloader PRO • By Basit • Mobile App</title>
   <script>
     // Auto-purge old caches once on version update
-    const BUILD_VERSION = 'v5.9_clean_standalone';
+    const BUILD_VERSION = 'v6.3_fix_fb_webp';
     if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       localStorage.setItem('zdown_build', BUILD_VERSION);
       if ('caches' in window) {
@@ -2226,6 +2226,17 @@
 
   <div class="m-container">
 
+    <!-- Desktop Localhost Turbo Engine Callout (for Laptop Users on GitHub Pages) -->
+    <div id="laptopLocalhostBanner" style="display:none; background:linear-gradient(135deg, rgba(0,242,254,0.12), rgba(139,92,246,0.15)); border:1px solid rgba(0,242,254,0.4); border-radius:14px; padding:12px 16px; margin-bottom:14px; align-items:center; justify-content:space-between; gap:12px; backdrop-filter:blur(10px);">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:22px;">💻</span>
+        <div style="font-size:12.5px; line-height:1.4; color:#e0f2fe;">
+          <strong>Laptop par hain?</strong> 100% full-speed 1080p downloads ke liye <a href="http://localhost:8000" style="color:#00f2fe; font-weight:800; text-decoration:underline;">http://localhost:8000</a> kholein (Meta bot protection bypass ke saath)!
+        </div>
+      </div>
+      <a href="http://localhost:8000" style="padding:7px 14px; background:linear-gradient(135deg,#00f2fe,#4facfe); color:#080c18; font-weight:800; font-size:11.5px; border-radius:8px; text-decoration:none; white-space:nowrap; box-shadow:0 0 12px rgba(0,242,254,0.4);">Open Localhost ↗</a>
+    </div>
+
     <!-- Callout Install Notice -->
     <div class="m-install-callout" id="installCallout">
       <div style="display:flex; align-items:center; gap:10px;">
@@ -3216,7 +3227,7 @@
         </div>
         <div class="m-queue-actions">
           <span class="m-queue-status-pill queued" id="qStatus_${item.id}">⏳ Queued</span>
-          <a class="m-btn-save-mini" id="qSave_${item.id}" style="display:none;" target="_blank" download>⬇️ Save</a>
+          <a class="m-btn-save-mini" id="qSave_${item.id}" style="display:none;" download>⬇️ Save</a>
         </div>
       `;
         queueList.appendChild(el);
@@ -3303,13 +3314,7 @@
             }
 
             // Trigger automatic browser download
-            const a = document.createElement('a');
-            a.href = result.downloadUrl;
-            a.download = result.filename || `video_${i + 1}.${isAudio ? 'mp3' : 'mp4'}`;
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => a.remove(), 1000);
+            triggerDirectDeviceSave(result.downloadUrl, result.filename || `video_${i + 1}.${isAudio ? 'mp3' : 'mp4'}`);
 
             // Save to local storage history
             try {
@@ -3982,6 +3987,10 @@
       backendAvailable = false;
       updateStatusBadge(`⚡ By Basit · Standalone (Laptop-Free)`);
       updateWifiButton(false);
+      const hostBanner = document.getElementById('laptopLocalhostBanner');
+      if (hostBanner && !isLocalBackend && window.innerWidth >= 640) {
+        hostBanner.style.display = 'flex';
+      }
       return false;
     }
 
@@ -4366,8 +4375,8 @@
                     document.getElementById('mProgStatus').textContent = pj.text ? `⚡ ${pj.text}…` : "⚡ Processing YouTube Stream…";
 
                     if (pj.download_url) {
-                      // Reject ad redirects
-                      if (pj.download_url.includes('/pacific/') || pj.download_url.includes('melbet') || pj.download_url.includes('ey43.com')) {
+                      // Reject true ad redirects only
+                      if (pj.download_url.includes('melbet') || pj.download_url.includes('ey43.com') || pj.download_url.includes('hoofsduke.com')) {
                         break;
                       }
                       return {
@@ -4390,18 +4399,20 @@
         throw new Error("YouTube video stream fetch nahi ho saka. Video link ya privacy check karein.");
       }
 
-      // 5. Facebook (Videos & Reels)
-      if (/facebook\.com|fb\.watch/i.test(url)) {
+      // 5. Facebook (Videos, Reels & Shares)
+      if (/facebook\.com|fb\.watch|fb\.com/i.test(url)) {
         document.getElementById('mProgStatus').textContent = "⚡ Fetching Facebook Video…";
-        document.getElementById('mProgPct').textContent = "45%";
-        document.getElementById('mProgFill').style.width = "45%";
+        document.getElementById('mProgPct').textContent = "35%";
+        document.getElementById('mProgFill').style.width = "35%";
         document.getElementById('mProgSpeed').textContent = "⚡ Extracting Stream…";
 
-        // Strategy 1: Direct converter stream
+        const isBadAdUrl = (u) => !u || u.includes('/pacific/') || u.includes('melbet') || u.includes('ey43.com') || u.includes('hoofsduke.com') || u.includes('byclickdownloader.com') || u.includes('rsrc.php') || /\.(webp|jpg|jpeg|png|gif)(\?|$)/i.test(u);
+
+        // Strategy 1: loader.to stream conversion (supports reels, watch, share links)
         try {
           const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), 12000);
-          const fbFormat = isAudio ? 'mp3' : '720';
+          const timer = setTimeout(() => ctrl.abort(), 15000);
+          const fbFormat = isAudio ? 'mp3' : (selectedFormat === '720' ? '720' : '1080');
           const target = `https://loader.to/ajax/download.php?button=1&start=1&end=1&format=${fbFormat}&url=${encodeURIComponent(url)}`;
           const res = await fetch(`https://r.jina.ai/${target}`, { signal: ctrl.signal });
           clearTimeout(timer);
@@ -4410,34 +4421,30 @@
             const pMatch = text.match(/"progress_url":\s*"([^"]+)"/) || text.match(/"id":\s*"([^"]+)"/);
             let pUrl = null;
             if (pMatch) {
-              pUrl = pMatch[0].includes('progress_url') ? pMatch[1].replace(/\\\//g, '/') : `https://loader.to/ajax/progress.php?id=${pMatch[1]}`;
+              pUrl = pMatch[0].includes('progress_url') ? pMatch[1].replace(/\\\//g, '/') : `https://lto2.affadaffa.com/api/progress?id=${pMatch[1]}`;
             }
             const tMatch = text.match(/"title":\s*"([^"]+)"/);
-            const videoTitle = tMatch ? tMatch[1].trim() : "Facebook Video";
+            const videoTitle = (tMatch && tMatch[1] && !tMatch[1].startsWith('http')) ? tMatch[1].trim() : "Facebook Video";
 
             if (pUrl) {
-              for (let i = 0; i < 20; i++) {
-                await new Promise(r => setTimeout(r, 1200));
+              for (let i = 0; i < 25; i++) {
+                await new Promise(r => setTimeout(r, 1400));
                 try {
                   const pr = await fetch(pUrl);
                   if (pr.ok) {
                     const pj = await pr.json();
-                    const pct = Math.min(95, 45 + (i * 2));
-                    document.getElementById('mProgPct').textContent = `${pct}%`;
+                    const pct = Math.min(95, 35 + (i * 2.5));
+                    document.getElementById('mProgPct').textContent = `${Math.round(pct)}%`;
                     document.getElementById('mProgFill').style.width = `${pct}%`;
                     document.getElementById('mProgStatus').textContent = pj.text ? `⚡ ${pj.text}…` : "⚡ Processing Facebook Stream…";
 
-                    if (pj.download_url) {
-                      // CRITICAL: Block any ad redirects
-                      if (!pj.download_url.includes('/pacific/') && !pj.download_url.includes('melbet') && !pj.download_url.includes('ey43.com')) {
-                        return {
-                          ok: true,
-                          title: videoTitle,
-                          downloadUrl: pj.download_url,
-                          filename: `Facebook_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
-                        };
-                      }
-                      break; // Skip ad url
+                    if (pj.download_url && !isBadAdUrl(pj.download_url)) {
+                      return {
+                        ok: true,
+                        title: videoTitle,
+                        downloadUrl: pj.download_url,
+                        filename: `${(videoTitle || 'Facebook').replace(/[^\w\s-]/g, '').slice(0, 40) || 'Facebook'}_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+                      };
                     }
                   }
                 } catch {}
@@ -4445,30 +4452,33 @@
             }
           }
         } catch (err) {
-          console.warn("Facebook extraction error:", err);
+          console.warn("loader.to FB error:", err);
         }
 
-        // Strategy 2: Direct CDN stream extraction via scraper
+        // Strategy 2: Direct CDN stream extraction via scraper (strict mp4 regex, never images)
         try {
-          const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), 8000);
-          const res = await fetch(`https://r.jina.ai/${url}`, { signal: ctrl.signal });
-          clearTimeout(timer);
-          if (res.ok) {
-            const text = await res.text();
-            const directMatch = text.match(/(https:\/\/[^\s\)\"\'\<\>]+fbcdn\.net\/[^\s\)\"\'\<\>]+)/i);
-            if (directMatch && directMatch[1]) {
+          const ctrl2 = new AbortController();
+          const timer2 = setTimeout(() => ctrl2.abort(), 10000);
+          const res2 = await fetch(`https://r.jina.ai/${url}`, { signal: ctrl2.signal });
+          clearTimeout(timer2);
+          if (res2.ok) {
+            const text2 = await res2.text();
+            const videoMatch =
+              text2.match(/(https:\/\/[^\s\)\"\'<>]*fbcdn\.net\/v[bhs]?\/[^\s\)\"\'<>]+\.mp4[^\s\)\"\'<>]*)/i) ||
+              text2.match(/(https:\/\/[^\s\)\"\'<>]*fbcdn\.net\/[^\s\)\"\'<>]+\.mp4[^\s\)\"\'<>]*)/i);
+            if (videoMatch && videoMatch[1] && !isBadAdUrl(videoMatch[1])) {
+              const vUrl = videoMatch[1].replace(/&amp;/g, '&');
               return {
                 ok: true,
                 title: "Facebook Video",
-                downloadUrl: directMatch[1].replace(/&amp;/g, '&'),
-                filename: `Facebook_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+                downloadUrl: vUrl,
+                filename: `Facebook_${Date.now()}.mp4`
               };
             }
           }
         } catch {}
 
-        throw new Error("Facebook video stream extract nahi ho saki. Video link ya public privacy check karein.");
+        throw new Error("Is Facebook video ka direct link Meta protection ki wajah se extract nahi ho saka. Agar aap laptop par hain to ZDownloader (http://localhost:8000) ya Chrome Extension use karein jahan 100% download ho jayega!");
       }
 
       // 6. Pinterest
@@ -4515,32 +4525,67 @@
       throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
     }
 
-    // ── Robust Direct Device Save Engine (Native & Instant) ──
-    function triggerDirectDeviceSave(downloadUrl, filename) {
+    // ── Robust Direct Device Save Engine (100% Native - No 2nd Tab) ──
+    async function triggerDirectDeviceSave(downloadUrl, filename) {
       if (!downloadUrl) return;
-      // Strict security filter: block any ad or spam redirect links
-      if (downloadUrl.includes('savenow.to') || downloadUrl.includes('melbet') || downloadUrl.includes('loader.to')) {
-        console.warn("Spam redirect blocked:", downloadUrl);
+      // Strict guard against ad pages, tracker redirects and non-video image files
+      if (
+        downloadUrl.includes('/pacific/') ||
+        downloadUrl.includes('rsrc.php') ||
+        downloadUrl.includes('static.xx.fbcdn.net') ||
+        downloadUrl.includes('melbet') ||
+        downloadUrl.includes('ey43.com') ||
+        downloadUrl.includes('byclickdownloader.com') ||
+        downloadUrl.includes('hoofsduke.com') ||
+        /\.(webp|jpg|jpeg|png|gif|svg|ico)(\?|$)/i.test(downloadUrl)
+      ) {
+        console.warn("Invalid media URL blocked:", downloadUrl);
+        showToast("⚠️ Valid video file nahi mili. Download blocked.");
         return;
       }
       const safeName = filename || `video_${Date.now()}.mp4`;
       showToast("⬇️ Device me save ho raha hai…");
 
+      // Strategy 1: Try fetch + blob for CORS-enabled links (TikTok, same-origin, etc.)
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const resp = await fetch(downloadUrl, {
+          signal: ctrl.signal,
+          mode: 'cors',
+          cache: 'no-store'
+        });
+        clearTimeout(timer);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = safeName;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            a.remove();
+            URL.revokeObjectURL(blobUrl);
+          }, 4000);
+          showToast("✅ Video device me save ho gayi!");
+          return;
+        }
+      } catch (err) {
+        // Expected for cross-origin servers that don't send CORS headers
+      }
+
+      // Strategy 2: Direct <a> trigger in same tab (NEVER target="_blank")
       try {
         const a = document.createElement('a');
         a.href = downloadUrl;
         a.download = safeName;
-        a.target = "_blank";
-        a.rel = "noreferrer noopener";
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => a.remove(), 1200);
-        showToast("✅ Download shuru ho gaya!");
-      } catch (err) {
-        console.warn("Direct save fallback:", err);
-        try {
-          window.open(downloadUrl, "_blank", "noreferrer,noopener");
-        } catch { }
+        setTimeout(() => a.remove(), 1500);
+        showToast("✅ Video download ho rahi hai!");
+      } catch (e) {
+        console.error("Direct save error:", e);
       }
     }
 
@@ -4549,8 +4594,16 @@
         showToast("⚠️ Video stream link mil nahi saka.");
         return;
       }
-      if (result.downloadUrl.includes('/pacific/') || result.downloadUrl.includes('melbet') || result.downloadUrl.includes('ey43.com')) {
-        showToast("⚠️ Link currently unavailable. Dobara koshish karein.");
+      if (
+        result.downloadUrl.includes('/pacific/') ||
+        result.downloadUrl.includes('rsrc.php') ||
+        result.downloadUrl.includes('static.xx.fbcdn.net') ||
+        result.downloadUrl.includes('melbet') ||
+        result.downloadUrl.includes('ey43.com') ||
+        result.downloadUrl.includes('hoofsduke.com') ||
+        /\.(webp|jpg|jpeg|png|gif|svg|ico)(\?|$)/i.test(result.downloadUrl)
+      ) {
+        showToast("⚠️ Valid video stream nahi mila. Facebook video protected hai.");
         return;
       }
       document.getElementById('mProgStatus').textContent = `✅ Video Download Ready!`;
@@ -4567,10 +4620,10 @@
       const saveBtn = document.getElementById('mSavePhoneBtn');
       saveBtn.href = result.downloadUrl;
       saveBtn.setAttribute("download", result.filename || "video.mp4");
-      saveBtn.setAttribute("target", "_blank");
-      saveBtn.setAttribute("rel", "noreferrer noopener");
-      saveBtn.onclick = () => {
-        showToast("⬇️ Device me save ho raha hai…");
+      saveBtn.removeAttribute("target"); // CRITICAL: NEVER open a new tab!
+      saveBtn.onclick = (e) => {
+        e.preventDefault();
+        triggerDirectDeviceSave(result.downloadUrl, result.filename);
       };
 
       document.getElementById('mPlayPhoneBtn').onclick = () => {
@@ -4644,8 +4697,8 @@
           activeJobId = data.job_id;
           startPolling(activeJobId, apiPrefix);
         } catch (err) {
-          console.warn("PC Engine error, falling back to Standalone:", err);
-          document.getElementById('mProgStatus').textContent = "⚠️ Laptop unreachable. Switching to Standalone Engine…";
+          console.warn("PC Engine fallback:", err);
+          document.getElementById('mProgStatus').textContent = "⚡ Resolving Video Stream…";
           try {
             const res = await resolveDirectVideo(url, isAudio);
             document.getElementById('mProgPct').textContent = "95%";
@@ -4747,10 +4800,10 @@
       const saveBtn = document.getElementById('mSavePhoneBtn');
       saveBtn.href = downloadFileUrl;
       saveBtn.setAttribute("download", cleanFilename);
-      saveBtn.setAttribute("target", "_blank");
-      saveBtn.setAttribute("rel", "noreferrer noopener");
-      saveBtn.onclick = () => {
-        showToast("⬇️ Video save ho rahi hai…");
+      saveBtn.removeAttribute("target");
+      saveBtn.onclick = (e) => {
+        e.preventDefault();
+        triggerDirectDeviceSave(downloadFileUrl, cleanFilename);
       };
 
       // Play now button
@@ -4856,10 +4909,13 @@
           </div>
         </div>
         <div class="m-lib-acts">
-          <a class="m-lib-btn" href="${f.stream_url}" download="${f.name || 'video.mp4'}" target="_blank" title="Download">⬇️</a>
+          <button class="m-lib-btn btn-dl" title="Download">⬇️</button>
           <button class="m-lib-btn btn-play" title="Play">▶</button>
         </div>
       `;
+        item.querySelector('.btn-dl').onclick = () => {
+          triggerDirectDeviceSave(f.stream_url, f.name || 'video.mp4');
+        };
         item.querySelector('.btn-play').onclick = () => {
           openMobilePlayer(f.stream_url, f.name || 'Video');
         };

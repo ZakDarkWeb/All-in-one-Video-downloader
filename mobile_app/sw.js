@@ -1,5 +1,5 @@
 // ZDownloader Pro Service Worker
-const CACHE_NAME = 'zdownloader-pwa-v5.9-clean-standalone';
+const CACHE_NAME = 'zdownloader-pwa-v6.3-fix-fb-webp';
 const ASSETS = [
   './',
   'manifest.json',
