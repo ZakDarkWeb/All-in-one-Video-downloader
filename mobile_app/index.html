@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v5.0_engine_pro';
+const BUILD_VERSION = 'v5.2_media_hub';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -1205,6 +1205,241 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     margin-top: 10px;
   }
 
+  /* ── Live Video Preview Card ── */
+  .m-preview-card {
+    background: linear-gradient(135deg, rgba(14, 21, 37, 0.95) 0%, rgba(17, 24, 39, 0.9) 100%);
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    box-shadow: 0 8px 24px rgba(0, 242, 254, 0.15), 0 4px 12px rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-lg);
+    padding: 10px;
+    margin-bottom: 12px;
+    animation: popIn 0.28s ease;
+  }
+  .m-preview-body {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .m-preview-thumb-wrap {
+    position: relative;
+    width: 108px;
+    height: 66px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .m-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .m-preview-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.78);
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 800;
+    font-family: monospace;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .m-preview-platform-icon {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: rgba(0, 0, 0, 0.65);
+    border-radius: 4px;
+    font-size: 11px;
+    padding: 1px 3px;
+  }
+  .m-preview-details {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .m-preview-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .m-preview-author {
+    font-size: 11px;
+    color: var(--cyan);
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .m-preview-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .m-preview-tag {
+    font-size: 9.5px;
+    font-weight: 800;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .m-preview-size {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+
+  /* Quick Actions inside Live Preview Card */
+  .m-preview-action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .m-preview-fmts {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .m-prev-fmt-chip {
+    padding: 4px 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .m-prev-fmt-chip:hover {
+    background: rgba(0, 242, 254, 0.12);
+    color: #fff;
+  }
+  .m-prev-fmt-chip.active {
+    background: rgba(0, 242, 254, 0.2);
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+  }
+  .m-prev-quick-dl-btn {
+    padding: 6px 14px;
+    font-size: 11.5px;
+    font-weight: 800;
+    border-radius: 8px;
+    background: var(--cyber-grad);
+    color: #070a13;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 2px 12px rgba(0, 242, 254, 0.35);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  .m-prev-quick-dl-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 18px rgba(0, 242, 254, 0.5);
+  }
+  .m-prev-quick-dl-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* Dynamic Resolution Chips Container */
+  .m-prev-res-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 7px;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  }
+  .m-prev-res-chip {
+    padding: 2px 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    border-radius: 4px;
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    color: var(--cyan);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .m-prev-res-chip:hover {
+    background: rgba(0, 242, 254, 0.22);
+    border-color: var(--cyan);
+  }
+  .m-prev-res-chip.active {
+    background: var(--cyan);
+    color: #070a13;
+  }
+
+  /* Clear button inside input */
+  .m-btn-clear {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-dim);
+    border-radius: 8px;
+    width: 32px;
+    height: 34px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-right: -2px;
+  }
+  .m-btn-clear:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+  }
+
+  /* Library Filter Chips */
+  .m-lib-filters {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .m-lib-filter-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .m-lib-filter-btn.active {
+    background: rgba(0, 242, 254, 0.15);
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+
 </style>
 </head>
 <body>
@@ -1284,7 +1519,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         </div>
 
         <div class="m-input-wrap">
-          <input type="url" class="m-input" id="mUrlInput" placeholder="Paste TikTok, Snapchat, YouTube, X link…" />
+          <input type="url" class="m-input" id="mUrlInput" placeholder="Paste TikTok, Snapchat, YouTube, X link…" autocomplete="off" spellcheck="false" />
+          <button class="m-btn-clear" id="mClearBtn" type="button" title="Clear link">✕</button>
           <button class="m-btn-paste" id="mPasteBtn" type="button">📋 Paste</button>
         </div>
 
@@ -1308,6 +1544,40 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
             </div>
             <button id="btnDismissTip" type="button" style="background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:2px;" title="Dismiss">✕</button>
           </div>
+        </div>
+
+        <!-- Live Video Info & Media Preview Hub -->
+        <div class="m-preview-card" id="mVideoPreviewCard" style="display:none;">
+          <div class="m-preview-body">
+            <div class="m-preview-thumb-wrap">
+              <img id="mPrevThumb" src="icons/icon128.png" alt="Thumbnail" class="m-preview-img" onerror="this.src='icons/icon128.png';" />
+              <div class="m-preview-badge" id="mPrevDuration">HD</div>
+              <div class="m-preview-platform-icon" id="mPrevPlatformIcon">🎬</div>
+            </div>
+            <div class="m-preview-details">
+              <div class="m-preview-title" id="mPrevTitle">Ready to Download</div>
+              <div class="m-preview-author" id="mPrevAuthor">Video Link Detected</div>
+              <div class="m-preview-meta" id="mPrevMeta">
+                <span class="m-preview-tag" id="mPrevQualityTag">HD 1080p</span>
+                <span class="m-preview-size" id="mPrevSize">Instant Ready</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Format Selector & 1-Tap Download Button -->
+          <div class="m-preview-action-row">
+            <div class="m-preview-fmts">
+              <button type="button" class="m-prev-fmt-chip active" data-fmt="best" id="prevFmtBest">🎬 1080p HD</button>
+              <button type="button" class="m-prev-fmt-chip" data-fmt="720" id="prevFmt720">📺 720p</button>
+              <button type="button" class="m-prev-fmt-chip" data-fmt="audio" id="prevFmtAudio">🎵 MP3 Audio</button>
+            </div>
+            <button type="button" class="m-prev-quick-dl-btn" id="btnPrevQuickDl">
+              <span>⚡ Download Now</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Resolution Hub (when Laptop Turbo / api/info is available) -->
+          <div class="m-prev-res-container" id="mPrevResolutions" style="display:none;"></div>
         </div>
 
         <!-- Format Selection -->
@@ -1495,9 +1765,18 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   <!-- VIEW 2: LIBRARY / SAVED VIDEOS -->
   <div class="m-library-view" id="viewLibrary">
-    <div style="display:flex; align-items:center; justify-content:space-between;">
-      <h3 style="font-size:16px; font-weight:800;">📁 Videos on PC</h3>
-      <button class="m-btn-paste" id="mRefreshLibBtn" style="padding:4px 10px; font-size:11px;">🔄 Refresh</button>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <h3 style="font-size:16px; font-weight:800;">📁 Downloads &amp; History</h3>
+      <div style="display:flex; gap:6px;">
+        <button class="m-btn-paste" id="mClearLibBtn" type="button" style="padding:4px 9px; font-size:11px; background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.3); color:#ef4444;" title="Clear Local Download History">🗑️ Clear</button>
+        <button class="m-btn-paste" id="mRefreshLibBtn" type="button" style="padding:4px 9px; font-size:11px;">🔄 Refresh</button>
+      </div>
+    </div>
+    <!-- Filter Tabs: All, Videos, Audio -->
+    <div class="m-lib-filters">
+      <button class="m-lib-filter-btn active" data-libfilter="all" id="libFilterAll" type="button">All Files</button>
+      <button class="m-lib-filter-btn" data-libfilter="video" id="libFilterVideo" type="button">🎬 Videos</button>
+      <button class="m-lib-filter-btn" data-libfilter="audio" id="libFilterAudio" type="button">🎵 Audio</button>
     </div>
     <div id="mLibList" style="display:flex; flex-direction:column; gap:8px;">
       <!-- Populated via JS -->
@@ -2295,6 +2574,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       badgeWrap.style.background = `${meta.color}20`;
     }
     if (urlPreview) urlPreview.textContent = url;
+    fetchLiveVideoPreview(url);
 
     if (titleEl) {
       titleEl.innerHTML = source === 'share' ? '📲 Shared Video Detected!' : '⚡ Copied Link Detected!';
@@ -2437,11 +2717,213 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     checkClipboardForVideoLink(false);
   }, { once: true });
 
-  // ── Start Download ──
+  // ── Live Video Info & Thumbnail Preview ──
+  let lastFetchedPreviewUrl = '';
+  let previewAbortController = null;
+
+  async function fetchLiveVideoPreview(url) {
+    if (!url || typeof url !== 'string') return;
+    const cleanUrl = url.trim();
+    if (!cleanUrl.startsWith('http')) {
+      const card = document.getElementById('mVideoPreviewCard');
+      if (card) card.style.display = 'none';
+      lastFetchedPreviewUrl = '';
+      return;
+    }
+    if (cleanUrl === lastFetchedPreviewUrl) return;
+
+    const card = document.getElementById('mVideoPreviewCard');
+    const thumbEl = document.getElementById('mPrevThumb');
+    const titleEl = document.getElementById('mPrevTitle');
+    const authorEl = document.getElementById('mPrevAuthor');
+    const durEl = document.getElementById('mPrevDuration');
+    const platformIconEl = document.getElementById('mPrevPlatformIcon');
+    const qualityTagEl = document.getElementById('mPrevQualityTag');
+    const sizeEl = document.getElementById('mPrevSize');
+
+    if (!card) return;
+
+    if (previewAbortController) {
+      try { previewAbortController.abort(); } catch {}
+    }
+    previewAbortController = new AbortController();
+
+    const platform = detectPlatform(cleanUrl);
+    if (platformIconEl) platformIconEl.textContent = platform.icon || '🎬';
+
+    // 1. YouTube instant oEmbed / Thumbnail
+    const ytMatch = cleanUrl.match(/(?:youtu\.be\/|watch\?v=|\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      const vid = ytMatch[1];
+      lastFetchedPreviewUrl = cleanUrl;
+      card.style.display = 'block';
+      if (thumbEl) thumbEl.src = `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`;
+      if (titleEl) titleEl.textContent = "Loading YouTube Video Info…";
+      if (authorEl) authorEl.textContent = "YouTube";
+      if (durEl) durEl.textContent = "HD";
+      if (qualityTagEl) qualityTagEl.textContent = "1080p / 4K";
+      if (sizeEl) sizeEl.textContent = "⚡ Fast Stream";
+
+      try {
+        const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(cleanUrl)}&format=json`, { signal: previewAbortController.signal });
+        if (res.ok) {
+          const data = await res.json();
+          if (titleEl) titleEl.textContent = data.title || "YouTube Video";
+          if (authorEl) authorEl.textContent = data.author_name ? `🔴 ${data.author_name}` : "YouTube";
+        }
+      } catch {}
+      return;
+    }
+
+    // 2. TikTok instant preview
+    if (/tiktok\.com/i.test(cleanUrl)) {
+      lastFetchedPreviewUrl = cleanUrl;
+      card.style.display = 'block';
+      if (titleEl) titleEl.textContent = "Analyzing TikTok Video…";
+      if (authorEl) authorEl.textContent = "🎵 TikTok";
+      if (durEl) durEl.textContent = "No Watermark";
+      if (qualityTagEl) qualityTagEl.textContent = "HD 1080p";
+
+      try {
+        const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(cleanUrl)}`, { signal: previewAbortController.signal });
+        if (res.ok) {
+          const d = await res.json();
+          if (d && d.data) {
+            if (thumbEl) thumbEl.src = d.data.cover || "";
+            if (titleEl) titleEl.textContent = d.data.title || "TikTok Video";
+            if (authorEl) authorEl.textContent = d.data.author?.nickname ? `🎵 @${d.data.author.unique_id || d.data.author.nickname}` : "TikTok";
+            if (durEl) durEl.textContent = d.data.duration ? `${Math.floor(d.data.duration/60)}:${String(d.data.duration%60).padStart(2,'0')}` : "HD";
+          }
+        }
+      } catch {}
+      return;
+    }
+
+    // 3. Laptop Backend /api/info (When Laptop Turbo is online)
+    if ((isLocalBackend || activeBackendUrl) && backendAvailable) {
+      const apiPrefix = activeBackendUrl || '';
+      lastFetchedPreviewUrl = cleanUrl;
+      card.style.display = 'block';
+      if (titleEl) titleEl.textContent = "🔍 Fetching stream info…";
+      if (authorEl) authorEl.textContent = platform.name;
+
+      try {
+        const res = await fetch(`${apiPrefix}/api/info`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: cleanUrl }),
+          signal: previewAbortController.signal
+        });
+        if (res.ok) {
+          const info = await res.json();
+          if (thumbEl && info.thumbnail) thumbEl.src = info.thumbnail;
+          if (titleEl) titleEl.textContent = info.title || "Video";
+          if (authorEl) authorEl.textContent = info.uploader ? `${platform.icon} ${info.uploader}` : platform.name;
+          if (durEl && info.duration) {
+            const m = Math.floor(info.duration / 60);
+            const s = String(info.duration % 60).padStart(2, '0');
+            durEl.textContent = `${m}:${s}`;
+          }
+          if (qualityTagEl && info.qualities && info.qualities.length > 0) {
+            const bestQ = info.qualities[0].label || "1080p";
+            qualityTagEl.textContent = `${bestQ} Max`;
+            // Populate dynamic resolution chips
+            const resContainer = document.getElementById('mPrevResolutions');
+            if (resContainer) {
+              resContainer.innerHTML = '';
+              resContainer.style.display = 'flex';
+              info.qualities.slice(0, 6).forEach((q, idx) => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = `m-prev-res-chip ${idx === 0 ? 'active' : ''}`;
+                chip.textContent = q.label || `${q.resolution}p`;
+                chip.onclick = () => {
+                  resContainer.querySelectorAll('.m-prev-res-chip').forEach(c => c.classList.remove('active'));
+                  chip.classList.add('active');
+                  selectedFormat = q.format_id || q.resolution;
+                  showToast(`Selected: ${q.label || q.resolution}`);
+                };
+                resContainer.appendChild(chip);
+              });
+            }
+          }
+          return;
+        }
+      } catch {}
+    }
+
+    // Generic platform preview fallback
+    lastFetchedPreviewUrl = cleanUrl;
+    card.style.display = 'block';
+    if (thumbEl) thumbEl.src = "icons/icon128.png";
+    if (titleEl) titleEl.textContent = `${platform.name} Video`;
+    if (authorEl) authorEl.textContent = platform.name;
+    if (durEl) durEl.textContent = "HD";
+    if (qualityTagEl) qualityTagEl.textContent = "Direct Stream";
+  }
+
+  // ── Start Download & Input Controls ──
   const mStartDlBtn = document.getElementById('mStartDlBtn');
   const mUrlInput = document.getElementById('mUrlInput');
+  const mClearBtn = document.getElementById('mClearBtn');
   const mProgCard = document.getElementById('mProgCard');
   const mDoneBox = document.getElementById('mDoneBox');
+
+  // Input event wiring (Live Preview, Clear button, Auto-detect)
+  if (mUrlInput) {
+    const handleUrlInputEvent = () => {
+      const val = mUrlInput.value.trim();
+      if (mClearBtn) mClearBtn.style.display = val ? 'flex' : 'none';
+      if (val.length > 8) {
+        checkForPlaylist(val);
+        fetchLiveVideoPreview(val);
+      } else {
+        const card = document.getElementById('mVideoPreviewCard');
+        if (card) card.style.display = 'none';
+        lastFetchedPreviewUrl = '';
+      }
+    };
+
+    mUrlInput.addEventListener('input', handleUrlInputEvent);
+    mUrlInput.addEventListener('change', handleUrlInputEvent);
+    mUrlInput.addEventListener('paste', () => setTimeout(handleUrlInputEvent, 60));
+  }
+
+  if (mClearBtn) {
+    mClearBtn.addEventListener('click', () => {
+      if (mUrlInput) {
+        mUrlInput.value = '';
+        mUrlInput.focus();
+      }
+      mClearBtn.style.display = 'none';
+      const card = document.getElementById('mVideoPreviewCard');
+      if (card) card.style.display = 'none';
+      lastFetchedPreviewUrl = '';
+    });
+  }
+
+  // Quick format chips inside Live Preview Hub
+  document.querySelectorAll('.m-prev-fmt-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.m-prev-fmt-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const fmt = btn.dataset.fmt;
+      selectedFormat = fmt;
+      // Sync main format buttons
+      document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.fmt === fmt);
+      });
+      syncClipSheetFormat(fmt);
+    });
+  });
+
+  // Quick 1-Tap Download button inside Live Preview Hub
+  const btnPrevQuickDl = document.getElementById('btnPrevQuickDl');
+  if (btnPrevQuickDl) {
+    btnPrevQuickDl.addEventListener('click', () => {
+      if (mStartDlBtn) mStartDlBtn.click();
+    });
+  }
 
   // ── Toast Notification Helper ──
   function showToast(msg, duration = 3000) {
@@ -2469,8 +2951,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         extracted = extracted.replace(/[),.;!?]+$/, '');
 
         if (mUrlInput) {
-    mUrlInput.addEventListener('change', () => checkForPlaylist(mUrlInput.value.trim()));
           mUrlInput.value = extracted;
+          fetchLiveVideoPreview(extracted);
           if (navDl && typeof navDl.click === 'function') navDl.click();
           mUrlInput.style.borderColor = "var(--cyan)";
           mUrlInput.style.boxShadow = "0 0 20px rgba(0, 242, 254, 0.4)";
@@ -2747,7 +3229,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v5.0_engine_pro';
+  const APP_VERSION = 'v5.2_media_hub';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -3250,20 +3732,59 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           ...f,
           stream_url: f.stream_url && f.stream_url.startsWith('http') ? f.stream_url : `${apiPrefix}${f.stream_url}`
         }));
-        renderLibItems(list, processed);
+        currentLibFiles = processed;
+        applyLibFilter(list);
         return;
       } catch {}
     }
     renderLocalLib(list);
   }
 
+  let currentLibFiles = [];
+  let currentLibFilter = 'all';
+
   function renderLocalLib(list) {
     try {
-      const files = JSON.parse(localStorage.getItem('zdown_history') || '[]');
-      renderLibItems(list, files);
+      currentLibFiles = JSON.parse(localStorage.getItem('zdown_history') || '[]');
+      applyLibFilter(list);
     } catch {
       list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim);">Abhi koi video download nahi hui.</div>';
     }
+  }
+
+  function applyLibFilter(list) {
+    const targetList = list || document.getElementById('mLibList');
+    if (!targetList) return;
+    let filtered = currentLibFiles;
+    if (currentLibFilter === 'video') {
+      filtered = currentLibFiles.filter(f => !(f.name || '').match(/\.(mp3|m4a|aac|wav)$/i));
+    } else if (currentLibFilter === 'audio') {
+      filtered = currentLibFiles.filter(f => (f.name || '').match(/\.(mp3|m4a|aac|wav)$/i));
+    }
+    renderLibItems(targetList, filtered);
+  }
+
+  // Filter tab clicks
+  document.querySelectorAll('.m-lib-filter-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.m-lib-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLibFilter = btn.dataset.libfilter || 'all';
+      applyLibFilter();
+    };
+  });
+
+  // Clear History Button
+  const mClearLibBtn = document.getElementById('mClearLibBtn');
+  if (mClearLibBtn) {
+    mClearLibBtn.onclick = () => {
+      if (confirm("Kya aap saari download history clear karna chahte hain?")) {
+        localStorage.removeItem('zdown_history');
+        currentLibFiles = [];
+        applyLibFilter();
+        showToast("🗑️ Download history clear ho gayi");
+      }
+    };
   }
 
   function renderLibItems(list, files) {
