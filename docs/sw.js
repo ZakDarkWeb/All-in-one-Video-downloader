@@ -1,5 +1,5 @@
 // ZDownloader Pro Service Worker
-const CACHE_NAME = 'zdownloader-pwa-v5.3-ui-flagship';
+const CACHE_NAME = 'zdownloader-pwa-v5.4-desktop-clean';
 const ASSETS = [
   './',
   'manifest.json',

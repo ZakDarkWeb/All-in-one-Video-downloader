@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v5.3_ui_flagship';
+const BUILD_VERSION = 'v5.4_desktop_fixed';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -200,6 +200,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   @media (min-width: 768px) {
     .m-desktop-tabs { display: flex; }
     .m-bottom-nav { display: none !important; }
+    .m-clip-sheet { display: none !important; }
     body { padding-bottom: 24px !important; }
     .m-container {
       max-width: 820px;
@@ -1142,9 +1143,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   .m-clip-sheet-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(4, 7, 15, 0.78);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(4, 7, 15, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     animation: fadeInClipSheet 0.22s ease;
   }
   .m-clip-sheet-content {
@@ -2806,6 +2807,20 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   function openClipSheet(url, source = 'clipboard') {
+    // Desktop / Laptop Safeguard: Never open mobile bottom sheet on desktop screens!
+    if (window.innerWidth >= 768) {
+      if (mUrlInput) {
+        mUrlInput.value = url;
+        const cardWrap = mUrlInput.closest('.m-card');
+        if (cardWrap) cardWrap.classList.add('has-link');
+        if (mClearBtn) mClearBtn.style.display = 'flex';
+        const plat = detectPlatform(url);
+        updatePlatformPills(plat.id);
+        fetchLiveVideoPreview(url);
+        mUrlInput.focus();
+      }
+      return;
+    }
     const meta = detectPlatform(url);
     const sheet = document.getElementById('mClipSheet');
     const badgeIcon = document.getElementById('mClipPlatformIcon');
@@ -2868,14 +2883,22 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         return;
       }
 
-      // If user clicked Paste button, always open prompt
+      // If user clicked Paste button, paste directly into box and show Live Preview Hub!
       if (isUserTriggered) {
         mUrlInput.value = detectedUrl;
-        openClipSheet(detectedUrl, 'clipboard');
+        if (mClearBtn) mClearBtn.style.display = 'flex';
+        const cardWrap = mUrlInput.closest('.m-card');
+        if (cardWrap) cardWrap.classList.add('has-link');
+        const plat = detectPlatform(detectedUrl);
+        updatePlatformPills(plat.id);
+        fetchLiveVideoPreview(detectedUrl);
+        showToast(`📋 ${plat.name} paste ho gaya!`);
+        mUrlInput.focus();
         return;
       }
 
-      // Passive check: avoid prompting if already dismissed or downloaded
+      // Passive check: only on mobile screens when fresh link is copied
+      if (window.innerWidth >= 768) return;
       if (detectedUrl === clipSheetDismissedUrl || detectedUrl === lastHandledClipUrl) {
         return;
       }
@@ -3520,7 +3543,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v5.3_ui_flagship';
+  const APP_VERSION = 'v5.4_desktop_fixed';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
