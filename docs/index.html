@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v4.9_ui_clean';
+const BUILD_VERSION = 'v5.0_engine_pro';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -1708,6 +1708,20 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       💡 Tip: Laptop mein ZDownloader open karein aur top-right par <strong>📱 Connect Phone</strong> click karein taake IP mil sake.
     </div>
 
+    <!-- 1-Click yt-dlp Engine Updater -->
+    <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+      <div style="font-size:12px; font-weight:800; color:#fff; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span>⚡</span> Core Downloader Engine (yt-dlp)
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px; line-height:1.4;">
+        Agar YouTube bot blocks ya download errors aayein, to 1-click me engine ko latest release par update karein:
+      </div>
+      <button id="btnUpdateEngine" type="button" style="width:100%; background:rgba(0,242,254,0.12); border:1px solid rgba(0,242,254,0.35); color:var(--cyan); border-radius:var(--radius-md); padding:10px; font-size:12px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+        🔄 Update Downloader Engine (yt-dlp)
+      </button>
+      <div id="updateEngineMsg" style="font-size:11.5px; margin-top:8px; display:none; line-height:1.4;"></div>
+    </div>
+
     <button class="m-btn-modal-close" id="btnCloseWifiModal" style="margin-top:12px;">Band Karein</button>
   </div>
 </div>
@@ -2455,6 +2469,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         extracted = extracted.replace(/[),.;!?]+$/, '');
 
         if (mUrlInput) {
+    mUrlInput.addEventListener('change', () => checkForPlaylist(mUrlInput.value.trim()));
           mUrlInput.value = extracted;
           if (navDl && typeof navDl.click === 'function') navDl.click();
           mUrlInput.style.borderColor = "var(--cyan)";
@@ -2540,6 +2555,87 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     updateStatusBadge(`⚡ By Basit · Standalone (Laptop-Free)`);
     updateWifiButton(false);
     return false;
+  }
+
+  // ── Engine Auto-Updater Control ──
+  const btnUpdateEngine = document.getElementById('btnUpdateEngine');
+  const updateEngineMsg = document.getElementById('updateEngineMsg');
+  if (btnUpdateEngine) {
+    btnUpdateEngine.onclick = async () => {
+      const apiPrefix = activeBackendUrl || '';
+      if (!isLocalBackend && !backendAvailable) {
+        alert("Pehle laptop Turbo Engine connect karein taake engine update kiya ja sake.");
+        return;
+      }
+      btnUpdateEngine.disabled = true;
+      btnUpdateEngine.textContent = "⏳ Updating yt-dlp Engine…";
+      if (updateEngineMsg) {
+        updateEngineMsg.style.display = 'block';
+        updateEngineMsg.style.color = '#00f2fe';
+        updateEngineMsg.textContent = "Checking and downloading latest yt-dlp release...";
+      }
+      try {
+        const res = await fetch(`${apiPrefix}/api/update-engine`, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          if (updateEngineMsg) {
+            updateEngineMsg.style.color = 'var(--emerald)';
+            updateEngineMsg.textContent = `✅ ${data.message || 'Engine successfully updated to latest version!'}`;
+          }
+          showToast(`✅ Engine updated to v${data.version || 'latest'}!`);
+        } else {
+          throw new Error(data.error || "Update failed");
+        }
+      } catch (err) {
+        if (updateEngineMsg) {
+          updateEngineMsg.style.color = '#f87171';
+          updateEngineMsg.textContent = `❌ Update failed: ${err.message}`;
+        }
+      } finally {
+        btnUpdateEngine.disabled = false;
+        btnUpdateEngine.textContent = "🔄 Update Downloader Engine (yt-dlp)";
+      }
+    };
+  }
+
+  // ── YouTube Playlist Auto-Detection & Batch Enqueue ──
+  async function checkForPlaylist(url) {
+    if (!url || typeof url !== 'string') return;
+    if (/youtube\.com\/.*[?&]list=([a-zA-Z0-9_-]+)/i.test(url)) {
+      const match = url.match(/[?&]list=([a-zA-Z0-9_-]+)/i);
+      const listId = match ? match[1] : '';
+      if (!listId || listId === 'WL' || listId === 'LL') return;
+
+      if (sessionStorage.getItem('zdown_playlist_prompted') === listId) return;
+      sessionStorage.setItem('zdown_playlist_prompted', listId);
+
+      const confirmExtract = confirm("🎵 YouTube Playlist Detected!\n\nKya aap is playlist ki saari videos ko ek hi dafa Bulk Queue me load karna chahte hain?");
+      if (!confirmExtract) return;
+
+      showToast("⏳ Extracting playlist videos…");
+      const apiPrefix = activeBackendUrl || '';
+      try {
+        const res = await fetch(`${apiPrefix}/api/playlist-extract`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.videos && data.videos.length > 0) {
+            const urls = data.videos.map(v => v.url).join('\n');
+            if (mBulkInput) mBulkInput.value = urls;
+            if (mBulkLineCount) mBulkLineCount.textContent = `${data.videos.length} links`;
+            if (deskTabBulk) deskTabBulk.click();
+            else if (modeBulkBtn) modeBulkBtn.click();
+            showToast(`🎉 ${data.videos.length} playlist videos Bulk Queue me load ho gayin!`, 4000);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("Playlist extraction fallback:", e);
+      }
+    }
   }
 
   // Wi-Fi Turbo Modal Controls
@@ -2651,7 +2747,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v4.9_ui_clean';
+  const APP_VERSION = 'v5.0_engine_pro';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);

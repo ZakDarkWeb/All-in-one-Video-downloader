@@ -1250,11 +1250,22 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
         )
 
         pref_q = audio_bitrate.replace("k", "").strip() if audio_bitrate else "320"
-        options["postprocessors"] = [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": pref_q,
-        }]
+        options["writethumbnail"] = True
+        options["postprocessors"] = [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": pref_q,
+            },
+            {
+                "key": "FFmpegMetadata",
+                "add_metadata": True,
+            },
+            {
+                "key": "EmbedThumbnail",
+                "already_have_thumbnail": False,
+            }
+        ]
 
     else:
         if quality == "best":
@@ -1628,6 +1639,86 @@ def sync_cookies(req: CookieSyncRequest):
         "filename": matched_filename,
         "message": f"Cookies successfully synced to {matched_filename}!"
     }
+
+
+# ------------------------------------------------------------
+# 1-Click Engine Auto-Updater
+# ------------------------------------------------------------
+
+@app.post("/api/update-engine")
+def update_engine():
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],
+            capture_output=True,
+            text=True,
+            timeout=90
+        )
+        import yt_dlp
+        from importlib import reload
+        reload(yt_dlp)
+        new_ver = yt_dlp.version.__version__
+        return {
+            "ok": True,
+            "version": new_ver,
+            "message": f"Engine successfully updated to yt-dlp v{new_ver}!"
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+# ------------------------------------------------------------
+# YouTube Playlist Batch Extractor
+# ------------------------------------------------------------
+
+class PlaylistRequest(BaseModel):
+    url: str
+
+@app.post("/api/playlist-extract")
+def extract_playlist(req: PlaylistRequest):
+    url = req.url.strip()
+    if not is_valid_url(url):
+        raise HTTPException(status_code=400, detail="Valid URL paste karein.")
+
+    opts = {
+        "extract_flat": "in_playlist",
+        "skip_download": True,
+        "quiet": True,
+        "no_warnings": True,
+    }
+    cookie_file = get_cookie_file(url)
+    if cookie_file:
+        opts["cookiefile"] = cookie_file
+
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            if not info:
+                raise HTTPException(status_code=400, detail="Playlist fetch nahi ho saki.")
+
+            entries = info.get("entries") or [info]
+            videos = []
+            for entry in entries:
+                if not entry:
+                    continue
+                v_url = entry.get("url") or f"https://www.youtube.com/watch?v={entry.get('id')}"
+                if not str(v_url).startswith("http"):
+                    v_url = f"https://www.youtube.com/watch?v={v_url}"
+                videos.append({
+                    "id": entry.get("id"),
+                    "title": entry.get("title") or "Video",
+                    "url": v_url,
+                    "duration": entry.get("duration")
+                })
+
+            return {
+                "ok": True,
+                "title": info.get("title") or "Playlist",
+                "count": len(videos),
+                "videos": videos
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Playlist extract error: {str(e)}")
 
 
 # ------------------------------------------------------------
