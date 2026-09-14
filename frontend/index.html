@@ -3750,8 +3750,8 @@
       card.style.display = 'block';
       card.classList.remove('loading');
       if (thumbEl) thumbEl.src = "icons/icon128.png";
-      if (titleEl) titleEl.textContent = `${platform.name} Video`;
-      if (authorEl) authorEl.textContent = platform.name;
+      if (titleEl) titleEl.textContent = platform.name;
+      if (authorEl) authorEl.textContent = platform.id === 'facebook' ? 'Facebook Reel / Video' : platform.name;
       if (durEl) durEl.textContent = "HD";
       if (qualityTagEl) qualityTagEl.textContent = "Direct Stream";
     }
