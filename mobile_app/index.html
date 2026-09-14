@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="referrer" content="no-referrer">
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v5.5_local_engine';
+const BUILD_VERSION = 'v5.6_save_perfect';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -2266,7 +2267,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     <div class="m-audio-meta-title" id="mAudioStudioTitle">Playing Audio</div>
     <div class="m-audio-meta-sub">⚡ MP3 STUDIO HQ • CREATED BY BASIT</div>
   </div>
-  <video class="m-player-video" id="mVideoPlayer" controls playsinline></video>
+  <video class="m-player-video" id="mVideoPlayer" controls playsinline referrerpolicy="no-referrer"></video>
 </div>
 
 <script>
@@ -3578,7 +3579,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v5.5_local_engine';
+  const APP_VERSION = 'v5.6_save_perfect';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -3830,6 +3831,45 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
   }
 
+  // ── Robust Direct Device Save Engine (Blob & Native Download) ──
+  async function triggerDirectDeviceSave(downloadUrl, filename) {
+    if (!downloadUrl) return;
+    const safeName = filename || `video_${Date.now()}.mp4`;
+    showToast("⬇️ Device me save ho raha hai…");
+
+    try {
+      // Try blob download: creates a same-origin URL so browser forcibly saves to gallery/downloads
+      const res = await fetch(downloadUrl, { referrerPolicy: 'no-referrer' });
+      if (!res.ok) throw new Error("Stream fetch not ok");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = safeName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+      }, 4000);
+      showToast("✅ Video device me save ho gayi!");
+      return;
+    } catch (err) {
+      console.warn("Direct blob save fallback:", err);
+    }
+
+    // Fallback: direct anchor with no-referrer
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = safeName;
+    a.rel = "noreferrer";
+    a.referrerPolicy = "no-referrer";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 2000);
+    showToast("⬇️ Download shuru ho gaya!");
+  }
+
   function onDownloadDoneDirect(result) {
     document.getElementById('mProgStatus').textContent = `✅ Video Download Ready!`;
     document.getElementById('mProgPct').textContent = "100%";
@@ -3842,9 +3882,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     mDoneBox.classList.add('show');
 
     const saveBtn = document.getElementById('mSavePhoneBtn');
-    saveBtn.href = result.downloadUrl;
-    saveBtn.setAttribute("download", result.filename || "video.mp4");
-    saveBtn.setAttribute("target", "_blank");
+    saveBtn.removeAttribute("target");
+    saveBtn.onclick = (e) => {
+      e.preventDefault();
+      triggerDirectDeviceSave(result.downloadUrl, result.filename);
+    };
 
     document.getElementById('mPlayPhoneBtn').onclick = () => {
       openMobilePlayer(result.downloadUrl, result.title);
@@ -3866,14 +3908,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       localStorage.setItem('zdown_history', JSON.stringify(history.slice(0, 30)));
     } catch {}
 
-    // Auto trigger mobile browser save
-    const a = document.createElement('a');
-    a.href = result.downloadUrl;
-    a.download = result.filename || "video.mp4";
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => a.remove(), 1000);
+    // Automatically trigger real device file save
+    triggerDirectDeviceSave(result.downloadUrl, result.filename);
   }
 
   mStartDlBtn.onclick = async () => {
@@ -4010,8 +4046,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     // Save to phone direct link
     const fileUrl = `${apiPrefix}/api/file/${job.id}`;
     const saveBtn = document.getElementById('mSavePhoneBtn');
-    saveBtn.href = fileUrl;
-    saveBtn.setAttribute("download", job.filename || `${job.id}.mp4`);
+    saveBtn.removeAttribute("target");
+    saveBtn.onclick = (e) => {
+      e.preventDefault();
+      triggerDirectDeviceSave(fileUrl, job.filename || `${job.id}.mp4`);
+    };
 
     // Play now button
     document.getElementById('mPlayPhoneBtn').onclick = () => {
@@ -4022,8 +4061,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       mDoneBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 250);
 
-    // Auto trigger mobile download save
-    saveBtn.click();
+    // Automatically trigger real device file save
+    triggerDirectDeviceSave(fileUrl, job.filename || `${job.id}.mp4`);
   }
 
   // ── Library / History ──
