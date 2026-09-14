@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v4.8_brand_icon';
+const BUILD_VERSION = 'v4.9_ui_clean';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -199,10 +199,30 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   @media (min-width: 768px) {
     .m-desktop-tabs { display: flex; }
+    .m-bottom-nav { display: none !important; }
+    body { padding-bottom: 24px !important; }
     .m-container {
-      max-width: 920px;
-      padding: 24px 20px 80px 20px;
+      max-width: 820px;
+      padding: 24px 20px 40px 20px;
     }
+    .m-mode-switcher { display: none !important; }
+  }
+
+  @media (max-width: 640px) {
+    .m-header-actions .m-btn-install { display: none !important; }
+    .m-title { font-size: 14px; }
+    .m-status { font-size: 9.5px; }
+    .m-header-inner { min-height: 56px; }
+    .m-card { padding: 14px; }
+  }
+
+  /* Universal clean scrollbars */
+  .m-platforms, .m-platforms * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  .m-platforms::-webkit-scrollbar {
+    display: none !important;
   }
 
   /* ── Mode Switcher (Single vs Bulk) ── */
@@ -1225,11 +1245,17 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   <!-- Callout Install Notice -->
   <div class="m-install-callout" id="installCallout">
-    <div>
-      <div class="m-install-text">⚡ Add to Home Screen</div>
-      <div class="m-install-sub">Install as standalone app with 1 tap</div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="font-size:18px;">📲</span>
+      <div>
+        <div class="m-install-text">Add to Home Screen</div>
+        <div class="m-install-sub">Install as standalone app with 1 tap</div>
+      </div>
     </div>
-    <button class="m-install-action" id="calloutInstallBtn">Install</button>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button class="m-install-action" id="calloutInstallBtn">Install</button>
+      <button id="btnCloseCallout" type="button" style="background:transparent; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:4px 6px;" title="Dismiss">✕</button>
+    </div>
   </div>
 
   <!-- VIEW 1: DOWNLOADER -->
@@ -1262,17 +1288,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           <button class="m-btn-paste" id="mPasteBtn" type="button">📋 Paste</button>
         </div>
 
-        <!-- Pro Tip for Mobile Clipboard / Share -->
-        <div class="m-clip-hint-card" id="mClipHintBanner">
-          <div style="display:flex; align-items:flex-start; gap:8px;">
-            <span style="font-size:15px; line-height:1;">💡</span>
-            <div style="font-size:11px; line-height:1.45; color:#94a3b8;">
-              <strong style="color:#00f2fe;">Auto-Prompt Feature:</strong> YouTube, TikTok ya Insta me link <span style="color:#fff; font-weight:700;">Copy</span> karke ZDownloader kholein — download prompt khud ba khud pop-up hoga! Ya direct <span style="color:#fff; font-weight:700;">Share ➔ ZDownloader</span> use karein.
-            </div>
-          </div>
-        </div>
-
-        <!-- Platform Pills -->
+        <!-- Platform Pills (Clean & Scrollbar-free) -->
         <div class="m-platforms">
           <div class="m-pill">🔴 YouTube</div>
           <div class="m-pill">🎵 TikTok</div>
@@ -1283,20 +1299,15 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           <div class="m-pill">🔵 Facebook</div>
         </div>
 
-        <!-- Ecosystem Quick Access Badges -->
-        <div style="display:flex; gap:6px; margin: 12px 0 4px; overflow-x:auto; padding-bottom:2px;">
-          <button id="quickExtBtn" type="button" style="background:rgba(0,242,254,0.12); border:1px solid rgba(0,242,254,0.35); color:#00f2fe; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
-            🧩 Chrome Extension (.ZIP)
-          </button>
-          <button id="quickAndroidBtn" type="button" style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.35); color:#10b981; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
-            🤖 Android App
-          </button>
-          <button id="quickIosBtn" type="button" style="background:rgba(244,114,182,0.12); border:1px solid rgba(244,114,182,0.35); color:#f472b6; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
-            🍎 iPhone
-          </button>
-          <button id="quickPcBtn" type="button" style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.35); color:#c4b5fd; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px;">
-            💻 PC Desktop
-          </button>
+        <!-- Sleek Auto-Prompt Tip Chip -->
+        <div class="m-clip-hint-card" id="mClipHintBanner" style="margin-top:2px; margin-bottom:12px; padding:7px 10px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#94a3b8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              <span style="font-size:13px;">💡</span>
+              <span><strong style="color:#00f2fe;">Tip:</strong> Link copy karke app kholein — download prompt khud pop-up hoga!</span>
+            </div>
+            <button id="btnDismissTip" type="button" style="background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:2px;" title="Dismiss">✕</button>
+          </div>
         </div>
 
         <!-- Format Selection -->
@@ -1744,6 +1755,30 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       showInstallModal('android');
     }
   };
+
+  const btnCloseCallout = document.getElementById('btnCloseCallout');
+  const installCallout = document.getElementById('installCallout');
+  if (localStorage.getItem('zdown_hide_callout') === '1' && installCallout) {
+    installCallout.style.display = 'none';
+  }
+  if (btnCloseCallout && installCallout) {
+    btnCloseCallout.onclick = () => {
+      installCallout.style.display = 'none';
+      localStorage.setItem('zdown_hide_callout', '1');
+    };
+  }
+
+  const btnDismissTip = document.getElementById('btnDismissTip');
+  const mClipHintBanner = document.getElementById('mClipHintBanner');
+  if (localStorage.getItem('zdown_hide_tip') === '1' && mClipHintBanner) {
+    mClipHintBanner.style.display = 'none';
+  }
+  if (btnDismissTip && mClipHintBanner) {
+    btnDismissTip.onclick = () => {
+      mClipHintBanner.style.display = 'none';
+      localStorage.setItem('zdown_hide_tip', '1');
+    };
+  }
   document.getElementById('btnOpenInstallModal').onclick = () => showInstallModal('ext');
   document.getElementById('navInstall').onclick = () => showInstallModal('ext');
 
@@ -2616,7 +2651,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v4.8_brand_icon';
+  const APP_VERSION = 'v4.9_ui_clean';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
