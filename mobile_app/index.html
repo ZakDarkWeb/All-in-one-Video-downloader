@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v5.4_desktop_fixed';
+const BUILD_VERSION = 'v5.5_local_engine';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -1646,6 +1646,30 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     color: var(--cyan);
   }
 
+  /* Laptop Turbo Switch Button in Header */
+  .m-btn-local-engine {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: rgba(0, 242, 254, 0.12);
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    color: var(--cyan);
+    font-size: 11.5px;
+    font-weight: 800;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .m-btn-local-engine:hover {
+    background: rgba(0, 242, 254, 0.25);
+    box-shadow: 0 0 16px rgba(0, 242, 254, 0.4);
+    color: #fff;
+  }
+  @media (min-width: 768px) {
+    .m-btn-local-engine.show-desktop { display: inline-flex; }
+  }
 </style>
 </head>
 <body>
@@ -1661,6 +1685,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         <span class="m-title">ZDownloader PRO</span>
         <span class="m-status" id="mStatusBadge" style="cursor:pointer;" title="Tap to connect Laptop Turbo Engine (Wi-Fi)"><span class="m-dot"></span> By Basit · Standalone (Laptop-Free)</span>
       </div>
+      <a href="http://localhost:8000" id="btnOpenLocalEngine" class="m-btn-local-engine" title="Open Laptop Turbo Engine for direct 16x downloads to Downloads\ZDownloader folder">
+        <span>💻 Open Laptop Engine (localhost:8000)</span>
+      </a>
     </div>
 
     <!-- Desktop Navigation Tabs (Visible on >= 768px screens) -->
@@ -3290,6 +3317,14 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   // ── Backend & Turbo Wi-Fi Connection Management ──
   const isLocalBackend = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const btnOpenLocalEngine = document.getElementById('btnOpenLocalEngine');
+  if (btnOpenLocalEngine) {
+    if (!isLocalBackend) {
+      btnOpenLocalEngine.classList.add('show-desktop');
+    } else {
+      btnOpenLocalEngine.style.display = 'none';
+    }
+  }
   let activeBackendUrl = isLocalBackend ? '' : (localStorage.getItem('zdown_pc_ip') || '');
   let backendAvailable = false;
 
@@ -3543,7 +3578,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v5.4_desktop_fixed';
+  const APP_VERSION = 'v5.5_local_engine';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -3746,48 +3781,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       throw new Error("YouTube video stream fetch nahi ho saka. Video privacy setting ya link check karein.");
     }
 
-    // 5. Facebook
+    // 5. Facebook & Instagram Meta Resolution
     if (/facebook\.com|fb\.watch/i.test(url)) {
-      document.getElementById('mProgStatus').textContent = "⚡ Fetching Facebook Video…";
-      document.getElementById('mProgPct').textContent = "45%";
-      document.getElementById('mProgFill').style.width = "45%";
-
-      try {
-        const target = `https://loader.to/ajax/download.php?button=1&start=1&end=1&format=720&url=${encodeURIComponent(url)}`;
-        const res = await fetch(`https://r.jina.ai/${target}`);
-        if (res.ok) {
-          const text = await res.text();
-          const pMatch = text.match(/"progress_url":\s*"([^"]+)"/);
-          if (pMatch) {
-            const pUrl = pMatch[1].replace(/\\\//g, '/');
-            for (let i = 0; i < 25; i++) {
-              await new Promise(r => setTimeout(r, 1200));
-              try {
-                const pr = await fetch(pUrl);
-                if (pr.ok) {
-                  const pj = await pr.json();
-                  const pct = Math.min(95, 45 + (i * 2));
-                  document.getElementById('mProgPct').textContent = `${pct}%`;
-                  document.getElementById('mProgFill').style.width = `${pct}%`;
-                  document.getElementById('mProgStatus').textContent = pj.text ? `⚡ ${pj.text}…` : "⚡ Processing Facebook Stream…";
-
-                  if (pj.download_url) {
-                    return {
-                      ok: true,
-                      title: "Facebook Video",
-                      downloadUrl: pj.download_url,
-                      filename: `Facebook_${Date.now()}.mp4`
-                    };
-                  }
-                }
-              } catch {}
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("Facebook direct extraction error:", err);
-      }
-      throw new Error("Facebook video extract nahi ho saka. Video public privacy setting check karein.");
+      throw new Error("Facebook Videos & Reels download karne ke liye ZDownloader ka Laptop Turbo Engine zaroori hai (Meta account security bot protection ki wajah se). Apne browser me http://localhost:8000 open karein — video 4 second me direct aapke Downloads\\ZDownloader folder me 1080p HD me save ho jayegi!");
     }
 
     // 6. Pinterest
