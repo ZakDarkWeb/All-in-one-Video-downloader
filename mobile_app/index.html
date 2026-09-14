@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v5.2_media_hub';
+const BUILD_VERSION = 'v5.3_ui_flagship';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -633,7 +633,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border);
     border-radius: 20px;
-    padding: 5px 10px;
+    padding: 5px 11px;
     font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
@@ -641,6 +641,87 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     display: flex;
     align-items: center;
     gap: 5px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    user-select: none;
+  }
+  .m-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .m-pill.dimmed {
+    opacity: 0.35;
+    filter: grayscale(0.5);
+    transform: scale(0.96);
+  }
+
+  /* Reactive Platform Neon Brand Glows */
+  .m-pill.active-youtube {
+    background: rgba(239, 68, 68, 0.22) !important;
+    border-color: #ef4444 !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.5) !important;
+    transform: translateY(-2px) scale(1.04) !important;
+  }
+  .m-pill.active-tiktok {
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(236, 72, 153, 0.25)) !important;
+    border-color: var(--cyan) !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(0, 242, 254, 0.5) !important;
+    transform: translateY(-2px) scale(1.04) !important;
+  }
+  .m-pill.active-snapchat {
+    background: rgba(234, 179, 8, 0.22) !important;
+    border-color: #eab308 !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(234, 179, 8, 0.5) !important;
+    transform: translateY(-2px) scale(1.04) !important;
+  }
+  .m-pill.active-instagram {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(139, 92, 246, 0.25)) !important;
+    border-color: #ec4899 !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(236, 72, 153, 0.5) !important;
+    transform: translateY(-2px) scale(1.04) !important;
+  }
+  .m-pill.active-facebook {
+    background: rgba(59, 130, 246, 0.22) !important;
+    border-color: #3b82f6 !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.5) !important;
+    transform: translateY(-2px) scale(1.04) !important;
+  }
+  .m-pill.active-twitter {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: #fff !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.4) !important;
+    transform: translateY(-2px) scale(1.04) !important;
+  }
+  .m-pill.active-pinterest {
+    background: rgba(225, 29, 72, 0.22) !important;
+    border-color: #e11d48 !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(225, 29, 72, 0.5) !important;
+    transform: translateY(-2px) scale(1.04) !important;
+  }
+
+  /* Tactile Micro-Springs for All Interactive Elements */
+  .m-btn-dl, .m-btn-paste, .m-prev-quick-dl-btn, .m-fmt-btn, .m-clip-btn-download, .m-btn-save-phone, .m-btn-play-phone {
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .m-btn-dl:hover, .m-prev-quick-dl-btn:hover {
+    transform: translateY(-2px);
+  }
+  .m-btn-dl:active, .m-btn-paste:active, .m-prev-quick-dl-btn:active, .m-clip-btn-download:active {
+    transform: scale(0.96);
+  }
+
+  /* Reactive Ambient Glow on Card when Link is Present */
+  .m-card.has-link {
+    border-color: rgba(0, 242, 254, 0.35);
+    box-shadow: 0 12px 36px rgba(0, 242, 254, 0.12), 0 4px 16px rgba(0, 0, 0, 0.45);
   }
 
   /* ── Format Selectors ── */
@@ -750,17 +831,52 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   .m-track {
     width: 100%;
-    height: 8px;
+    height: 9px;
     background: rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
   }
   .m-fill {
     height: 100%;
     width: 0%;
-    background: var(--cyber-grad);
+    background: linear-gradient(90deg, #00f2fe 0%, #4facfe 35%, #8b5cf6 70%, #00f2fe 100%);
+    background-size: 250% 100%;
     border-radius: 10px;
     transition: width 0.25s ease;
+    animation: laserStream 2s linear infinite;
+    box-shadow: 0 0 16px rgba(0, 242, 254, 0.55), 0 0 28px rgba(139, 92, 246, 0.3);
+    position: relative;
+  }
+  .m-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 16px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85));
+    border-radius: 10px;
+    box-shadow: 0 0 8px #fff;
+  }
+  @keyframes laserStream {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 250% 50%; }
+  }
+
+  .m-speed-beacon {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+    animation: beaconPulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    display: inline-block;
+  }
+  @keyframes beaconPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.7); }
   }
 
   .m-meta-row {
@@ -1209,11 +1325,100 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   .m-preview-card {
     background: linear-gradient(135deg, rgba(14, 21, 37, 0.95) 0%, rgba(17, 24, 39, 0.9) 100%);
     border: 1px solid rgba(0, 242, 254, 0.35);
-    box-shadow: 0 8px 24px rgba(0, 242, 254, 0.15), 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 28px rgba(0, 242, 254, 0.15), 0 4px 16px rgba(0, 0, 0, 0.45);
     border-radius: var(--radius-lg);
-    padding: 10px;
+    padding: 11px;
     margin-bottom: 12px;
-    animation: popIn 0.28s ease;
+    animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Skeleton Shimmer Loading State */
+  .m-preview-card.loading .m-preview-thumb-wrap {
+    background: #111827;
+  }
+  .m-preview-card.loading .m-preview-img {
+    opacity: 0.3;
+    filter: blur(2px);
+  }
+  .m-preview-card.loading .m-preview-thumb-wrap::after,
+  .m-preview-card.loading .m-preview-title::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmerWave 1.4s ease-in-out infinite;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  @keyframes shimmerWave {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Studio Audio Vinyl & Wave Visualizer */
+  .m-preview-audio-disc {
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 10, 19, 0.78);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    animation: fadeIn 0.2s ease;
+    border-radius: 8px;
+    z-index: 5;
+  }
+  .m-disc-ring {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #1e293b, #0f172a, #334155, #1e293b);
+    border: 2px solid rgba(0, 242, 254, 0.7);
+    box-shadow: 0 0 14px rgba(0, 242, 254, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: spinDisc 4s linear infinite;
+  }
+  @keyframes spinDisc {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .m-disc-center {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: var(--cyber-grad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: #070a13;
+    font-weight: 900;
+  }
+  .m-mini-eq {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 20px;
+  }
+  .m-eq-bar {
+    width: 3px;
+    background: var(--cyan);
+    border-radius: 2px;
+    animation: eqBounce 0.75s ease-in-out infinite alternate;
+  }
+  .m-eq-bar:nth-child(1) { height: 40%; animation-delay: 0.1s; }
+  .m-eq-bar:nth-child(2) { height: 95%; animation-delay: 0.3s; }
+  .m-eq-bar:nth-child(3) { height: 55%; animation-delay: 0.2s; }
+  .m-eq-bar:nth-child(4) { height: 80%; animation-delay: 0.4s; }
+  @keyframes eqBounce {
+    0% { height: 25%; opacity: 0.6; }
+    100% { height: 100%; opacity: 1; box-shadow: 0 0 8px var(--cyan); }
   }
   .m-preview-body {
     display: flex;
@@ -1524,15 +1729,15 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           <button class="m-btn-paste" id="mPasteBtn" type="button">📋 Paste</button>
         </div>
 
-        <!-- Platform Pills (Clean & Scrollbar-free) -->
-        <div class="m-platforms">
-          <div class="m-pill">🔴 YouTube</div>
-          <div class="m-pill">🎵 TikTok</div>
-          <div class="m-pill">🟡 Snapchat</div>
-          <div class="m-pill">⚫ Twitter/X</div>
-          <div class="m-pill">📌 Pinterest</div>
-          <div class="m-pill">🟣 Instagram</div>
-          <div class="m-pill">🔵 Facebook</div>
+        <!-- Platform Pills with Interactive Reactivity -->
+        <div class="m-platforms" id="mPlatformPills">
+          <div class="m-pill" data-platform="youtube" title="YouTube Videos, Shorts & Playlists">🔴 YouTube</div>
+          <div class="m-pill" data-platform="tiktok" title="TikTok HD (No Watermark)">🎵 TikTok</div>
+          <div class="m-pill" data-platform="snapchat" title="Snapchat Spotlight & Stories">🟡 Snapchat</div>
+          <div class="m-pill" data-platform="twitter" title="Twitter / X Videos">⚫ Twitter/X</div>
+          <div class="m-pill" data-platform="pinterest" title="Pinterest Video Pins">📌 Pinterest</div>
+          <div class="m-pill" data-platform="instagram" title="Instagram Reels & Posts">🟣 Instagram</div>
+          <div class="m-pill" data-platform="facebook" title="Facebook Videos & Reels">🔵 Facebook</div>
         </div>
 
         <!-- Sleek Auto-Prompt Tip Chip -->
@@ -1553,6 +1758,18 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
               <img id="mPrevThumb" src="icons/icon128.png" alt="Thumbnail" class="m-preview-img" onerror="this.src='icons/icon128.png';" />
               <div class="m-preview-badge" id="mPrevDuration">HD</div>
               <div class="m-preview-platform-icon" id="mPrevPlatformIcon">🎬</div>
+              <!-- Studio Audio Vinyl Visualizer -->
+              <div class="m-preview-audio-disc" id="mPrevAudioDisc" style="display:none;">
+                <div class="m-disc-ring">
+                  <div class="m-disc-center">🎵</div>
+                </div>
+                <div class="m-mini-eq">
+                  <span class="m-eq-bar"></span>
+                  <span class="m-eq-bar"></span>
+                  <span class="m-eq-bar"></span>
+                  <span class="m-eq-bar"></span>
+                </div>
+              </div>
             </div>
             <div class="m-preview-details">
               <div class="m-preview-title" id="mPrevTitle">Ready to Download</div>
@@ -1653,7 +1870,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           <div class="m-fill" id="mProgFill"></div>
         </div>
         <div class="m-meta-row">
-          <span id="mProgSpeed">⚡ High Speed</span>
+          <span style="display:flex; align-items:center; gap:6px;">
+            <span class="m-speed-beacon" id="mSpeedBeacon"></span>
+            <span id="mProgSpeed">⚡ High Speed</span>
+          </span>
           <span id="mProgEta">ETA --</span>
         </div>
 
@@ -2218,6 +2438,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedFormat = btn.dataset.fmt;
+      updateAudioPreviewVisual(selectedFormat);
+      // Sync preview card chips
+      document.querySelectorAll('.m-prev-fmt-chip').forEach(b => {
+        b.classList.toggle('active', b.dataset.fmt === selectedFormat);
+      });
     };
   });
 
@@ -2528,17 +2753,41 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   let clipSheetDismissedUrl = '';
 
   function detectPlatform(url) {
-    if (/youtube\.com|youtu\.be/i.test(url)) return { name: 'YouTube Video', icon: '🔴', color: '#ef4444' };
-    if (/tiktok\.com/i.test(url)) return { name: 'TikTok (No Watermark)', icon: '🎵', color: '#00f2fe' };
-    if (/snapchat\.com/i.test(url)) return { name: 'Snapchat Spotlight', icon: '🟡', color: '#eab308' };
-    if (/instagram\.com/i.test(url)) return { name: 'Instagram Reel/Post', icon: '🟣', color: '#ec4899' };
-    if (/facebook\.com|fb\.watch/i.test(url)) return { name: 'Facebook Video', icon: '🔵', color: '#3b82f6' };
-    if (/twitter\.com|x\.com/i.test(url)) return { name: 'Twitter / X', icon: '⚫', color: '#94a3b8' };
-    if (/pinterest\.com|pin\.it/i.test(url)) return { name: 'Pinterest Video', icon: '📌', color: '#ef4444' };
-    if (/reddit\.com/i.test(url)) return { name: 'Reddit Video', icon: '🟠', color: '#f97316' };
-    if (/dailymotion\.com|dai\.ly/i.test(url)) return { name: 'Dailymotion', icon: '🎬', color: '#06b6d4' };
-    if (/\.(mp4|webm|mov|m4v|mp3|m4a|aac|wav)($|\?)/i.test(url)) return { name: 'Direct Media Stream', icon: '⚡', color: '#10b981' };
-    return { name: 'Web Video', icon: '🎬', color: '#00f2fe' };
+    if (/youtube\.com|youtu\.be/i.test(url)) return { id: 'youtube', name: 'YouTube Video', icon: '🔴', color: '#ef4444' };
+    if (/tiktok\.com/i.test(url)) return { id: 'tiktok', name: 'TikTok (No Watermark)', icon: '🎵', color: '#00f2fe' };
+    if (/snapchat\.com/i.test(url)) return { id: 'snapchat', name: 'Snapchat Spotlight', icon: '🟡', color: '#eab308' };
+    if (/instagram\.com/i.test(url)) return { id: 'instagram', name: 'Instagram Reel/Post', icon: '🟣', color: '#ec4899' };
+    if (/facebook\.com|fb\.watch/i.test(url)) return { id: 'facebook', name: 'Facebook Video', icon: '🔵', color: '#3b82f6' };
+    if (/twitter\.com|x\.com/i.test(url)) return { id: 'twitter', name: 'Twitter / X', icon: '⚫', color: '#94a3b8' };
+    if (/pinterest\.com|pin\.it/i.test(url)) return { id: 'pinterest', name: 'Pinterest Video', icon: '📌', color: '#ef4444' };
+    if (/reddit\.com/i.test(url)) return { id: 'reddit', name: 'Reddit Video', icon: '🟠', color: '#f97316' };
+    if (/dailymotion\.com|dai\.ly/i.test(url)) return { id: 'dailymotion', name: 'Dailymotion', icon: '🎬', color: '#06b6d4' };
+    if (/\.(mp4|webm|mov|m4v|mp3|m4a|aac|wav)($|\?)/i.test(url)) return { id: 'direct', name: 'Direct Media Stream', icon: '⚡', color: '#10b981' };
+    return { id: 'web', name: 'Web Video', icon: '🎬', color: '#00f2fe' };
+  }
+
+  // ── Reactive Platform Pills Auto-Glow ──
+  function updatePlatformPills(platformId) {
+    const pills = document.querySelectorAll('#mPlatformPills .m-pill');
+    if (!pills || !pills.length) return;
+    pills.forEach(p => {
+      const pid = p.dataset.platform;
+      p.className = 'm-pill';
+      if (!platformId) {
+        // all neutral
+      } else if (pid === platformId) {
+        p.classList.add(`active-${platformId}`);
+      } else {
+        p.classList.add('dimmed');
+      }
+    });
+  }
+
+  // ── Studio Audio Vinyl Preview Sync ──
+  function updateAudioPreviewVisual(fmt) {
+    const disc = document.getElementById('mPrevAudioDisc');
+    const isAudio = fmt === 'audio';
+    if (disc) disc.style.display = isAudio ? 'flex' : 'none';
   }
 
   function extractVideoUrl(text) {
@@ -2749,6 +2998,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     previewAbortController = new AbortController();
 
     const platform = detectPlatform(cleanUrl);
+    updatePlatformPills(platform.id);
+    updateAudioPreviewVisual(selectedFormat);
+    card.classList.add('loading');
     if (platformIconEl) platformIconEl.textContent = platform.icon || '🎬';
 
     // 1. YouTube instant oEmbed / Thumbnail
@@ -2771,7 +3023,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           if (titleEl) titleEl.textContent = data.title || "YouTube Video";
           if (authorEl) authorEl.textContent = data.author_name ? `🔴 ${data.author_name}` : "YouTube";
         }
-      } catch {}
+      } catch {} finally {
+        card.classList.remove('loading');
+      }
       return;
     }
 
@@ -2795,7 +3049,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
             if (durEl) durEl.textContent = d.data.duration ? `${Math.floor(d.data.duration/60)}:${String(d.data.duration%60).padStart(2,'0')}` : "HD";
           }
         }
-      } catch {}
+      } catch {} finally {
+        card.classList.remove('loading');
+      }
       return;
     }
 
@@ -2855,6 +3111,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     // Generic platform preview fallback
     lastFetchedPreviewUrl = cleanUrl;
     card.style.display = 'block';
+    card.classList.remove('loading');
     if (thumbEl) thumbEl.src = "icons/icon128.png";
     if (titleEl) titleEl.textContent = `${platform.name} Video`;
     if (authorEl) authorEl.textContent = platform.name;
@@ -2873,13 +3130,22 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   if (mUrlInput) {
     const handleUrlInputEvent = () => {
       const val = mUrlInput.value.trim();
+      const cardWrap = mUrlInput.closest('.m-card');
       if (mClearBtn) mClearBtn.style.display = val ? 'flex' : 'none';
       if (val.length > 8) {
+        const plat = detectPlatform(val);
+        updatePlatformPills(plat.id);
+        if (cardWrap) cardWrap.classList.add('has-link');
         checkForPlaylist(val);
         fetchLiveVideoPreview(val);
       } else {
+        updatePlatformPills(null);
+        if (cardWrap) cardWrap.classList.remove('has-link');
         const card = document.getElementById('mVideoPreviewCard');
-        if (card) card.style.display = 'none';
+        if (card) {
+          card.style.display = 'none';
+          card.classList.remove('loading');
+        }
         lastFetchedPreviewUrl = '';
       }
     };
@@ -2894,13 +3160,37 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       if (mUrlInput) {
         mUrlInput.value = '';
         mUrlInput.focus();
+        const cardWrap = mUrlInput.closest('.m-card');
+        if (cardWrap) cardWrap.classList.remove('has-link');
       }
       mClearBtn.style.display = 'none';
+      updatePlatformPills(null);
       const card = document.getElementById('mVideoPreviewCard');
-      if (card) card.style.display = 'none';
+      if (card) {
+        card.style.display = 'none';
+        card.classList.remove('loading');
+      }
       lastFetchedPreviewUrl = '';
     });
   }
+
+  // Interactive Platform Pills click tooltips
+  document.querySelectorAll('#mPlatformPills .m-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const plat = pill.dataset.platform;
+      const names = {
+        youtube: 'YouTube Videos, Shorts ya Playlist',
+        tiktok: 'TikTok Video (No Watermark)',
+        snapchat: 'Snapchat Spotlight / Stories',
+        twitter: 'Twitter / X Video',
+        pinterest: 'Pinterest Video Pins',
+        instagram: 'Instagram Reels & Posts',
+        facebook: 'Facebook Videos & Reels'
+      };
+      showToast(`⚡ ${names[plat] || plat} ka link copy karke yahan Paste karein!`);
+      if (mUrlInput) mUrlInput.focus();
+    });
+  });
 
   // Quick format chips inside Live Preview Hub
   document.querySelectorAll('.m-prev-fmt-chip').forEach(btn => {
@@ -2909,6 +3199,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       btn.classList.add('active');
       const fmt = btn.dataset.fmt;
       selectedFormat = fmt;
+      updateAudioPreviewVisual(fmt);
       // Sync main format buttons
       document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.fmt === fmt);
@@ -3229,7 +3520,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v5.2_media_hub';
+  const APP_VERSION = 'v5.3_ui_flagship';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
