@@ -3003,24 +3003,24 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
       const hint = document.getElementById('mDoneHint');
       if (hint) {
-        hint.innerHTML = result.desc || `⚡ Neeche diye gaye <strong>Fast Resolver</strong> se direct video save karein:`;
-        hint.style.background = "rgba(59, 130, 246, 0.15)";
-        hint.style.borderColor = "rgba(59, 130, 246, 0.4)";
-        hint.style.color = "#93c5fd";
+        hint.innerHTML = `🔒 <strong>Meta Protection:</strong> Facebook reels direct browser fetch ko restrict karti hain.<br>✨ <strong>Bina kisi doosri website par jaye direct phone me save karne ke liye:</strong> Upar green button <strong>"Direct Phone Download (Wi-Fi Engine)"</strong> dabayein (1080p full HD direct save hogi)!`;
+        hint.style.background = "rgba(16, 185, 129, 0.12)";
+        hint.style.borderColor = "rgba(16, 185, 129, 0.35)";
+        hint.style.color = "#6ee7b7";
       }
 
       const actions = document.getElementById('mDoneActions');
       if (actions) {
         actions.innerHTML = `
-          <button class="m-btn-save-phone" id="mExtPrimaryBtn" type="button" style="background:linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color:#050d1a; font-weight:800; border:none; cursor:pointer; width:100%; border-radius:12px; padding:12px; font-size:14px;">
-            ${result.primaryName || '⚡ 1-Tap Download Video'}
+          <button class="m-btn-save-phone" id="mExtWifiBtn" type="button" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); color:#ffffff; font-weight:800; border:none; cursor:pointer; width:100%; border-radius:12px; padding:13px; font-size:14px; box-shadow:0 4px 15px rgba(16,185,129,0.35);">
+            💻 Direct Phone Download (Wi-Fi Engine · Zero Redirects)
           </button>
           <div style="display:flex; gap:8px; width:100%; margin-top:6px;">
-            <button class="m-btn-play-phone" id="mExtAltBtn" type="button" style="flex:1; border-radius:10px; padding:10px; font-size:12px;">
-              ${result.altName || '📱 Alternate Server'}
+            <button class="m-btn-play-phone" id="mExtPrimaryBtn" type="button" style="flex:1; border-radius:10px; padding:10px; font-size:12px;">
+              🌐 Web Extractor (FDownloader)
             </button>
-            <button class="m-btn-play-phone" id="mExtWifiBtn" type="button" style="flex:1; border-radius:10px; padding:10px; font-size:12px; border-color:rgba(16,185,129,0.5); color:#10b981;">
-              💻 Laptop Wi-Fi (1080p)
+            <button class="m-btn-play-phone" id="mExtAltBtn" type="button" style="flex:1; border-radius:10px; padding:10px; font-size:12px;">
+              📱 SnapSave Mirror
             </button>
           </div>
         `;
