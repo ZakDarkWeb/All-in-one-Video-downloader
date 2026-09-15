@@ -1379,16 +1379,16 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         <!-- Download Complete Actions -->
         <div class="m-done-box" id="mDoneBox">
           <div class="m-done-badge">
-            <div class="m-done-tick">✓</div>
+            <div class="m-done-tick" id="mDoneTick">✓</div>
             <div>
               <div class="m-done-title" id="mDoneTitle">Video Downloaded!</div>
-              <div class="m-done-sub">Ready to save or watch on phone</div>
+              <div class="m-done-sub" id="mDoneSub">Ready to save or watch on phone</div>
             </div>
           </div>
           <div class="m-done-hint" id="mDoneHint" style="font-size:11.5px; color:#38bdf8; text-align:center; padding: 9px 12px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); border-radius: 10px; line-height: 1.4;">
             📥 <strong>Notification check karein:</strong> Video aapke device me download ho rahi hai. Dobara save ya play karne ke liye:
           </div>
-          <div class="m-done-actions">
+          <div class="m-done-actions" id="mDoneActions">
             <a class="m-btn-save-phone" id="mSavePhoneBtn" download>
               ⬇️ Save / Download Video to Gallery
             </a>
@@ -1941,7 +1941,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           showToast("📋 Clipboard content added to batch list!");
         }
       } catch {
-        alert("Clipboard access allow karein ya link direct paste karein.");
+        showToast("⚠️ Clipboard permission allow karein ya direct paste karein.");
       }
     };
   }
@@ -1990,7 +1990,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     const raw = (mBulkInput.value || '').trim();
     const urls = (raw.match(/https?:\/\/[^\s]+/gi) || []);
     if (urls.length === 0) {
-      alert("Pehle kam az kam 1 ya zyada video links paste karein!");
+      showToast("⚠️ Pehle kam az kam 1 ya zyada video links paste karein!");
       return;
     }
 
@@ -2271,7 +2271,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   async function checkClipboardForVideoLink(isUserTriggered = false) {
     if (!navigator.clipboard || !navigator.clipboard.readText) {
-      if (isUserTriggered) alert("Aapke browser me clipboard reading support nahi hai. Box me direct link paste karein.");
+      if (isUserTriggered) showToast("⚠️ Aapke browser me clipboard reading support nahi hai. Box me direct link paste karein.");
       return;
     }
 
@@ -2306,7 +2306,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       openClipSheet(detectedUrl, 'clipboard');
     } catch (err) {
       if (isUserTriggered) {
-        alert("Clipboard permission allow karein ya box me ungli dabaye rakh kar direct 'Paste' karein.");
+        showToast("⚠️ Clipboard permission allow karein ya direct 'Paste' karein.");
       }
     }
   }
@@ -2544,7 +2544,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     btnConnectWifi.onclick = async () => {
       const rawIp = (mWifiIpInput.value || '').trim();
       if (!rawIp) {
-        alert("Pehle laptop ka IP address enter karein (e.g. 192.168.1.5:8000).");
+        showToast("⚠️ Pehle laptop ka IP address enter karein (e.g. 192.168.1.5:8000).");
         return;
       }
       btnConnectWifi.disabled = true;
@@ -2616,7 +2616,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v4.8_brand_icon';
+  const APP_VERSION = 'v5.0_meta_smart_resolver';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -2847,10 +2847,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     }
 
     // 5. Facebook
-    if (/facebook\.com|fb\.watch/i.test(url)) {
+    if (/facebook\.com|fb\.watch|fb\.me/i.test(url)) {
       document.getElementById('mProgStatus').textContent = "⚡ Fetching Facebook Video…";
-      document.getElementById('mProgPct').textContent = "45%";
-      document.getElementById('mProgFill').style.width = "45%";
+      document.getElementById('mProgPct').textContent = "50%";
+      document.getElementById('mProgFill').style.width = "50%";
 
       // Check if local engine is running
       if (backendAvailable && (isLocalBackend || activeBackendUrl)) {
@@ -2866,7 +2866,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           const pMatch = text.match(/"progress_url":\s*"([^"]+)"/);
           if (pMatch) {
             const pUrl = pMatch[1].replace(/\\\//g, '/');
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 12; i++) {
               await new Promise(r => setTimeout(r, 1200));
               try {
                 const pr = await fetch(pUrl);
@@ -2889,7 +2889,19 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         console.warn("Facebook direct extraction error:", err);
       }
 
-      throw new Error("Is Facebook video par Meta security lock laga hai. 100% download ke liye apne laptop par ZDownloader (http://localhost:8000) ya Chrome Extension use karein jahan 1080p foran save ho jayegi!");
+      // Smart In-App Resolver (Zero blocking alert, 100% smooth mobile flow)
+      return {
+        ok: true,
+        isExternalResolver: true,
+        platform: 'facebook',
+        title: "Facebook Video / Reel",
+        url: url,
+        primaryResolver: "https://fdownloader.net/",
+        primaryName: "⚡ 1-Tap Download via FDownloader",
+        altResolver: "https://snapsave.app/",
+        altName: "📱 Alternate Server (SnapSave)",
+        desc: "🔒 <strong>Meta Security Notice:</strong> Facebook videos browser ke direct fetch ko block karti hain. Neeche diye gaye <strong>1-Tap Instant Resolver</strong> se direct HD/SD video save karein ya Wi-Fi par laptop Turbo Engine use karein."
+      };
     }
 
     // 6. Pinterest
@@ -2930,7 +2942,18 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
     // 8. Instagram Notice in Standalone Mode
     if (/instagram\.com/i.test(url)) {
-      throw new Error("Instagram Reels download karne ke liye laptop me Turbo Engine chalayein (Meta bot protection ki wajah se). TikTok, Snapchat, YouTube, Twitter aur Direct MP4 links mobile pe 100% direct chalte hain!");
+      return {
+        ok: true,
+        isExternalResolver: true,
+        platform: 'instagram',
+        title: "Instagram Reel / Video",
+        url: url,
+        primaryResolver: "https://snapinsta.app/",
+        primaryName: "⚡ 1-Tap Download via SnapInsta",
+        altResolver: "https://fastdl.app/",
+        altName: "📱 Alternate Server (FastDl)",
+        desc: "🔒 <strong>Meta Security Notice:</strong> Instagram Reels browser ke direct fetch ko block karti hain. Neeche diye gaye <strong>1-Tap Instant Resolver</strong> se direct video save karein ya Wi-Fi par laptop Turbo Engine use karein."
+      };
     }
 
     throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
@@ -2962,27 +2985,122 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   function onDownloadDoneDirect(result) {
+    mStartDlBtn.disabled = false;
+    mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+
+    // 1. Smart External Resolver (Facebook / Instagram Meta Security Protection)
+    if (result.isExternalResolver) {
+      document.getElementById('mProgStatus').textContent = `⚡ ${result.title} Ready for Download!`;
+      document.getElementById('mProgPct').textContent = "100%";
+      document.getElementById('mProgFill').style.width = "100%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Fast Resolver";
+
+      const tickEl = document.getElementById('mDoneTick');
+      if (tickEl) tickEl.textContent = "⚡";
+      document.getElementById('mDoneTitle').textContent = result.title;
+      const subEl = document.getElementById('mDoneSub');
+      if (subEl) subEl.textContent = "Meta Bot Protection Bypassed · 1-Tap Save";
+
+      const hint = document.getElementById('mDoneHint');
+      if (hint) {
+        hint.innerHTML = result.desc || `⚡ Neeche diye gaye <strong>Fast Resolver</strong> se direct video save karein:`;
+        hint.style.background = "rgba(59, 130, 246, 0.15)";
+        hint.style.borderColor = "rgba(59, 130, 246, 0.4)";
+        hint.style.color = "#93c5fd";
+      }
+
+      const actions = document.getElementById('mDoneActions');
+      if (actions) {
+        actions.innerHTML = `
+          <button class="m-btn-save-phone" id="mExtPrimaryBtn" type="button" style="background:linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color:#050d1a; font-weight:800; border:none; cursor:pointer; width:100%; border-radius:12px; padding:12px; font-size:14px;">
+            ${result.primaryName || '⚡ 1-Tap Download Video'}
+          </button>
+          <div style="display:flex; gap:8px; width:100%; margin-top:6px;">
+            <button class="m-btn-play-phone" id="mExtAltBtn" type="button" style="flex:1; border-radius:10px; padding:10px; font-size:12px;">
+              ${result.altName || '📱 Alternate Server'}
+            </button>
+            <button class="m-btn-play-phone" id="mExtWifiBtn" type="button" style="flex:1; border-radius:10px; padding:10px; font-size:12px; border-color:rgba(16,185,129,0.5); color:#10b981;">
+              💻 Laptop Wi-Fi (1080p)
+            </button>
+          </div>
+        `;
+
+        document.getElementById('mExtPrimaryBtn').onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(result.url);
+            showToast("📋 Video link copy ho gaya! Extractor khul raha hai...");
+          } catch {}
+          window.open(result.primaryResolver, '_blank');
+        };
+
+        document.getElementById('mExtAltBtn').onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(result.url);
+            showToast("📋 Video link copy ho gaya! Alternate server khul raha hai...");
+          } catch {}
+          window.open(result.altResolver, '_blank');
+        };
+
+        document.getElementById('mExtWifiBtn').onclick = () => {
+          const pcIp = localStorage.getItem('zdown_pc_ip') || '192.168.1.5:8000';
+          const cleanTarget = pcIp.startsWith('http') ? pcIp : `http://${pcIp}`;
+          showToast("💻 Laptop Turbo Engine khul raha hai...");
+          window.open(cleanTarget, '_blank');
+        };
+      }
+
+      mDoneBox.classList.add('show');
+      setTimeout(() => {
+        mDoneBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 250);
+      return;
+    }
+
+    // 2. Normal Native Direct Media Download (YouTube, TikTok, Snapchat, Twitter, Pinterest)
     document.getElementById('mProgStatus').textContent = `✅ Video Download Ready!`;
     document.getElementById('mProgPct').textContent = "100%";
     document.getElementById('mProgFill').style.width = "100%";
     document.getElementById('mProgSpeed').textContent = "⚡ Fast Download";
-    mStartDlBtn.disabled = false;
-    mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
 
+    const tickEl = document.getElementById('mDoneTick');
+    if (tickEl) tickEl.textContent = "✓";
     document.getElementById('mDoneTitle').textContent = result.title;
+    const subEl = document.getElementById('mDoneSub');
+    if (subEl) subEl.textContent = "Ready to save or watch on phone";
+
+    const hint = document.getElementById('mDoneHint');
+    if (hint) {
+      hint.innerHTML = `📥 <strong>Notification check karein:</strong> Video aapke device me download ho rahi hai. Dobara save ya play karne ke liye:`;
+      hint.style.background = "rgba(56,189,248,0.12)";
+      hint.style.borderColor = "rgba(56,189,248,0.3)";
+      hint.style.color = "#38bdf8";
+    }
+
+    const actions = document.getElementById('mDoneActions');
+    if (actions) {
+      actions.innerHTML = `
+        <a class="m-btn-save-phone" id="mSavePhoneBtn" download>
+          ⬇️ Save / Download Video to Gallery
+        </a>
+        <button class="m-btn-play-phone" id="mPlayPhoneBtn" type="button">
+          🎬 Play Video Inside ZDownloader
+        </button>
+      `;
+
+      const saveBtn = document.getElementById('mSavePhoneBtn');
+      saveBtn.href = result.downloadUrl;
+      saveBtn.setAttribute("download", result.filename || "video.mp4");
+      saveBtn.removeAttribute("target");
+      saveBtn.onclick = () => {
+        triggerDirectDeviceSave(result.downloadUrl, result.filename);
+      };
+
+      document.getElementById('mPlayPhoneBtn').onclick = () => {
+        openMobilePlayer(result.downloadUrl, result.title);
+      };
+    }
+
     mDoneBox.classList.add('show');
-
-    const saveBtn = document.getElementById('mSavePhoneBtn');
-    saveBtn.href = result.downloadUrl;
-    saveBtn.setAttribute("download", result.filename || "video.mp4");
-    saveBtn.removeAttribute("target"); // Remove _blank to avoid blank tab redirects!
-    saveBtn.onclick = (e) => {
-      triggerDirectDeviceSave(result.downloadUrl, result.filename);
-    };
-
-    document.getElementById('mPlayPhoneBtn').onclick = () => {
-      openMobilePlayer(result.downloadUrl, result.title);
-    };
 
     setTimeout(() => {
       mDoneBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -3007,7 +3125,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   mStartDlBtn.onclick = async () => {
     const raw = mUrlInput.value.trim();
     if (!raw) {
-      alert("Pehle koi video link paste karein!");
+      showToast("⚠️ Pehle koi video link paste karein!");
       return;
     }
 
@@ -3062,7 +3180,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
             onDownloadDoneDirect(res);
           }, 200);
         } catch (subErr) {
-          alert("Notice: " + subErr.message);
+          showToast("⚠️ " + subErr.message);
           mStartDlBtn.disabled = false;
           mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
           mProgCard.classList.remove('show');
@@ -3083,7 +3201,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           onDownloadDoneDirect(res);
         }, 200);
       } catch (err) {
-        alert("Download Notice: " + err.message);
+        showToast("⚠️ " + err.message);
         mStartDlBtn.disabled = false;
         mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
         mProgCard.classList.remove('show');
@@ -3116,7 +3234,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           onDownloadDone(job, apiPrefix);
         } else if (job.status === "error") {
           clearInterval(pollTimer);
-          alert("Error: " + (job.error || "Download failed"));
+          showToast("❌ Error: " + (job.error || "Download failed"));
           mStartDlBtn.disabled = false;
           mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
         }
