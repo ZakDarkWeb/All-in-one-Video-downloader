@@ -17,6 +17,10 @@ function startNextInQueue() {
   }, 800);
 }
 
+function sanitizeFilename(name) {
+  return (name || "video").replace(/[\\/:*?"<>|]/g, "_").trim().slice(0, 100);
+}
+
 // BUG FIX: Notification button listener at TOP LEVEL (not inside pollJob).
 // Previously it was added inside pollJob on every completion → listener leak.
 chrome.notifications.onButtonClicked.addListener((nId, btnIdx) => {
@@ -76,10 +80,10 @@ function isSupportedVideoUrl(url) {
   if (url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("about:") || url.startsWith("chrome-extension://")) return false;
   if (/(youtu\.be|youtube\.com\/(watch|shorts|embed))/i.test(url)) return true;
   if (/tiktok\.com\//i.test(url)) return true;
-  if (/instagram\.com\/(reel|p|tv)\//i.test(url)) return true;
+  if (/instagram\.com\/(reel|reels|p|tv|share)?/i.test(url)) return true;
   if (/snapchat\.com\/(spotlight|add)/i.test(url)) return true;
   if (/(twitter\.com|x\.com)\/[^/]+\/status\/\d+/i.test(url)) return true;
-  if (/(facebook\.com\/(watch|reel|.+?\/videos)|fb\.watch)/i.test(url)) return true;
+  if (/(facebook\.com|fb\.watch)/i.test(url)) return true;
   if (/(pinterest\.com\/pin|pin\.it)/i.test(url)) return true;
   if (/reddit\.com\/r\/[^\/]+\/comments\//i.test(url)) return true;
   return false;

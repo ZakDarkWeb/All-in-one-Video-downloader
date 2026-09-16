@@ -27,10 +27,12 @@
       if (lastRightClickedEl) {
         const ytLink  = lastRightClickedEl.closest('a[href*="/watch"], a[href*="/shorts/"]');
         const pinLink = lastRightClickedEl.closest('a[href*="/pin/"]');
-        const igLink  = lastRightClickedEl.closest('a[href*="/reel/"], a[href*="/p/"]');
+        const igLink  = lastRightClickedEl.closest('a[href*="/reel/"], a[href*="/p/"], a[href*="/reels/"]');
+        const fbLink  = lastRightClickedEl.closest('a[href*="facebook.com"], a[href*="fb.watch"], a[href*="/watch"], a[href*="/reel/"], a[href*="/share/"]');
         if (ytLink?.href)  url = ytLink.href;
         if (pinLink?.href) url = url || pinLink.href;
         if (igLink?.href)  url = url || igLink.href;
+        if (fbLink?.href)  url = url || fbLink.href;
       }
       sendResponse({ url: url || detectedVideo.url || window.location.href });
       return false;
@@ -79,17 +81,24 @@
     });
 
     // 3. Instagram reels / posts
-    document.querySelectorAll('a[href*="/reel/"], a[href*="/p/"]').forEach(a => {
+    document.querySelectorAll('a[href*="/reel/"], a[href*="/p/"], a[href*="/reels/"]').forEach(a => {
       const img = a.querySelector("img");
       addItem(a.href, "Instagram Media", "Instagram", img?.src || "");
     });
 
-    // 4. TikTok links
+    // 4. Facebook links / reels
+    document.querySelectorAll('a[href*="facebook.com/share/"], a[href*="/watch"], a[href*="fb.watch"]').forEach(a => {
+      const title = a.title || a.textContent.trim() || a.getAttribute("aria-label") || "Facebook Video";
+      const img = a.querySelector("img");
+      addItem(a.href, title, "Facebook", img?.src || "");
+    });
+
+    // 5. TikTok links
     document.querySelectorAll('a[href*="/video/"]').forEach(a => {
       addItem(a.href, "TikTok Video", "TikTok", "");
     });
 
-    // 5. HTML5 video elements
+    // 6. HTML5 video elements
     document.querySelectorAll("video").forEach((v, idx) => {
       let src = v.currentSrc || v.src;
       if (!src) {
@@ -116,7 +125,7 @@
     if (host.includes("instagram.com")) return "Instagram";
     if (host.includes("pinterest.com") || host.includes("pin.it")) return "Pinterest";
     if (host.includes("tiktok.com")) return "TikTok";
-    if (host.includes("facebook.com")) return "Facebook";
+    if (host.includes("facebook.com") || host.includes("fb.watch")) return "Facebook";
     if (host.includes("twitter.com") || host.includes("x.com")) return "Twitter / X";
     if (document.querySelector("video")) return "Web Video";
     return null;
@@ -128,19 +137,23 @@
 
     detectedVideo.platform = plat;
     let url = window.location.href;
-    let title = document.title.replace(/ - YouTube$/, "").replace(/ • Instagram$/, "").trim() || "Detected Video";
+    let title = document.title.replace(/ - YouTube$/, "").replace(/ • Instagram$/, "").replace(/ \| Facebook$/, "").trim() || "Detected Video";
 
     // Platform-specific smart extraction
     if (plat === "YouTube") {
       const ytTitle = document.querySelector("h1.ytd-watch-metadata, #title h1, yt-formatted-string.ytd-video-primary-info-renderer");
       if (ytTitle && ytTitle.textContent.trim()) title = ytTitle.textContent.trim();
     } else if (plat === "Pinterest") {
-      // Check if viewing a specific pin or focused pin in feed
       const activePin = document.querySelector('[data-test-id="pin-title"], [data-test-id="rich-pin-title"], h1');
       if (activePin && activePin.textContent.trim()) title = activePin.textContent.trim();
     } else if (plat === "Instagram") {
       const igCaption = document.querySelector("h1, article header + div span, div._a9zs");
       if (igCaption && igCaption.textContent.trim()) title = igCaption.textContent.trim().slice(0, 70);
+    } else if (plat === "Facebook") {
+      const fbMeta = document.querySelector('meta[property="og:title"]');
+      if (fbMeta?.content) title = fbMeta.content;
+      const fbHeader = document.querySelector('h1, h2, [data-ad-preview="message"]');
+      if (fbHeader?.textContent.trim()) title = fbHeader.textContent.trim().slice(0, 70);
     }
 
     detectedVideo.url = url;
@@ -148,7 +161,7 @@
     return true;
   }
 
-  // Track hover on feed items (e.g. Pinterest pins, Insta reels in grid)
+  // Track hover on feed items (e.g. Pinterest pins, Insta reels, Facebook reels in grid)
   document.addEventListener("mouseover", e => {
     if (isDownloading) return;
     const pinLink = e.target.closest('a[href*="/pin/"]');
@@ -161,11 +174,20 @@
       return;
     }
 
-    const reelLink = e.target.closest('a[href*="/reel/"]');
+    const reelLink = e.target.closest('a[href*="/reel/"], a[href*="/reels/"]');
     if (reelLink && reelLink.href) {
       detectedVideo.url = reelLink.href;
       detectedVideo.platform = "Instagram";
       refreshCardUI();
+      return;
+    }
+
+    const fbLink = e.target.closest('a[href*="facebook.com"], a[href*="fb.watch"], a[href*="/watch"]');
+    if (fbLink && fbLink.href) {
+      detectedVideo.url = fbLink.href;
+      detectedVideo.platform = "Facebook";
+      refreshCardUI();
+      return;
     }
   }, { passive: true });
 

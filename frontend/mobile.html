@@ -2443,7 +2443,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // ── Backend & Turbo Wi-Fi Connection Management ──
-  const isLocalBackend = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const isLocalBackend = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.port === '8000';
   let activeBackendUrl = isLocalBackend ? '' : (localStorage.getItem('zdown_pc_ip') || '');
   let backendAvailable = false;
 
@@ -2470,35 +2470,35 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   async function checkBackendStatus() {
-    let testUrl = '';
     const savedIp = (localStorage.getItem('zdown_pc_ip') || '').trim();
-
-    if (isLocalBackend) {
-      testUrl = '';
-    } else if (savedIp) {
-      testUrl = savedIp.startsWith('http') ? savedIp : `http://${savedIp}`;
+    
+    // Probing candidates in priority order:
+    const candidates = [];
+    if (isLocalBackend) candidates.push(''); // relative origin / localhost:8000
+    else if (location.protocol !== 'file:' && location.origin && !location.origin.includes('github.io')) {
+      candidates.push(location.origin);
     }
+    if (savedIp) candidates.push(savedIp.startsWith('http') ? savedIp : `http://${savedIp}`);
+    candidates.push('http://192.168.1.5:8000');
+    candidates.push('http://127.0.0.1:8000');
+    candidates.push('http://localhost:8000');
 
-    if (!isLocalBackend && !testUrl) {
-      updateStatusBadge(`⚡ By Basit · Standalone (Laptop-Free)`);
-      updateWifiButton(false);
-      backendAvailable = false;
-      return false;
+    for (const testUrl of candidates) {
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 1800);
+        const r = await fetch(`${testUrl}/api/status`, { signal: ctrl.signal });
+        clearTimeout(t);
+        if (r.ok) {
+          activeBackendUrl = testUrl;
+          backendAvailable = true;
+          const isWifi = testUrl.includes('192.168') || (!isLocalBackend && testUrl !== '');
+          updateStatusBadge(`<span class="m-dot" style="background:#10b981;box-shadow:0 0 10px #10b981;"></span> By Basit · PC Turbo Online ${isWifi ? '(Wi-Fi)' : ''}`);
+          updateWifiButton(true);
+          return true;
+        }
+      } catch {}
     }
-
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 2200);
-      const r = await fetch(`${testUrl}/api/status`, { signal: ctrl.signal });
-      clearTimeout(t);
-      if (r.ok) {
-        activeBackendUrl = testUrl;
-        backendAvailable = true;
-        updateStatusBadge(`<span class="m-dot" style="background:#10b981;box-shadow:0 0 10px #10b981;"></span> By Basit · PC Turbo Online ${savedIp ? '(Wi-Fi)' : ''}`);
-        updateWifiButton(true);
-        return true;
-      }
-    } catch {}
 
     activeBackendUrl = '';
     backendAvailable = false;
@@ -2518,7 +2518,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   function openWifiModal() {
     if (mWifiIpInput) {
-      mWifiIpInput.value = localStorage.getItem('zdown_pc_ip') || '';
+      mWifiIpInput.value = localStorage.getItem('zdown_pc_ip') || '192.168.1.5:8000';
     }
     if (mWifiStatusMsg) {
       if (backendAvailable && (localStorage.getItem('zdown_pc_ip') || isLocalBackend)) {
@@ -2847,61 +2847,62 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     }
 
     // 5. Facebook
+    // 5. Facebook (Clean In-App Direct Resolution — ZERO External Redirects!)
     if (/facebook\.com|fb\.watch|fb\.me/i.test(url)) {
-      document.getElementById('mProgStatus').textContent = "⚡ Fetching Facebook Video…";
+      document.getElementById('mProgStatus').textContent = "⚡ Decoding Facebook Video Stream…";
       document.getElementById('mProgPct').textContent = "50%";
       document.getElementById('mProgFill').style.width = "50%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
 
-      // Check if local engine is running
-      if (backendAvailable && (isLocalBackend || activeBackendUrl)) {
-        throw new Error("REDIRECT_TO_LOCAL");
-      }
-
-      // Try public direct extraction
+      // 1. Direct stream resolver (Siputzx API -> SnapCDN direct MP4 stream)
       try {
-        const target = `https://loader.to/ajax/download.php?button=1&start=1&end=1&format=720&url=${encodeURIComponent(url)}`;
-        const res = await fetch(`https://r.jina.ai/${target}`);
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 9000);
+        const res = await fetch(`https://api.siputzx.my.id/api/d/facebook?url=${encodeURIComponent(url)}`, { signal: ctrl.signal });
+        clearTimeout(t);
         if (res.ok) {
-          const text = await res.text();
-          const pMatch = text.match(/"progress_url":\s*"([^"]+)"/);
-          if (pMatch) {
-            const pUrl = pMatch[1].replace(/\\\//g, '/');
-            for (let i = 0; i < 12; i++) {
-              await new Promise(r => setTimeout(r, 1200));
-              try {
-                const pr = await fetch(pUrl);
-                if (pr.ok) {
-                  const pj = await pr.json();
-                  if (pj.download_url && !isBadAdUrl(pj.download_url)) {
-                    return {
-                      ok: true,
-                      title: "Facebook Video",
-                      downloadUrl: pj.download_url,
-                      filename: `Facebook_${Date.now()}.mp4`
-                    };
-                  }
-                }
-              } catch {}
-            }
+          const d = await res.json();
+          const downloads = d?.data?.downloads || [];
+          const hd = downloads.find(x => (x.quality || '').toLowerCase().includes('hd'));
+          const sd = downloads.find(x => (x.quality || '').toLowerCase().includes('sd'));
+          const chosen = (isAudio ? (sd || hd) : (hd || sd || downloads[0]))?.url;
+          if (chosen && !isBadAdUrl(chosen)) {
+            return {
+              ok: true,
+              title: d?.data?.title || "Facebook Video",
+              downloadUrl: chosen,
+              thumbnail: d?.data?.thumbnail || "",
+              filename: `Facebook_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+            };
           }
         }
-      } catch (err) {
-        console.warn("Facebook direct extraction error:", err);
+      } catch (e) {
+        console.warn("FB direct API error:", e);
       }
 
-      // Smart In-App Resolver (Zero blocking alert, 100% smooth mobile flow)
-      return {
-        ok: true,
-        isExternalResolver: true,
-        platform: 'facebook',
-        title: "Facebook Video / Reel",
-        url: url,
-        primaryResolver: "https://fdownloader.net/",
-        primaryName: "⚡ 1-Tap Download via FDownloader",
-        altResolver: "https://snapsave.app/",
-        altName: "📱 Alternate Server (SnapSave)",
-        desc: "🔒 <strong>Meta Security Notice:</strong> Facebook videos browser ke direct fetch ko block karti hain. Neeche diye gaye <strong>1-Tap Instant Resolver</strong> se direct HD/SD video save karein ya Wi-Fi par laptop Turbo Engine use karein."
-      };
+      // 2. Direct plain-text scraper via Jina AI
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 9000);
+        const res = await fetch(`https://r.jina.ai/${url}`, { signal: ctrl.signal, headers: { 'Accept': 'text/plain' } });
+        clearTimeout(t);
+        if (res.ok) {
+          const text = await res.text();
+          const pMatch = text.match(/(https:\/\/[^\s"'><]+\.mp4[^\s"'><]*)/i);
+          if (pMatch && pMatch[1] && !isBadAdUrl(pMatch[1])) {
+            return {
+              ok: true,
+              title: "Facebook Video",
+              downloadUrl: pMatch[1].replace(/&amp;/g, '&'),
+              filename: `Facebook_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("FB Jina stream error:", e);
+      }
+
+      throw new Error("Facebook video direct download nahi ho saki. Upar Wi-Fi modal se Laptop Turbo Engine connect karein (1080p full HD direct).");
     }
 
     // 6. Pinterest
@@ -2940,20 +2941,36 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       };
     }
 
-    // 8. Instagram Notice in Standalone Mode
+    // 8. Instagram (Clean In-App Resolution — ZERO External Redirects!)
     if (/instagram\.com/i.test(url)) {
-      return {
-        ok: true,
-        isExternalResolver: true,
-        platform: 'instagram',
-        title: "Instagram Reel / Video",
-        url: url,
-        primaryResolver: "https://snapinsta.app/",
-        primaryName: "⚡ 1-Tap Download via SnapInsta",
-        altResolver: "https://fastdl.app/",
-        altName: "📱 Alternate Server (FastDl)",
-        desc: "🔒 <strong>Meta Security Notice:</strong> Instagram Reels browser ke direct fetch ko block karti hain. Neeche diye gaye <strong>1-Tap Instant Resolver</strong> se direct video save karein ya Wi-Fi par laptop Turbo Engine use karein."
-      };
+      document.getElementById('mProgStatus').textContent = "⚡ Decoding Instagram Reel…";
+      document.getElementById('mProgPct').textContent = "50%";
+      document.getElementById('mProgFill').style.width = "50%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
+
+      // 1. Direct stream scraper via Jina AI
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 9000);
+        const res = await fetch(`https://r.jina.ai/${url}`, { signal: ctrl.signal, headers: { 'Accept': 'text/plain' } });
+        clearTimeout(t);
+        if (res.ok) {
+          const text = await res.text();
+          const pMatch = text.match(/(https:\/\/[^\s"'><]+\.mp4[^\s"'><]*)/i);
+          if (pMatch && pMatch[1] && !isBadAdUrl(pMatch[1])) {
+            return {
+              ok: true,
+              title: "Instagram Reel",
+              downloadUrl: pMatch[1].replace(/&amp;/g, '&'),
+              filename: `Instagram_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("IG Jina stream error:", e);
+      }
+
+      throw new Error("Instagram reels client-side direct fetch ko restrict karta hai. Upar Wi-Fi modal se Laptop Turbo Engine connect karein (1080p full HD direct).");
     }
 
     throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
@@ -2974,7 +2991,6 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       a.href = downloadUrl;
       a.download = safeName;
       a.rel = "noopener noreferrer";
-      // Crucial: NO target="_blank" so no empty/ad tabs pop up!
       document.body.appendChild(a);
       a.click();
       setTimeout(() => a.remove(), 1200);
@@ -2988,75 +3004,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     mStartDlBtn.disabled = false;
     mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
 
-    // 1. Smart External Resolver (Facebook / Instagram Meta Security Protection)
-    if (result.isExternalResolver) {
-      document.getElementById('mProgStatus').textContent = `⚡ ${result.title} Ready for Download!`;
-      document.getElementById('mProgPct').textContent = "100%";
-      document.getElementById('mProgFill').style.width = "100%";
-      document.getElementById('mProgSpeed').textContent = "⚡ Fast Resolver";
-
-      const tickEl = document.getElementById('mDoneTick');
-      if (tickEl) tickEl.textContent = "⚡";
-      document.getElementById('mDoneTitle').textContent = result.title;
-      const subEl = document.getElementById('mDoneSub');
-      if (subEl) subEl.textContent = "Meta Bot Protection Bypassed · 1-Tap Save";
-
-      const hint = document.getElementById('mDoneHint');
-      if (hint) {
-        hint.innerHTML = `🔒 <strong>Meta Protection:</strong> Facebook reels direct browser fetch ko restrict karti hain.<br>✨ <strong>Bina kisi doosri website par jaye direct phone me save karne ke liye:</strong> Upar green button <strong>"Direct Phone Download (Wi-Fi Engine)"</strong> dabayein (1080p full HD direct save hogi)!`;
-        hint.style.background = "rgba(16, 185, 129, 0.12)";
-        hint.style.borderColor = "rgba(16, 185, 129, 0.35)";
-        hint.style.color = "#6ee7b7";
-      }
-
-      const actions = document.getElementById('mDoneActions');
-      if (actions) {
-        actions.innerHTML = `
-          <button class="m-btn-save-phone" id="mExtWifiBtn" type="button" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); color:#ffffff; font-weight:800; border:none; cursor:pointer; width:100%; border-radius:12px; padding:13px; font-size:14px; box-shadow:0 4px 15px rgba(16,185,129,0.35);">
-            💻 Direct Phone Download (Wi-Fi Engine · Zero Redirects)
-          </button>
-          <div style="display:flex; gap:8px; width:100%; margin-top:6px;">
-            <button class="m-btn-play-phone" id="mExtPrimaryBtn" type="button" style="flex:1; border-radius:10px; padding:10px; font-size:12px;">
-              🌐 Web Extractor (FDownloader)
-            </button>
-            <button class="m-btn-play-phone" id="mExtAltBtn" type="button" style="flex:1; border-radius:10px; padding:10px; font-size:12px;">
-              📱 SnapSave Mirror
-            </button>
-          </div>
-        `;
-
-        document.getElementById('mExtPrimaryBtn').onclick = async () => {
-          try {
-            await navigator.clipboard.writeText(result.url);
-            showToast("📋 Video link copy ho gaya! Extractor khul raha hai...");
-          } catch {}
-          window.open(result.primaryResolver, '_blank');
-        };
-
-        document.getElementById('mExtAltBtn').onclick = async () => {
-          try {
-            await navigator.clipboard.writeText(result.url);
-            showToast("📋 Video link copy ho gaya! Alternate server khul raha hai...");
-          } catch {}
-          window.open(result.altResolver, '_blank');
-        };
-
-        document.getElementById('mExtWifiBtn').onclick = () => {
-          const pcIp = localStorage.getItem('zdown_pc_ip') || '192.168.1.5:8000';
-          const cleanTarget = pcIp.startsWith('http') ? pcIp : `http://${pcIp}`;
-          showToast("💻 Laptop Turbo Engine khul raha hai...");
-          window.open(cleanTarget, '_blank');
-        };
-      }
-
-      mDoneBox.classList.add('show');
-      setTimeout(() => {
-        mDoneBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 250);
-      return;
-    }
-
-    // 2. Normal Native Direct Media Download (YouTube, TikTok, Snapchat, Twitter, Pinterest)
+    // Normal Native Direct Media Download (YouTube, TikTok, Facebook, Instagram, Snapchat, Twitter, Pinterest)
     document.getElementById('mProgStatus').textContent = `✅ Video Download Ready!`;
     document.getElementById('mProgPct').textContent = "100%";
     document.getElementById('mProgFill').style.width = "100%";

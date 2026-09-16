@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ZDownloader PRO • by Basit",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "author": "Basit",
   "description": "Ultra-fast 1-click video & audio downloader created by Basit with 1-click cookie sync, side panel, in-page IDM-style buttons, tabs & background downloads.",
   "icons": {
@@ -23,9 +23,11 @@
   "host_permissions": [
     "http://127.0.0.1:8000/*",
     "http://localhost:8000/*",
+    "http://192.168.*:*/*",
     "*://*.youtube.com/*",
     "*://*.instagram.com/*",
     "*://*.facebook.com/*",
+    "*://fb.watch/*",
     "*://*.tiktok.com/*",
     "*://*.twitter.com/*",
     "*://*.x.com/*",
@@ -64,6 +66,7 @@
         "*://*.instagram.com/*",
         "*://*.tiktok.com/*",
         "*://*.facebook.com/*",
+        "*://fb.watch/*",
         "*://*.twitter.com/*",
         "*://*.x.com/*",
         "*://*.snapchat.com/*",
