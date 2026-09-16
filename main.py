@@ -1828,12 +1828,14 @@ def get_downloaded_file(job_id: str):
         )
 
     fname = job.get("filename") or file_path.name
+    safe_ascii = re.sub(r'[^\w\.-]', '_', fname)
     quoted = quote(fname)
+    media_type = "video/mp4" if fname.lower().endswith(".mp4") else ("audio/mpeg" if fname.lower().endswith(".mp3") else "application/octet-stream")
     return FileResponse(
         path=str(file_path),
         filename=fname,
-        headers={"Content-Disposition": f"attachment; filename*=utf-8''{quoted}"},
-        media_type="application/octet-stream"
+        headers={"Content-Disposition": f'attachment; filename="{safe_ascii}"; filename*=UTF-8\'\'{quoted}'},
+        media_type=media_type
     )
 
 
@@ -1990,12 +1992,14 @@ def download_by_filename(filename: str):
         if not file_path.exists() or not file_path.is_file():
             raise HTTPException(status_code=404, detail="File nahi mili.")
             
+    safe_ascii = re.sub(r'[^\w\.-]', '_', clean_name)
     quoted = quote(clean_name)
+    media_type = "video/mp4" if clean_name.lower().endswith(".mp4") else ("audio/mpeg" if clean_name.lower().endswith(".mp3") else "application/octet-stream")
     return FileResponse(
         path=str(file_path),
         filename=clean_name,
-        headers={"Content-Disposition": f"attachment; filename*=utf-8''{quoted}"},
-        media_type="application/octet-stream"
+        headers={"Content-Disposition": f'attachment; filename="{safe_ascii}"; filename*=UTF-8\'\'{quoted}'},
+        media_type=media_type
     )
 
 
