@@ -3295,7 +3295,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         } else if (job.status === "done") {
           clearInterval(pollTimer);
           pollTimer = null;
-          onDownloadDone(job, apiPrefix);
+          onDownloadDone(job, apiPrefix, jobId);
         } else if (job.status === "error") {
           clearInterval(pollTimer);
           showToast("❌ Error: " + (job.error || "Download failed"));
@@ -3306,7 +3306,12 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     }, 600);
   }
 
-  function onDownloadDone(job, apiPrefix = (activeBackendUrl || '')) {
+  function onDownloadDone(job, apiPrefix = (activeBackendUrl || ''), passedJobId = '') {
+    const jId = job.id || job.job_id || passedJobId;
+    if (!jId) {
+      console.warn("Missing job id in onDownloadDone:", job);
+      return;
+    }
     document.getElementById('mProgStatus').textContent = `✅ Download Complete!`;
     document.getElementById('mProgPct').textContent = "100%";
     document.getElementById('mProgFill').style.width = "100%";
@@ -3317,23 +3322,33 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     document.getElementById('mDoneTitle').textContent = title;
     mDoneBox.classList.add('show');
 
-    // Save to phone direct link
-    const fileUrl = `${apiPrefix}/api/file/${job.id}`;
+    // Clean device download URL
+    const fileUrl = `${apiPrefix}/api/file/${jId}`;
+    const safeFilename = job.filename || `Video_${jId}.mp4`;
     const saveBtn = document.getElementById('mSavePhoneBtn');
-    saveBtn.href = fileUrl;
-    saveBtn.setAttribute("download", job.filename || `${job.id}.mp4`);
+    if (saveBtn) {
+      saveBtn.href = fileUrl;
+      saveBtn.setAttribute("download", safeFilename);
+      saveBtn.onclick = (e) => {
+        e.preventDefault();
+        triggerDirectDeviceSave(fileUrl, safeFilename);
+      };
+    }
 
     // Play now button
-    document.getElementById('mPlayPhoneBtn').onclick = () => {
-      openMobilePlayer(fileUrl, title);
-    };
+    const playBtn = document.getElementById('mPlayPhoneBtn');
+    if (playBtn) {
+      playBtn.onclick = () => {
+        openMobilePlayer(fileUrl, title);
+      };
+    }
 
     setTimeout(() => {
       mDoneBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 250);
 
-    // Auto trigger mobile download save
-    saveBtn.click();
+    // Auto trigger clean download without navigating away
+    triggerDirectDeviceSave(fileUrl, safeFilename);
   }
 
   // ── Library / History ──

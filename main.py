@@ -1488,6 +1488,7 @@ def start_download(request: DownloadRequest):
 
     with JOBS_LOCK:
         JOBS[job_id] = {
+            "id": job_id,
             "status": "starting",
             "progress": 0,
             "speed": "",
@@ -1794,11 +1795,14 @@ def get_progress(job_id: str):
             detail="Download job nahi mila."
         )
 
-    return {
+    res = {
         key: value
         for key, value in job.items()
         if key not in ("file", "file_path")
     }
+    res["id"] = job.get("id") or job_id
+    res["job_id"] = job_id
+    return res
 
 
 # ------------------------------------------------------------
