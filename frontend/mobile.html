@@ -2517,6 +2517,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       candidates.push(location.origin);
     }
     if (savedIp) candidates.push(savedIp.startsWith('http') ? savedIp : `http://${savedIp}`);
+    candidates.push('https://consumer-pos-requested-baghdad.trycloudflare.com');
     candidates.push('http://192.168.1.5:8000');
     candidates.push('http://127.0.0.1:8000');
     candidates.push('http://localhost:8000');
@@ -2524,14 +2525,16 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     for (const testUrl of candidates) {
       try {
         const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 1800);
+        const t = setTimeout(() => ctrl.abort(), 2500);
         const r = await fetch(`${testUrl}/api/status`, { signal: ctrl.signal });
         clearTimeout(t);
         if (r.ok) {
           activeBackendUrl = testUrl;
           backendAvailable = true;
-          const isWifi = testUrl.includes('192.168') || (!isLocalBackend && testUrl !== '');
-          updateStatusBadge(`<span class="m-dot" style="background:#10b981;box-shadow:0 0 10px #10b981;"></span> By Basit · PC Turbo Online ${isWifi ? '(Wi-Fi)' : ''}`);
+          const isTunnel = testUrl.includes('trycloudflare.com') || (testUrl.startsWith('https://') && !testUrl.includes('localhost'));
+          const isWifi = testUrl.includes('192.168') || (!isLocalBackend && testUrl !== '' && !isTunnel);
+          const modeLabel = isTunnel ? 'Cloud Turbo Online (HTTPS)' : isWifi ? 'PC Turbo Online (Wi-Fi)' : 'PC Turbo Online';
+          updateStatusBadge(`<span class="m-dot" style="background:#10b981;box-shadow:0 0 10px #10b981;"></span> By Basit · ${modeLabel}`);
           updateWifiButton(true);
           return true;
         }
