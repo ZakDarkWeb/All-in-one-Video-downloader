@@ -1211,6 +1211,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     </nav>
 
     <div class="m-header-actions">
+      <button id="btnCookieModal" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f59e0b;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Instagram &amp; Account Cookies Sync">🍪</button>
       <button id="btnWifiModal" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#c084fc;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Laptop Turbo Link (Wi-Fi)">📶</button>
       <button id="btnForceRefresh" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#00f2fe;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Refresh & Clear Cache">🔄</button>
       <button class="m-btn-install" id="btnOpenInstallModal">
@@ -1698,6 +1699,43 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     </div>
 
     <button class="m-btn-modal-close" id="btnCloseWifiModal" style="margin-top:12px;">Band Karein</button>
+  </div>
+</div>
+
+<!-- Cookies / Account Session Modal -->
+<div class="m-modal-backdrop" id="mCookieModal">
+  <div class="m-modal">
+    <div class="m-modal-title">
+      <span>🍪 Account Cookies &amp; Session Sync</span>
+    </div>
+    <div class="m-modal-desc">
+      Instagram restricted reels ya private videos download karne ke liye apna sessionid ya cookies yahan paste karein:
+    </div>
+
+    <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px;">Platform Select Karein</label>
+      <select id="mCookieDomain" style="width:100%;background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:#fff;font-size:13px;margin-bottom:12px;outline:none;">
+        <option value="instagram.com">Instagram (instagram.txt)</option>
+        <option value="facebook.com">Facebook (facebook.txt)</option>
+        <option value="youtube.com">YouTube (youtube.txt)</option>
+        <option value="tiktok.com">TikTok (tiktok.txt)</option>
+      </select>
+
+      <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px;">Session ID ya Cookie String</label>
+      <textarea id="mCookieInput" rows="3" placeholder="Paste sessionid (e.g. 648392019%3A...) ya Netscape cookie" style="width:100%;background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:#fff;font-size:12px;font-family:monospace;outline:none;resize:vertical;"></textarea>
+      <div id="mCookieStatusMsg" style="font-size:11.5px;margin-top:8px;display:none;line-height:1.4;"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button id="btnSaveCookie" style="flex:1;background:var(--cyber-grad);border:none;color:#070a13;font-weight:800;font-size:13px;padding:12px;border-radius:var(--radius-md);cursor:pointer;">💾 Save &amp; Sync Cookies</button>
+      <button id="btnClearCookie" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;font-weight:700;font-size:12px;padding:12px 14px;border-radius:var(--radius-md);cursor:pointer;">Clear</button>
+    </div>
+
+    <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-top:6px;line-height:1.4;">
+      💡 <strong>Chrome Extension Tip:</strong> Browser mein Instagram login karein aur ZDownloader Extension mein <strong>🍪 Sync</strong> dabayein, yeh khud session transfer kar dega!
+    </div>
+
+    <button class="m-btn-modal-close" id="btnCloseCookieModal" style="margin-top:12px;">Band Karein</button>
   </div>
 </div>
 
@@ -2598,6 +2636,81 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     };
   }
 
+  // ── Cookie Manager Modal Controls ─────────────────────────────
+  const btnCookieModal = document.getElementById('btnCookieModal');
+  const mCookieModal = document.getElementById('mCookieModal');
+  const mCookieDomain = document.getElementById('mCookieDomain');
+  const mCookieInput = document.getElementById('mCookieInput');
+  const mCookieStatusMsg = document.getElementById('mCookieStatusMsg');
+  const btnSaveCookie = document.getElementById('btnSaveCookie');
+  const btnClearCookie = document.getElementById('btnClearCookie');
+  const btnCloseCookieModal = document.getElementById('btnCloseCookieModal');
+
+  function openCookieModal() {
+    if (mCookieModal) mCookieModal.classList.add('show');
+    if (mCookieInput && !mCookieInput.value) {
+      mCookieInput.value = localStorage.getItem('zdown_ig_cookie') || '';
+    }
+  }
+
+  if (btnCookieModal) btnCookieModal.onclick = openCookieModal;
+  if (btnCloseCookieModal && mCookieModal) {
+    btnCloseCookieModal.onclick = () => mCookieModal.classList.remove('show');
+  }
+
+  if (btnClearCookie) {
+    btnClearCookie.onclick = () => {
+      if (mCookieInput) mCookieInput.value = '';
+      localStorage.removeItem('zdown_ig_cookie');
+      if (mCookieStatusMsg) {
+        mCookieStatusMsg.style.display = 'block';
+        mCookieStatusMsg.style.color = '#fca5a5';
+        mCookieStatusMsg.textContent = 'Cookies cleared.';
+      }
+    };
+  }
+
+  if (btnSaveCookie) {
+    btnSaveCookie.onclick = async () => {
+      const val = (mCookieInput.value || '').trim();
+      const domain = (mCookieDomain.value || 'instagram.com').trim();
+      if (!val) {
+        showToast('⚠️ Pehle sessionid ya cookie paste karein.');
+        return;
+      }
+      localStorage.setItem('zdown_ig_cookie', val);
+      btnSaveCookie.disabled = true;
+      btnSaveCookie.textContent = '⏳ Syncing Cookies…';
+      mCookieStatusMsg.style.display = 'block';
+      mCookieStatusMsg.style.color = '#00f2fe';
+      mCookieStatusMsg.textContent = 'Saving cookies to Turbo Engine…';
+
+      const syncUrl = activeBackendUrl ? `${activeBackendUrl}/api/sync-cookies` : '/api/sync-cookies';
+      try {
+        const res = await fetch(syncUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain: domain, netscape: val })
+        });
+        if (res.ok) {
+          const d = await res.json();
+          mCookieStatusMsg.style.color = 'var(--emerald)';
+          mCookieStatusMsg.textContent = `✅ ${d.message || 'Cookies successfully synced!'}`;
+          showToast(`🍪 ${domain} cookies successfully synced!`);
+          setTimeout(() => { if (mCookieModal) mCookieModal.classList.remove('show'); }, 1500);
+        } else {
+          throw new Error('HTTP ' + res.status);
+        }
+      } catch (e) {
+        mCookieStatusMsg.style.color = '#f87171';
+        mCookieStatusMsg.textContent = '⚠️ Backend connect nahi ho saka. Agar aap GitHub Pages par hain to PC par http://localhost:8000 open karein.';
+      } finally {
+        btnSaveCookie.disabled = false;
+        btnSaveCookie.textContent = '💾 Save & Sync Cookies';
+      }
+    };
+  }
+
   const btnForceRefresh = document.getElementById('btnForceRefresh');
   if (btnForceRefresh) {
     btnForceRefresh.onclick = async () => {
@@ -2970,7 +3083,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         console.warn("IG Jina stream error:", e);
       }
 
-      throw new Error("Instagram reels client-side direct fetch ko restrict karta hai. Upar Wi-Fi modal se Laptop Turbo Engine connect karein (1080p full HD direct).");
+      throw new Error("⚠️ Instagram ne is reel ko session/login protected rakha hai. Isay download karne ke liye browser mein http://localhost:8000 kholein aur 🍪 Cookie Manager se cookie add karein (ya Chrome Extension se 🍪 Sync karein).");
     }
 
     throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
