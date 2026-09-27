@@ -1183,8 +1183,394 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     border-radius: var(--radius-md);
     padding: 9px 12px;
     margin-top: 10px;
+  /* ── In-App Downloads & Player Cards ── */
+  .m-file-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.2s ease;
+  }
+  .m-file-card:hover {
+    border-color: rgba(0, 242, 254, 0.4);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  }
+  .m-file-card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .m-file-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(0, 242, 254, 0.12);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .m-file-icon.audio {
+    background: rgba(236, 72, 153, 0.12);
+    border-color: rgba(236, 72, 153, 0.35);
+  }
+  .m-file-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .m-file-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .m-file-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 3px;
+  }
+  .m-file-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .m-file-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .m-file-btn.play {
+    background: rgba(0, 242, 254, 0.15);
+    border-color: rgba(0, 242, 254, 0.4);
+    color: var(--cyan);
+  }
+  .m-file-btn.share {
+    background: rgba(37, 211, 102, 0.15);
+    border-color: rgba(37, 211, 102, 0.4);
+    color: #25d366;
+  }
+  .m-file-btn.delete {
+    flex: 0 0 34px;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
   }
 
+  /* ── WhatsApp Status Saver Grid ── */
+  .m-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .m-status-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(37, 211, 102, 0.25);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .m-status-card:hover {
+    border-color: #25d366;
+    box-shadow: 0 0 16px rgba(37, 211, 102, 0.25);
+  }
+  .m-status-thumb {
+    width: 100%;
+    aspect-ratio: 9/16;
+    max-height: 180px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .m-status-thumb img, .m-status-thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .m-status-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(7, 10, 19, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+  .m-status-footer {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(14, 21, 37, 0.95);
+  }
+  .m-status-btn-save {
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+    color: #070a13;
+    font-weight: 800;
+    font-size: 11px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    box-shadow: 0 2px 10px rgba(37, 211, 102, 0.35);
+  }
+
+  /* ── Audio Studio Cyber Turntable ── */
+  .m-turntable-card {
+    background: radial-gradient(circle at center, rgba(139, 92, 246, 0.15) 0%, rgba(14, 21, 37, 0.85) 70%);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    border-radius: var(--radius-xl);
+    padding: 22px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
+    margin-bottom: 20px;
+  }
+  .m-vinyl-disc {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #2d1b4e 10%, #0d0618 45%, #05020a 100%);
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 25px rgba(236, 72, 153, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 14px;
+    animation: spinVinyl 12s linear infinite;
+    animation-play-state: paused;
+  }
+  .m-vinyl-disc.playing {
+    animation-play-state: running;
+  }
+  @keyframes spinVinyl {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .m-vinyl-center {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--neon-pink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.6);
+  }
+
+  /* Equalizer Animation */
+  .m-eq-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 20px;
+    margin: 8px 0;
+  }
+  .m-eq-bar {
+    width: 4px;
+    background: var(--cyan);
+    border-radius: 2px;
+    height: 5px;
+    transition: height 0.15s ease;
+  }
+  .m-eq-bars.playing .m-eq-bar:nth-child(1) { animation: eqAnim 0.7s infinite alternate ease-in-out; }
+  .m-eq-bars.playing .m-eq-bar:nth-child(2) { animation: eqAnim 0.5s infinite alternate ease-in-out 0.1s; }
+  .m-eq-bars.playing .m-eq-bar:nth-child(3) { animation: eqAnim 0.9s infinite alternate ease-in-out 0.2s; }
+  .m-eq-bars.playing .m-eq-bar:nth-child(4) { animation: eqAnim 0.6s infinite alternate ease-in-out 0.15s; }
+  .m-eq-bars.playing .m-eq-bar:nth-child(5) { animation: eqAnim 0.8s infinite alternate ease-in-out 0.25s; }
+  @keyframes eqAnim {
+    0% { height: 4px; }
+    100% { height: 20px; background: #ec4899; }
+  }
+
+  /* ── Floating Quick Download Bubble ── */
+  .m-floating-bubble {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    z-index: 99;
+    background: rgba(7, 10, 19, 0.94);
+    border: 1.5px solid var(--cyan);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 4px 25px rgba(0, 242, 254, 0.45);
+    border-radius: 30px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    animation: bubbleBounce 2.5s infinite ease-in-out;
+  }
+  @keyframes bubbleBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .m-bubble-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--cyber-grad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #070a13;
+    font-weight: 900;
+  }
+  .m-bubble-title {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .m-bubble-sub {
+    font-size: 10px;
+    color: var(--cyan);
+    font-weight: 600;
+  }
+  .m-bubble-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .m-bubble-close:hover { color: #fff; }
+
+  /* ── Video Preview Card in Downloader & Modal ── */
+  .m-preview-card {
+    background: rgba(14, 21, 37, 0.95);
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.15);
+  }
+  .m-preview-header {
+    display: flex;
+    gap: 12px;
+  }
+  .m-preview-thumb-box {
+    width: 90px;
+    height: 90px;
+    border-radius: 10px;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .m-preview-thumb-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .m-preview-thumb-play {
+    position: absolute;
+    font-size: 24px;
+    color: #fff;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
+    cursor: pointer;
+  }
+  .m-preview-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .m-preview-platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 12px;
+    width: fit-content;
+  }
+  .m-preview-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.35;
+    margin: 4px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .m-preview-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .m-filter-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+  }
+  .m-filter-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .m-filter-chip.active {
+    background: var(--cyber-grad);
+    color: #070a13;
+    font-weight: 800;
+    border-color: transparent;
+  }
 </style>
 </head>
 <body>
@@ -1204,9 +1590,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
     <!-- Desktop Navigation Tabs (Visible on >= 768px screens) -->
     <nav class="m-desktop-tabs">
-      <button class="m-desk-tab active" id="deskTabSingle" type="button">⚡ Single Link</button>
+      <button class="m-desk-tab active" id="deskTabSingle" type="button">⚡ Downloader</button>
       <button class="m-desk-tab" id="deskTabBulk" type="button">📋 Bulk Queue</button>
-      <button class="m-desk-tab" id="deskTabLib" type="button">📂 Library</button>
+      <button class="m-desk-tab" id="deskTabLib" type="button">📂 My Files</button>
+      <button class="m-desk-tab" id="deskTabStatus" type="button">🟢 Status Saver</button>
+      <button class="m-desk-tab" id="deskTabAudio" type="button">🎵 Audio Studio</button>
       <button class="m-desk-tab" id="deskTabApps" type="button">🧩 Apps Hub</button>
     </nav>
 
@@ -1483,15 +1871,104 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     </div>
   </div>
 
-  <!-- VIEW 2: LIBRARY / SAVED VIDEOS -->
-  <div class="m-library-view" id="viewLibrary">
-    <div style="display:flex; align-items:center; justify-content:space-between;">
-      <h3 style="font-size:16px; font-weight:800;">📁 Videos on PC</h3>
-      <button class="m-btn-paste" id="mRefreshLibBtn" style="padding:4px 10px; font-size:11px;">🔄 Refresh</button>
+  <!-- VIEW 2: LIBRARY / SAVED VIDEOS & PLAYER -->
+  <div class="m-library-view" id="viewLibrary" style="display:none;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <div>
+        <h3 style="font-size:16px; font-weight:800;">📂 Downloads &amp; In-App Player</h3>
+        <div style="font-size:11px; color:var(--text-muted);" id="mLibStatsSub">Apne device me saved videos &amp; audios</div>
+      </div>
+      <button class="m-btn-paste" id="mRefreshLibBtn" style="padding:6px 12px; font-size:11px;">🔄 Refresh</button>
     </div>
-    <div id="mLibList" style="display:flex; flex-direction:column; gap:8px;">
+
+    <!-- Category Filter Chips -->
+    <div class="m-filter-chips">
+      <button class="m-filter-chip active" id="chipLibAll" type="button">All Files</button>
+      <button class="m-filter-chip" id="chipLibVideos" type="button">🎬 Videos</button>
+      <button class="m-filter-chip" id="chipLibAudios" type="button">🎵 Audios (MP3)</button>
+    </div>
+
+    <div id="mLibList" style="display:flex; flex-direction:column; gap:10px;">
       <!-- Populated via JS -->
-      <div style="text-align:center; padding:30px; color:var(--text-dim); font-size:13px;">Loading videos…</div>
+      <div style="text-align:center; padding:30px; color:var(--text-dim); font-size:13px;">Loading downloaded videos…</div>
+    </div>
+  </div>
+
+  <!-- VIEW 3: WHATSAPP STATUS SAVER -->
+  <div class="m-library-view" id="viewStatus" style="display:none;">
+    <div style="background:linear-gradient(135deg, rgba(37,211,102,0.15) 0%, rgba(18,140,126,0.15) 100%); border:1px solid rgba(37,211,102,0.35); border-radius:var(--radius-lg); padding:16px; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <div style="font-size:16px; font-weight:800; color:#25d366; display:flex; align-items:center; gap:8px;">
+          <span>🟢 WhatsApp Status Saver</span>
+        </div>
+        <button class="m-btn-paste" id="mRefreshStatusBtn" style="padding:6px 12px; font-size:11px; background:#25d366; color:#070a13; font-weight:800; border:none;">🔄 Refresh</button>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); line-height:1.4;">
+        Recent viewed WhatsApp photos aur video statuses ko 24 ghante baad expire hone se pehle <strong>1-Tap me phone Gallery me save karein!</strong>
+      </div>
+    </div>
+
+    <!-- Status Category Filter Chips -->
+    <div class="m-filter-chips">
+      <button class="m-filter-chip active" id="chipStatusAll" type="button">All Statuses</button>
+      <button class="m-filter-chip" id="chipStatusVideos" type="button">🎬 Videos</button>
+      <button class="m-filter-chip" id="chipStatusPhotos" type="button">🖼️ Photos</button>
+    </div>
+
+    <div class="m-status-grid" id="mStatusGrid">
+      <!-- Populated via JS -->
+      <div style="text-align:center; padding:35px 20px; color:var(--text-dim); font-size:13px; grid-column: 1 / -1;">
+        Loading WhatsApp statuses…
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 4: AUDIO STUDIO & TURNTABLE -->
+  <div class="m-library-view" id="viewAudio" style="display:none;">
+    <div class="m-turntable-card">
+      <div class="m-vinyl-disc" id="mAudioVinylDisc">
+        <div class="m-vinyl-center">🎵</div>
+      </div>
+      <div style="font-size:16px; font-weight:800; color:#fff;" id="mTurntableTitle">ZDownloader Audio Studio</div>
+      <div style="font-size:11px; color:#ec4899; font-weight:700; margin-top:3px;" id="mTurntableArtist">⚡ High Fidelity 320kbps MP3 Extractor</div>
+
+      <!-- Equalizer Visualizer -->
+      <div class="m-eq-bars" id="mEqBars">
+        <div class="m-eq-bar"></div>
+        <div class="m-eq-bar"></div>
+        <div class="m-eq-bar"></div>
+        <div class="m-eq-bar"></div>
+        <div class="m-eq-bar"></div>
+      </div>
+
+      <!-- Track Progress Bar -->
+      <div style="width:100%; max-width:320px; margin: 10px 0;">
+        <input type="range" id="mAudioSeek" min="0" max="100" value="0" style="width:100%; accent-color:#00f2fe; cursor:pointer;" />
+        <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); margin-top:2px;">
+          <span id="mAudioCurrentTime">0:00</span>
+          <span id="mAudioTotalTime">0:00</span>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex; align-items:center; justify-content:center; gap:14px; margin-top:6px;">
+        <button id="mAudioPrevBtn" type="button" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:14px;">⏮️</button>
+        <button id="mAudioPlayPauseBtn" type="button" style="background:var(--cyber-grad); border:none; color:#070a13; border-radius:50%; width:50px; height:50px; font-weight:900; font-size:18px; cursor:pointer; box-shadow:0 0 20px rgba(0,242,254,0.4);">▶️</button>
+        <button id="mAudioNextBtn" type="button" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; border-radius:50%; width:38px; height:38px; cursor:pointer; font-size:14px;">⏭️</button>
+        <button id="mAudioShareBtn" type="button" style="background:rgba(37,211,102,0.15); border:1px solid rgba(37,211,102,0.4); color:#25d366; border-radius:20px; padding:7px 14px; font-size:11px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px;">
+          📲 Share WhatsApp
+        </button>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <h3 style="font-size:15px; font-weight:800;">🎵 Extracted Audio &amp; Music</h3>
+      <button class="m-btn-paste" id="mRefreshAudioBtn" style="padding:4px 10px; font-size:11px;">🔄 Refresh</button>
+    </div>
+
+    <div id="mAudioList" style="display:flex; flex-direction:column; gap:8px;">
+      <!-- Populated via JS -->
+      <div style="text-align:center; padding:30px; color:var(--text-dim); font-size:13px;">Koi audio download nahi hua. Downloader me 'MP3 Audio' select karke video download karein!</div>
     </div>
   </div>
 
@@ -1501,7 +1978,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
 </div>
 
-<!-- Smart Clipboard & Instant Download Bottom Sheet -->
+<!-- Smart Clipboard & Video Preview Bottom Sheet -->
 <div class="m-clip-sheet" id="mClipSheet" role="dialog" aria-modal="true" aria-labelledby="mClipPromptTitle">
   <div class="m-clip-sheet-backdrop" id="mClipBackdrop"></div>
   <div class="m-clip-sheet-content">
@@ -1513,21 +1990,34 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       </div>
       <button class="m-clip-close-btn" id="btnClipDismiss" type="button" title="Close">✕</button>
     </div>
-    <div class="m-clip-title" id="mClipPromptTitle">⚡ Copied Link Detected!</div>
-    <div class="m-clip-sub" id="mClipPromptSub">Video link clipboard se detect ho gaya hai. 1-tap me download start karein:</div>
     
-    <div class="m-clip-url-card">
-      <span style="font-size:14px;">🔗</span>
-      <div class="m-clip-url-text" id="mClipUrlPreview">https://...</div>
+    <div class="m-clip-title" id="mClipPromptTitle">⚡ Video Preview &amp; Quality</div>
+    <div class="m-clip-sub" id="mClipPromptSub">Quality select karein aur foran direct download shuru karein:</div>
+    
+    <!-- Smart Video Preview Card -->
+    <div class="m-preview-card" id="mClipPreviewCard" style="margin-top:0; margin-bottom:14px;">
+      <div class="m-preview-header">
+        <div class="m-preview-thumb-box" id="mClipThumbBox">
+          <img id="mClipThumbImg" src="icons/icon192.png" alt="Thumbnail" />
+          <div class="m-preview-thumb-play" id="mClipThumbPlayBtn">▶️</div>
+        </div>
+        <div class="m-preview-details">
+          <div class="m-preview-platform-badge" id="mClipPreviewBadge" style="background:rgba(0,242,254,0.15); color:#00f2fe;">
+            <span>🎬</span> <span id="mClipBadgeText">Reel / Video</span>
+          </div>
+          <div class="m-preview-title" id="mClipVideoTitle">Social Media Video Ready</div>
+          <div class="m-clip-url-text" id="mClipUrlPreview" style="font-size:11px;">https://...</div>
+        </div>
+      </div>
     </div>
 
     <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:8px;">
-      Select Quality / Format:
+      Select Download Quality:
     </div>
     <div class="m-clip-fmt-selector">
       <div class="m-clip-fmt-chip active" data-clipfmt="best" id="clipFmtBest">
-        <div class="m-clip-fmt-chip-title">🎬 Best HD</div>
-        <div class="m-clip-fmt-chip-sub">1080p / Max</div>
+        <div class="m-clip-fmt-chip-title">🎬 1080p HD</div>
+        <div class="m-clip-fmt-chip-sub">Best Quality</div>
       </div>
       <div class="m-clip-fmt-chip" data-clipfmt="720" id="clipFmt720">
         <div class="m-clip-fmt-chip-title">📺 720p HD</div>
@@ -1541,28 +2031,51 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
     <div class="m-clip-btn-row">
       <button class="m-clip-btn-download" id="btnClipDownloadNow" type="button">
-        <span>⚡ Download Now</span>
+        <span>⚡ 1-Tap Download Now</span>
       </button>
-      <button class="m-clip-btn-paste-only" id="btnClipPasteOnly" type="button">
-        📋 Only Paste in Input
-      </button>
+      <div style="display:flex; gap:8px;">
+        <button class="m-clip-btn-paste-only" id="btnClipWatchPreview" type="button" style="flex:1; background:rgba(0,242,254,0.1); border:1px solid rgba(0,242,254,0.3); color:#00f2fe;">
+          ▶️ Watch Preview
+        </button>
+        <button class="m-clip-btn-paste-only" id="btnClipPasteOnly" type="button" style="flex:1;">
+          📋 Paste in Box
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Bottom Navigation Bar (Mobile App Style) -->
+<!-- Floating Quick Download Bubble (Appears on Link Copy) -->
+<div class="m-floating-bubble" id="mFloatingBubble" style="display:none;" title="Quick Download">
+  <div class="m-bubble-icon">⚡</div>
+  <div class="m-bubble-text">
+    <div class="m-bubble-title">Download Copied Link</div>
+    <div class="m-bubble-sub" id="mBubblePlatform">Tap to Save Video</div>
+  </div>
+  <button class="m-bubble-close" id="mBubbleClose" type="button">✕</button>
+</div>
+
+<!-- Bottom Navigation Bar (Mobile App Style - 5 Tabs) -->
 <nav class="m-bottom-nav">
-  <button class="m-nav-item active" id="navDl">
+  <button class="m-nav-item active" id="navDl" type="button">
     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     <span>Downloader</span>
   </button>
-  <button class="m-nav-item" id="navLib">
-    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-    <span>Library</span>
+  <button class="m-nav-item" id="navLib" type="button">
+    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    <span>My Files</span>
   </button>
-  <button class="m-nav-item" id="navInstall">
-    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-    <span>Apps &amp; Extension</span>
+  <button class="m-nav-item" id="navStatus" type="button">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M16 8l-8 8"/><path d="M8 8l8 8"/></svg>
+    <span style="color:#25d366; font-weight:800;">WA Status</span>
+  </button>
+  <button class="m-nav-item" id="navAudio" type="button">
+    <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    <span>Audio Studio</span>
+  </button>
+  <button class="m-nav-item" id="navInstall" type="button">
+    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    <span>Apps Hub</span>
   </button>
 </nav>
 
@@ -1839,88 +2352,105 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   if (quickPcBtn) quickPcBtn.onclick = () => showInstallModal('pc');
 
   // ── Navigation Tabs (Mobile Bottom Nav & Desktop Top Nav) ──
-  const navDl = document.getElementById('navDl');
-  const navLib = document.getElementById('navLib');
-  const viewDownload = document.getElementById('viewDownload');
-  const viewLibrary = document.getElementById('viewLibrary');
-
   const deskTabSingle = document.getElementById('deskTabSingle');
   const deskTabBulk = document.getElementById('deskTabBulk');
   const deskTabLib = document.getElementById('deskTabLib');
+  const deskTabStatus = document.getElementById('deskTabStatus');
+  const deskTabAudio = document.getElementById('deskTabAudio');
   const deskTabApps = document.getElementById('deskTabApps');
+
+  const navDl = document.getElementById('navDl');
+  const navLib = document.getElementById('navLib');
+  const navStatus = document.getElementById('navStatus');
+  const navAudio = document.getElementById('navAudio');
+  const navInstall = document.getElementById('navInstall');
+
+  const viewDownload = document.getElementById('viewDownload');
+  const viewLibrary = document.getElementById('viewLibrary');
+  const viewStatus = document.getElementById('viewStatus');
+  const viewAudio = document.getElementById('viewAudio');
 
   const modeSingleBtn = document.getElementById('modeSingleBtn');
   const modeBulkBtn = document.getElementById('modeBulkBtn');
   const singleDlSection = document.getElementById('singleDlSection');
   const bulkDlSection = document.getElementById('bulkDlSection');
 
-  function updateNavState(activeTab) {
-    [deskTabSingle, deskTabBulk, deskTabLib, deskTabApps].forEach(t => { if (t) t.classList.remove('active'); });
-    if (activeTab === 'single' && deskTabSingle) deskTabSingle.classList.add('active');
-    if (activeTab === 'bulk' && deskTabBulk) deskTabBulk.classList.add('active');
-    if (activeTab === 'lib' && deskTabLib) deskTabLib.classList.add('active');
-    if (activeTab === 'apps' && deskTabApps) deskTabApps.classList.add('active');
+  const allNavItems = [navDl, navLib, navStatus, navAudio, navInstall];
+  const allViews = [viewDownload, viewLibrary, viewStatus, viewAudio];
+  const allDeskTabs = [deskTabSingle, deskTabBulk, deskTabLib, deskTabStatus, deskTabAudio, deskTabApps];
+
+  function switchMainTab(tab) {
+    allNavItems.forEach(n => { if (n) n.classList.remove('active'); });
+    allViews.forEach(v => { if (v) v.style.display = 'none'; });
+    allDeskTabs.forEach(t => { if (t) t.classList.remove('active'); });
+
+    if (tab === 'dl') {
+      if (navDl) navDl.classList.add('active');
+      if (viewDownload) viewDownload.style.display = 'block';
+      if (deskTabSingle) deskTabSingle.classList.add('active');
+      if (singleDlSection && singleDlSection.style.display !== 'none') {
+        if (deskTabSingle) deskTabSingle.classList.add('active');
+      } else if (deskTabBulk) {
+        deskTabBulk.classList.add('active');
+      }
+    } else if (tab === 'lib') {
+      if (navLib) navLib.classList.add('active');
+      if (viewLibrary) viewLibrary.style.display = 'block';
+      if (deskTabLib) deskTabLib.classList.add('active');
+      loadLibrary();
+    } else if (tab === 'status') {
+      if (navStatus) navStatus.classList.add('active');
+      if (viewStatus) viewStatus.style.display = 'block';
+      if (deskTabStatus) deskTabStatus.classList.add('active');
+      loadWhatsAppStatuses();
+    } else if (tab === 'audio') {
+      if (navAudio) navAudio.classList.add('active');
+      if (viewAudio) viewAudio.style.display = 'block';
+      if (deskTabAudio) deskTabAudio.classList.add('active');
+      loadAudioStudio();
+    } else if (tab === 'install') {
+      if (navInstall) navInstall.classList.add('active');
+      if (deskTabApps) deskTabApps.classList.add('active');
+      showInstallModal('android');
+    }
   }
 
   function switchToSingleMode() {
+    switchMainTab('dl');
     if (modeSingleBtn) modeSingleBtn.classList.add('active');
     if (modeBulkBtn) modeBulkBtn.classList.remove('active');
     if (singleDlSection) singleDlSection.style.display = 'flex';
     if (bulkDlSection) bulkDlSection.style.display = 'none';
-    if (viewDownload) viewDownload.style.display = 'block';
-    if (viewLibrary) viewLibrary.classList.remove('active');
-    if (navDl) navDl.classList.add('active');
-    if (navLib) navLib.classList.remove('active');
-    updateNavState('single');
+    if (deskTabSingle) deskTabSingle.classList.add('active');
+    if (deskTabBulk) deskTabBulk.classList.remove('active');
   }
 
   function switchToBulkMode() {
+    switchMainTab('dl');
     if (modeBulkBtn) modeBulkBtn.classList.add('active');
     if (modeSingleBtn) modeSingleBtn.classList.remove('active');
     if (bulkDlSection) bulkDlSection.style.display = 'flex';
     if (singleDlSection) singleDlSection.style.display = 'none';
-    if (viewDownload) viewDownload.style.display = 'block';
-    if (viewLibrary) viewLibrary.classList.remove('active');
-    if (navDl) navDl.classList.add('active');
-    if (navLib) navLib.classList.remove('active');
-    updateNavState('bulk');
+    if (deskTabBulk) deskTabBulk.classList.add('active');
+    if (deskTabSingle) deskTabSingle.classList.remove('active');
     updateBulkCount();
   }
 
   if (modeSingleBtn) modeSingleBtn.onclick = switchToSingleMode;
   if (modeBulkBtn) modeBulkBtn.onclick = switchToBulkMode;
 
+  if (navDl) navDl.onclick = () => switchMainTab('dl');
+  if (navLib) navLib.onclick = () => switchMainTab('lib');
+  if (navStatus) navStatus.onclick = () => switchMainTab('status');
+  if (navAudio) navAudio.onclick = () => switchMainTab('audio');
+  if (navInstall) navInstall.onclick = () => switchMainTab('install');
+
   if (deskTabSingle) deskTabSingle.onclick = switchToSingleMode;
   if (deskTabBulk) deskTabBulk.onclick = switchToBulkMode;
-  if (deskTabLib) deskTabLib.onclick = () => {
-    if (navLib) navLib.click();
-    updateNavState('lib');
-  };
-  if (deskTabApps) deskTabApps.onclick = () => {
-    showInstallModal('ext');
-    updateNavState('apps');
-  };
-
-  navDl.onclick = () => {
-    navDl.classList.add('active');
-    navLib.classList.remove('active');
-    viewDownload.style.display = 'block';
-    viewLibrary.classList.remove('active');
-    if (bulkDlSection && bulkDlSection.style.display === 'flex') {
-      updateNavState('bulk');
-    } else {
-      updateNavState('single');
-    }
-  };
-
-  navLib.onclick = () => {
-    navLib.classList.add('active');
-    navDl.classList.remove('active');
-    viewDownload.style.display = 'none';
-    viewLibrary.classList.add('active');
-    updateNavState('lib');
-    loadLibrary();
-  };
+  if (deskTabLib) deskTabLib.onclick = () => switchMainTab('lib');
+  if (deskTabStatus) deskTabStatus.onclick = () => switchMainTab('status');
+  if (deskTabAudio) deskTabAudio.onclick = () => switchMainTab('audio');
+  if (deskTabApps) deskTabApps.onclick = () => showInstallModal('ext');
 
   // ── Single Link Format Selection ──
   document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(btn => {
@@ -2303,15 +2833,30 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     const badgeWrap = document.getElementById('mClipPlatformBadge');
     const titleEl = document.getElementById('mClipPromptTitle');
     const subEl = document.getElementById('mClipPromptSub');
+    const thumbImg = document.getElementById('mClipThumbImg');
+    const videoTitle = document.getElementById('mClipVideoTitle');
+    const previewBadge = document.getElementById('mClipBadgeText');
 
     if (badgeIcon) badgeIcon.textContent = meta.icon;
     if (badgeName) badgeName.textContent = meta.name;
+    if (previewBadge) previewBadge.textContent = meta.name;
     if (badgeWrap) {
       badgeWrap.style.borderColor = meta.color;
       badgeWrap.style.color = meta.color;
       badgeWrap.style.background = `${meta.color}20`;
     }
     if (urlPreview) urlPreview.textContent = url;
+    if (videoTitle) videoTitle.textContent = `${meta.name} ready for 1-Tap Download`;
+
+    // Smart thumbnail detection
+    if (thumbImg) {
+      const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{11})/i);
+      if (ytMatch && ytMatch[1]) {
+        thumbImg.src = `https://i.ytimg.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+      } else {
+        thumbImg.src = 'icons/icon192.png';
+      }
+    }
 
     if (titleEl) {
       titleEl.innerHTML = source === 'share' ? '📲 Shared Video Detected!' : '⚡ Copied Link Detected!';
@@ -2319,10 +2864,14 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     if (subEl) {
       subEl.textContent = source === 'share'
         ? `${meta.name} share hui hai. Quality select karein aur foran download karein:`
-        : `${meta.name} ka link copy mila hai. Kya aap is video ko download karna chahte hain?`;
+        : `${meta.name} ka link copy mila hai. Foran download ya preview karein:`;
     }
 
     syncClipSheetFormat(selectedFormat);
+
+    // Hide floating bubble if open
+    const bubble = document.getElementById('mFloatingBubble');
+    if (bubble) bubble.style.display = 'none';
 
     if (sheet) {
       sheet.classList.add('show');
@@ -2333,6 +2882,32 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   function closeClipSheet() {
     const sheet = document.getElementById('mClipSheet');
     if (sheet) sheet.classList.remove('show');
+  }
+
+  function showFloatingBubble(url) {
+    const bubble = document.getElementById('mFloatingBubble');
+    const bubblePlat = document.getElementById('mBubblePlatform');
+    if (!bubble) return;
+    const meta = detectPlatform(url);
+    if (bubblePlat) bubblePlat.textContent = `${meta.name} • 1-Tap Save`;
+    bubble.style.display = 'flex';
+  }
+
+  const mFloatingBubble = document.getElementById('mFloatingBubble');
+  const mBubbleClose = document.getElementById('mBubbleClose');
+  if (mBubbleClose) {
+    mBubbleClose.onclick = (e) => {
+      e.stopPropagation();
+      if (mFloatingBubble) mFloatingBubble.style.display = 'none';
+      clipSheetDismissedUrl = mUrlInput.value.trim();
+    };
+  }
+  if (mFloatingBubble) {
+    mFloatingBubble.onclick = () => {
+      mFloatingBubble.style.display = 'none';
+      const raw = mUrlInput.value.trim();
+      if (raw) openClipSheet(raw, 'clipboard');
+    };
   }
 
   async function checkClipboardForVideoLink(isUserTriggered = false) {
@@ -2394,6 +2969,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     }
 
     openClipSheet(detectedUrl, 'clipboard');
+    showFloatingBubble(detectedUrl);
   }
 
   // Format chip clicks inside bottom sheet
@@ -2416,12 +2992,32 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       lastHandledClipUrl = raw;
       sessionStorage.setItem('zdown_last_clip', lastHandledClipUrl);
       closeClipSheet();
-      if (navDl && typeof navDl.click === 'function') navDl.click();
+      if (mFloatingBubble) mFloatingBubble.style.display = 'none';
+      switchMainTab('dl');
       if (bulkDlSection) bulkDlSection.style.display = 'none';
       if (singleDlSection) singleDlSection.style.display = 'flex';
       mStartDlBtn.click();
     };
   }
+
+  const btnClipWatchPreview = document.getElementById('btnClipWatchPreview');
+  const mClipThumbPlayBtn = document.getElementById('mClipThumbPlayBtn');
+  function triggerWatchPreview() {
+    const raw = mUrlInput.value.trim();
+    if (!raw) return;
+    closeClipSheet();
+    if (mFloatingBubble) mFloatingBubble.style.display = 'none';
+    if (/\.(mp4|webm|mov|m4v|mp3|m4a)($|\?)/i.test(raw)) {
+      openMobilePlayer(raw, "Media Preview");
+    } else {
+      switchMainTab('dl');
+      if (bulkDlSection) bulkDlSection.style.display = 'none';
+      if (singleDlSection) singleDlSection.style.display = 'flex';
+      mStartDlBtn.click();
+    }
+  }
+  if (btnClipWatchPreview) btnClipWatchPreview.onclick = triggerWatchPreview;
+  if (mClipThumbPlayBtn) mClipThumbPlayBtn.onclick = triggerWatchPreview;
 
   const btnClipDismiss = document.getElementById('btnClipDismiss');
   if (btnClipDismiss) {
@@ -2444,6 +3040,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     btnClipPasteOnly.onclick = () => {
       clipSheetDismissedUrl = mUrlInput.value.trim();
       closeClipSheet();
+      if (mFloatingBubble) mFloatingBubble.style.display = 'none';
       showToast("📋 Link input me paste kar diya gaya!");
       mUrlInput.focus();
     };
@@ -3571,69 +4168,447 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     triggerDirectDeviceSave(fileUrl, safeFilename);
   }
 
-  // ── Library / History ──
+  // ── Library / History & Downloads Manager ──
+  let activeLibFilter = 'all';
+  let cachedLibFiles = [];
+
+  const chipLibAll = document.getElementById('chipLibAll');
+  const chipLibVideos = document.getElementById('chipLibVideos');
+  const chipLibAudios = document.getElementById('chipLibAudios');
+
+  function setLibFilter(filter) {
+    activeLibFilter = filter;
+    [chipLibAll, chipLibVideos, chipLibAudios].forEach(c => { if (c) c.classList.remove('active'); });
+    if (filter === 'all' && chipLibAll) chipLibAll.classList.add('active');
+    if (filter === 'videos' && chipLibVideos) chipLibVideos.classList.add('active');
+    if (filter === 'audios' && chipLibAudios) chipLibAudios.classList.add('active');
+    applyLibFilter();
+  }
+  if (chipLibAll) chipLibAll.onclick = () => setLibFilter('all');
+  if (chipLibVideos) chipLibVideos.onclick = () => setLibFilter('videos');
+  if (chipLibAudios) chipLibAudios.onclick = () => setLibFilter('audios');
+
+  function applyLibFilter() {
+    const list = document.getElementById('mLibList');
+    if (!list) return;
+    let filtered = cachedLibFiles;
+    if (activeLibFilter === 'videos') {
+      filtered = cachedLibFiles.filter(f => !f.isAudio && !((f.name || '').match(/\.(mp3|m4a|aac|wav)$/i)));
+    } else if (activeLibFilter === 'audios') {
+      filtered = cachedLibFiles.filter(f => f.isAudio || ((f.name || '').match(/\.(mp3|m4a|aac|wav)$/i)));
+    }
+    renderLibItems(list, filtered);
+  }
+
   async function loadLibrary() {
     const list = document.getElementById('mLibList');
-    list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-dim);">Videos load ho rahi hain…</div>';
+    if (!list) return;
+    list.innerHTML = '<div style="text-align:center; padding:25px; color:var(--text-dim); font-size:13px;">Files scan ho rahi hain…</div>';
 
+    // 1. Android APK Native Files
+    if (window.Android && typeof window.Android.getDownloadedFilesJson === 'function') {
+      try {
+        const jsonStr = window.Android.getDownloadedFilesJson();
+        cachedLibFiles = JSON.parse(jsonStr || '[]');
+        applyLibFilter();
+        return;
+      } catch (e) {
+        console.warn("Android files load error:", e);
+      }
+    }
+
+    // 2. PC Local Backend History
     if ((isLocalBackend || activeBackendUrl) && backendAvailable) {
       try {
         const apiPrefix = activeBackendUrl || '';
         const res = await fetch(`${apiPrefix}/api/history`);
         const data = await res.json();
         const files = data.files || [];
-        // Prepend apiPrefix to stream_url if needed
-        const processed = files.map(f => ({
+        cachedLibFiles = files.map(f => ({
           ...f,
-          stream_url: f.stream_url && f.stream_url.startsWith('http') ? f.stream_url : `${apiPrefix}${f.stream_url}`
+          stream_url: f.stream_url && f.stream_url.startsWith('http') ? f.stream_url : `${apiPrefix}${f.stream_url}`,
+          isAudio: (f.name || '').match(/\.(mp3|m4a|aac|wav)$/i)
         }));
-        renderLibItems(list, processed);
+        applyLibFilter();
         return;
       } catch {}
     }
-    renderLocalLib(list);
-  }
 
-  function renderLocalLib(list) {
+    // 3. LocalStorage Browser History
     try {
-      const files = JSON.parse(localStorage.getItem('zdown_history') || '[]');
-      renderLibItems(list, files);
+      cachedLibFiles = JSON.parse(localStorage.getItem('zdown_history') || '[]');
     } catch {
-      list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim);">Abhi koi video download nahi hui.</div>';
+      cachedLibFiles = [];
     }
+    applyLibFilter();
   }
 
   function renderLibItems(list, files) {
     if (!files || files.length === 0) {
-      list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim);">Abhi koi video download nahi hui.</div>';
+      list.innerHTML = `
+        <div style="text-align:center; padding:35px 20px; color:var(--text-dim); font-size:13px; background:rgba(255,255,255,0.02); border:1px dashed var(--border); border-radius:var(--radius-md);">
+          <div style="font-size:28px; margin-bottom:6px;">📂</div>
+          <div style="font-weight:700; color:#fff; margin-bottom:4px;">Abhi koi video download nahi hui.</div>
+          <div style="font-size:11px; color:var(--text-muted);">Main Downloader se video download karein, wo yahan offline list me show hogi!</div>
+        </div>
+      `;
       return;
     }
+
     list.innerHTML = '';
     files.forEach(f => {
       const item = document.createElement('div');
-      item.className = 'm-lib-item';
-      const isAudio = (f.name || '').match(/\.(mp3|m4a|aac|wav)$/i);
+      item.className = 'm-file-card';
+      const isAudio = f.isAudio || (f.name || '').match(/\.(mp3|m4a|aac|wav)$/i);
+      const fileUri = f.path ? `file://${f.path}` : (f.stream_url || '');
+
       item.innerHTML = `
-        <div class="m-lib-left">
-          <div class="m-lib-icon">${isAudio ? '🎵' : '🎬'}</div>
-          <div class="m-lib-info">
-            <div class="m-lib-name">${f.name || 'Video'}</div>
-            <div class="m-lib-size">${f.size || f.date || 'Saved'}</div>
+        <div class="m-file-left">
+          <div class="m-file-icon ${isAudio ? 'audio' : 'video'}">${isAudio ? '🎵' : '🎬'}</div>
+          <div class="m-file-info">
+            <div class="m-file-name" title="${f.name || 'Video'}">${f.name || 'Video'}</div>
+            <div class="m-file-meta">
+              <span>${f.sizeFormatted || f.size || 'Downloaded'}</span>
+              ${f.dateFormatted ? `<span>• ${f.dateFormatted}</span>` : ''}
+            </div>
           </div>
         </div>
-        <div class="m-lib-acts">
-          <a class="m-lib-btn" href="${f.stream_url}" download="${f.name || 'video.mp4'}" target="_blank" title="Download">⬇️</a>
-          <button class="m-lib-btn btn-play" title="Play">▶</button>
+        <div class="m-file-acts">
+          <button class="m-file-btn btn-play" title="Play Inside App" type="button">▶️ Play</button>
+          <button class="m-file-btn btn-share" title="Share via WhatsApp" type="button">📲 Share</button>
+          <button class="m-file-btn btn-delete" title="Delete File" type="button">🗑️</button>
         </div>
       `;
+
+      // Play button
       item.querySelector('.btn-play').onclick = () => {
-        openMobilePlayer(f.stream_url, f.name || 'Video');
+        if (window.Android && typeof window.Android.openFileInSystemPlayer === 'function' && f.name) {
+          window.Android.openFileInSystemPlayer(f.name);
+        } else {
+          openMobilePlayer(fileUri, f.name || 'Media');
+        }
       };
+
+      // Share button (direct to WhatsApp)
+      item.querySelector('.btn-share').onclick = async () => {
+        if (window.Android && typeof window.Android.shareFile === 'function' && f.name) {
+          window.Android.shareFile(f.name);
+        } else if (navigator.share && fileUri) {
+          try {
+            await navigator.share({ title: f.name || 'Video', url: fileUri });
+          } catch {}
+        } else {
+          showToast("📲 Share initiated for " + (f.name || 'file'));
+        }
+      };
+
+      // Delete button
+      item.querySelector('.btn-delete').onclick = () => {
+        if (!confirm(`Kya aap '${f.name || 'file'}' ko phone se delete karna chahte hain?`)) return;
+        if (window.Android && typeof window.Android.deleteDownloadedFile === 'function' && f.name) {
+          window.Android.deleteDownloadedFile(f.name);
+          loadLibrary();
+        } else {
+          try {
+            let hist = JSON.parse(localStorage.getItem('zdown_history') || '[]');
+            hist = hist.filter(x => x.name !== f.name && x.stream_url !== f.stream_url);
+            localStorage.setItem('zdown_history', JSON.stringify(hist));
+            loadLibrary();
+            showToast("🗑️ Item removed from history");
+          } catch {}
+        }
+      };
+
       list.appendChild(item);
     });
   }
 
-  document.getElementById('mRefreshLibBtn').onclick = loadLibrary;
+  const mRefreshLibBtn = document.getElementById('mRefreshLibBtn');
+  if (mRefreshLibBtn) mRefreshLibBtn.onclick = loadLibrary;
+
+  // ── WhatsApp Status Saver ──
+  let activeStatusFilter = 'all';
+  let cachedStatuses = [];
+
+  const chipStatusAll = document.getElementById('chipStatusAll');
+  const chipStatusVideos = document.getElementById('chipStatusVideos');
+  const chipStatusPhotos = document.getElementById('chipStatusPhotos');
+
+  function setStatusFilter(filter) {
+    activeStatusFilter = filter;
+    [chipStatusAll, chipStatusVideos, chipStatusPhotos].forEach(c => { if (c) c.classList.remove('active'); });
+    if (filter === 'all' && chipStatusAll) chipStatusAll.classList.add('active');
+    if (filter === 'videos' && chipStatusVideos) chipStatusVideos.classList.add('active');
+    if (filter === 'photos' && chipStatusPhotos) chipStatusPhotos.classList.add('active');
+    applyStatusFilter();
+  }
+  if (chipStatusAll) chipStatusAll.onclick = () => setStatusFilter('all');
+  if (chipStatusVideos) chipStatusVideos.onclick = () => setStatusFilter('videos');
+  if (chipStatusPhotos) chipStatusPhotos.onclick = () => setStatusFilter('photos');
+
+  function loadWhatsAppStatuses() {
+    const grid = document.getElementById('mStatusGrid');
+    if (!grid) return;
+    grid.innerHTML = '<div style="text-align:center; padding:35px 20px; color:var(--text-dim); font-size:13px; grid-column: 1 / -1;">WhatsApp status files scan ho rahi hain…</div>';
+
+    if (window.Android && typeof window.Android.getWhatsAppStatusesJson === 'function') {
+      try {
+        const jsonStr = window.Android.getWhatsAppStatusesJson();
+        cachedStatuses = JSON.parse(jsonStr || '[]');
+        applyStatusFilter();
+        return;
+      } catch (e) {
+        console.warn("Status parse error:", e);
+      }
+    }
+
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align:center; padding:30px 15px; background:rgba(37,211,102,0.06); border:1px dashed rgba(37,211,102,0.3); border-radius:var(--radius-md);">
+        <div style="font-size:32px; margin-bottom:8px;">🟢</div>
+        <div style="font-size:14px; font-weight:800; color:#fff; margin-bottom:6px;">WhatsApp Status Saver Feature</div>
+        <div style="font-size:12px; color:var(--text-muted); max-width:340px; margin:0 auto 12px; line-height:1.5;">
+          WhatsApp status save karne ke liye ZDownloader Android APK app install karein jisme direct storage access hota hai.
+        </div>
+        <button onclick="showInstallModal('android')" style="background:#25d366; color:#070a13; border:none; padding:10px 18px; border-radius:20px; font-size:12px; font-weight:800; cursor:pointer;">
+          📱 Android APK Download Karein
+        </button>
+      </div>
+    `;
+  }
+
+  function applyStatusFilter() {
+    const grid = document.getElementById('mStatusGrid');
+    if (!grid) return;
+    let filtered = cachedStatuses;
+    if (activeStatusFilter === 'videos') {
+      filtered = cachedStatuses.filter(s => s.isVideo);
+    } else if (activeStatusFilter === 'photos') {
+      filtered = cachedStatuses.filter(s => !s.isVideo);
+    }
+
+    if (!filtered || filtered.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align:center; padding:35px 20px; color:var(--text-dim); font-size:13px;">
+          Koi WhatsApp status nahi mila.<br>
+          <span style="font-size:11px; color:var(--text-muted);">WhatsApp open karke kuch status dekhein, phir yahan '🔄 Refresh' karein.</span>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = '';
+    filtered.forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'm-status-card';
+      const isVid = s.isVideo;
+      const fileUri = s.path ? `file://${s.path}` : '';
+      card.innerHTML = `
+        <div class="m-status-media-box">
+          ${isVid 
+            ? `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0d1117;font-size:32px;">🎬</div>`
+            : `<img class="m-status-img" src="${fileUri}" alt="Status" onerror="this.onerror=null;this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0d1117;font-size:32px;\\'>🖼️</div>';" />`
+          }
+          <div class="m-status-badge ${isVid ? 'video' : 'photo'}">${isVid ? '🎬 Video' : '🖼️ Photo'}</div>
+        </div>
+        <div class="m-status-info">
+          <div class="m-status-name" title="${s.name || 'Status'}">${s.name || 'Status'}</div>
+          <div class="m-status-size">${s.sizeFormatted || 'Ready'}</div>
+          <button class="m-btn-save-status" type="button">
+            💾 Save to Gallery
+          </button>
+        </div>
+      `;
+
+      card.querySelector('.m-status-media-box').onclick = () => {
+        if (isVid) {
+          if (window.Android && typeof window.Android.openFileInSystemPlayer === 'function') {
+            window.Android.openFileInSystemPlayer(s.name);
+          } else {
+            openMobilePlayer(fileUri, s.name);
+          }
+        }
+      };
+
+      card.querySelector('.m-btn-save-status').onclick = (e) => {
+        e.stopPropagation();
+        if (window.Android && typeof window.Android.saveWhatsAppStatus === 'function') {
+          const ok = window.Android.saveWhatsAppStatus(s.path);
+          if (ok) {
+            showToast("✅ Status Gallery me save ho gaya!");
+          }
+        } else {
+          showToast("💾 Status download initiated");
+        }
+      };
+
+      grid.appendChild(card);
+    });
+  }
+
+  const mRefreshStatusBtn = document.getElementById('mRefreshStatusBtn');
+  if (mRefreshStatusBtn) mRefreshStatusBtn.onclick = loadWhatsAppStatuses;
+
+  // ── Audio Studio & Turntable MP3 Player ──
+  let audioStudioPlaylist = [];
+  let currentAudioIndex = -1;
+  let isAudioPlaying = false;
+  const audioElem = new Audio();
+
+  const mAudioVinylDisc = document.getElementById('mAudioVinylDisc');
+  const mTurntableTitle = document.getElementById('mTurntableTitle');
+  const mTurntableArtist = document.getElementById('mTurntableArtist');
+  const mEqBars = document.getElementById('mEqBars');
+  const mAudioSeek = document.getElementById('mAudioSeek');
+  const mAudioCurrentTime = document.getElementById('mAudioCurrentTime');
+  const mAudioTotalTime = document.getElementById('mAudioTotalTime');
+  const mAudioPlayPauseBtn = document.getElementById('mAudioPlayPauseBtn');
+  const mAudioPrevBtn = document.getElementById('mAudioPrevBtn');
+  const mAudioNextBtn = document.getElementById('mAudioNextBtn');
+  const mAudioShareBtn = document.getElementById('mAudioShareBtn');
+  const mRefreshAudioBtn = document.getElementById('mRefreshAudioBtn');
+
+  function loadAudioStudio() {
+    const list = document.getElementById('mAudioList');
+    if (!list) return;
+
+    audioStudioPlaylist = cachedLibFiles.filter(f => f.isAudio || ((f.name || '').match(/\.(mp3|m4a|aac|wav)$/i)));
+    if (audioStudioPlaylist.length === 0) {
+      list.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-dim); font-size:13px;">Koi audio download nahi hua. Downloader me <strong>MP3 Audio</strong> select karke video download karein!</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    audioStudioPlaylist.forEach((track, idx) => {
+      const row = document.createElement('div');
+      row.className = 'm-file-card';
+      if (idx === currentAudioIndex) row.style.border = '1px solid #00f2fe';
+      row.innerHTML = `
+        <div class="m-file-left">
+          <div class="m-file-icon audio">🎵</div>
+          <div class="m-file-info">
+            <div class="m-file-name" title="${track.name || 'Audio Track'}">${track.name || 'Audio Track'}</div>
+            <div class="m-file-meta">
+              <span>${track.sizeFormatted || track.size || '320kbps MP3'}</span>
+            </div>
+          </div>
+        </div>
+        <div class="m-file-acts">
+          <button class="m-file-btn btn-turntable-play" style="background:var(--cyber-grad); color:#070a13; font-weight:800; border:none;" type="button">▶️ Play</button>
+        </div>
+      `;
+
+      row.querySelector('.btn-turntable-play').onclick = () => {
+        playTrackInStudio(idx);
+      };
+      list.appendChild(row);
+    });
+  }
+
+  function formatAudioTime(secs) {
+    if (isNaN(secs) || secs < 0) return "0:00";
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  function playTrackInStudio(idx) {
+    if (!audioStudioPlaylist[idx]) return;
+    currentAudioIndex = idx;
+    const track = audioStudioPlaylist[idx];
+
+    if (mTurntableTitle) mTurntableTitle.textContent = track.name || "Audio Track";
+    if (mTurntableArtist) mTurntableArtist.textContent = `⚡ HQ 320kbps • ${track.sizeFormatted || 'Audio'}`;
+
+    const playSrc = track.stream_url || (track.path ? `file://${track.path}` : '');
+    if (playSrc) {
+      audioElem.src = playSrc;
+      audioElem.play().catch(e => console.warn("Audio play:", e));
+      setTurntableState(true);
+    }
+
+    loadAudioStudio();
+  }
+
+  function setTurntableState(playing) {
+    isAudioPlaying = playing;
+    if (mAudioPlayPauseBtn) mAudioPlayPauseBtn.textContent = playing ? '⏸️' : '▶️';
+    if (mAudioVinylDisc) mAudioVinylDisc.classList.toggle('playing', playing);
+    if (mEqBars) mEqBars.classList.toggle('playing', playing);
+  }
+
+  if (mAudioPlayPauseBtn) {
+    mAudioPlayPauseBtn.onclick = () => {
+      if (audioStudioPlaylist.length === 0) {
+        showToast("⚠️ Pehle koi MP3 download karein.");
+        return;
+      }
+      if (currentAudioIndex === -1) {
+        playTrackInStudio(0);
+        return;
+      }
+      if (isAudioPlaying) {
+        audioElem.pause();
+        setTurntableState(false);
+      } else {
+        audioElem.play().catch(() => {});
+        setTurntableState(true);
+      }
+    };
+  }
+
+  if (mAudioPrevBtn) {
+    mAudioPrevBtn.onclick = () => {
+      if (audioStudioPlaylist.length === 0) return;
+      const nextIdx = (currentAudioIndex - 1 + audioStudioPlaylist.length) % audioStudioPlaylist.length;
+      playTrackInStudio(nextIdx);
+    };
+  }
+
+  if (mAudioNextBtn) {
+    mAudioNextBtn.onclick = () => {
+      if (audioStudioPlaylist.length === 0) return;
+      const nextIdx = (currentAudioIndex + 1) % audioStudioPlaylist.length;
+      playTrackInStudio(nextIdx);
+    };
+  }
+
+  if (mAudioShareBtn) {
+    mAudioShareBtn.onclick = () => {
+      if (currentAudioIndex === -1 || !audioStudioPlaylist[currentAudioIndex]) {
+        showToast("⚠️ Pehle koi track play karein.");
+        return;
+      }
+      const track = audioStudioPlaylist[currentAudioIndex];
+      if (window.Android && typeof window.Android.shareFile === 'function') {
+        window.Android.shareFile(track.name);
+      } else {
+        showToast("📲 Share track: " + track.name);
+      }
+    };
+  }
+
+  if (mRefreshAudioBtn) mRefreshAudioBtn.onclick = loadAudioStudio;
+
+  audioElem.ontimeupdate = () => {
+    if (audioElem.duration) {
+      const pct = (audioElem.currentTime / audioElem.duration) * 100;
+      if (mAudioSeek) mAudioSeek.value = pct;
+      if (mAudioCurrentTime) mAudioCurrentTime.textContent = formatAudioTime(audioElem.currentTime);
+      if (mAudioTotalTime) mAudioTotalTime.textContent = formatAudioTime(audioElem.duration);
+    }
+  };
+
+  audioElem.onended = () => {
+    if (mAudioNextBtn) mAudioNextBtn.click();
+  };
+
+  if (mAudioSeek) {
+    mAudioSeek.oninput = () => {
+      if (audioElem.duration) {
+        audioElem.currentTime = (mAudioSeek.value / 100) * audioElem.duration;
+      }
+    };
+  }
 
   // ── Audio & Video Media Player ──
   function openMobilePlayer(src, title) {

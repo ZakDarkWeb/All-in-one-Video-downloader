@@ -25,9 +25,20 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
+import android.media.MediaScannerConnection;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -433,6 +444,172 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void showAndroidToast(String msg) {
             mainHandler.post(() -> Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show());
+        }
+
+        @JavascriptInterface
+        public String getDownloadedFilesJson() {
+            JSONArray arr = new JSONArray();
+            try {
+                File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                if (dir != null && dir.exists() && dir.isDirectory()) {
+                    File[] files = dir.listFiles((d, name) -> {
+                        String n = name.toLowerCase();
+                        return n.endsWith(".mp4") || n.endsWith(".mp3") || n.endsWith(".mkv") || n.endsWith(".webm");
+                    });
+                    if (files != null) {
+                        java.util.Arrays.sort(files, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+                        int limit = Math.min(files.length, 50);
+                        for (int i = 0; i < limit; i++) {
+                            File f = files[i];
+                            JSONObject obj = new JSONObject();
+                            obj.put("name", f.getName());
+                            obj.put("path", f.getAbsolutePath());
+                            obj.put("size", f.length());
+                            obj.put("sizeFormatted", formatFileSize(f.length()));
+                            obj.put("date", f.lastModified());
+                            obj.put("dateFormatted", new SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(new Date(f.lastModified())));
+                            obj.put("isAudio", f.getName().toLowerCase().endsWith(".mp3"));
+                            arr.put(obj);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return arr.toString();
+        }
+
+        @JavascriptInterface
+        public void shareFile(String filename) {
+            mainHandler.post(() -> {
+                try {
+                    File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File file = new File(dir, filename);
+                    if (!file.exists()) {
+                        Toast.makeText(MainActivity.this, "File nahi mili!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    Uri uri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    String mime = filename.endsWith(".mp3") ? "audio/*" : "video/*";
+                    shareIntent.setType(mime);
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(shareIntent, "Share with:"));
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Share error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean deleteDownloadedFile(String filename) {
+            try {
+                File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                File file = new File(dir, filename);
+                if (file.exists() && file.delete()) {
+                    MediaScannerConnection.scanFile(MainActivity.this, new String[]{file.getAbsolutePath()}, null, null);
+                    mainHandler.post(() -> Toast.makeText(MainActivity.this, "File deleted: " + filename, Toast.LENGTH_SHORT).show());
+                    return true;
+                }
+            } catch (Exception ignored) {}
+            return false;
+        }
+
+        @JavascriptInterface
+        public void openFileInSystemPlayer(String filename) {
+            mainHandler.post(() -> {
+                try {
+                    File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File file = new File(dir, filename);
+                    if (!file.exists()) return;
+                    Uri uri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    String mime = filename.endsWith(".mp3") ? "audio/*" : "video/*";
+                    intent.setDataAndType(uri, mime);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Player error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public String getWhatsAppStatusesJson() {
+            JSONArray arr = new JSONArray();
+            try {
+                String[] potentialPaths = {
+                        Environment.getExternalStorageDirectory() + "/Android/media/com.whatsapp/WhatsApp/Media/.Statuses",
+                        Environment.getExternalStorageDirectory() + "/WhatsApp/Media/.Statuses",
+                        Environment.getExternalStorageDirectory() + "/Android/media/com.whatsapp.w4b/WhatsApp Business/Media/.Statuses",
+                        Environment.getExternalStorageDirectory() + "/WhatsApp Business/Media/.Statuses"
+                };
+
+                for (String p : potentialPaths) {
+                    File dir = new File(p);
+                    if (dir.exists() && dir.isDirectory()) {
+                        File[] files = dir.listFiles((d, name) -> {
+                            String n = name.toLowerCase();
+                            return !name.startsWith(".nomedia") && (n.endsWith(".mp4") || n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png"));
+                        });
+                        if (files != null) {
+                            java.util.Arrays.sort(files, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+                            for (File f : files) {
+                                JSONObject obj = new JSONObject();
+                                obj.put("name", f.getName());
+                                obj.put("path", f.getAbsolutePath());
+                                obj.put("size", f.length());
+                                obj.put("sizeFormatted", formatFileSize(f.length()));
+                                obj.put("isVideo", f.getName().toLowerCase().endsWith(".mp4"));
+                                obj.put("date", f.lastModified());
+                                arr.put(obj);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return arr.toString();
+        }
+
+        @JavascriptInterface
+        public boolean saveWhatsAppStatus(String sourcePath) {
+            try {
+                File src = new File(sourcePath);
+                if (!src.exists()) {
+                    mainHandler.post(() -> Toast.makeText(MainActivity.this, "Status file nahi mili!", Toast.LENGTH_SHORT).show());
+                    return false;
+                }
+                File destDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                if (!destDir.exists()) destDir.mkdirs();
+
+                String ext = src.getName().contains(".") ? src.getName().substring(src.getName().lastIndexOf(".")) : ".mp4";
+                File dest = new File(destDir, "WhatsApp_Status_" + System.currentTimeMillis() + ext);
+
+                try (FileInputStream in = new FileInputStream(src); FileOutputStream out = new FileOutputStream(dest)) {
+                    byte[] buf = new byte[8192];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
+                }
+
+                MediaScannerConnection.scanFile(MainActivity.this, new String[]{dest.getAbsolutePath()}, null, null);
+                mainHandler.post(() -> Toast.makeText(MainActivity.this, "✅ Status Gallery & Downloads me save ho gaya!", Toast.LENGTH_SHORT).show());
+                return true;
+            } catch (Exception e) {
+                mainHandler.post(() -> Toast.makeText(MainActivity.this, "Save error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                return false;
+            }
+        }
+
+        private String formatFileSize(long bytes) {
+            if (bytes <= 0) return "0 B";
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return new DecimalFormat("#.0").format((double) bytes / 1024) + " KB";
+            return new DecimalFormat("#.00").format((double) bytes / (1024 * 1024)) + " MB";
         }
     }
 
