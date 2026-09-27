@@ -33,3 +33,13 @@ cookies/*.txt
 Thumbs.db
 .DS_Store
 scratch/
+
+# Cloudflare & Tunnel temp files
+cloudflared.exe
+tunnel_url.txt
+
+# Android build outputs & Gradle caches
+.gradle/
+android/.gradle/
+android/app/build/
+android/local.properties

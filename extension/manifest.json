@@ -21,18 +21,7 @@
     "sidePanel"
   ],
   "host_permissions": [
-    "http://127.0.0.1:8000/*",
-    "http://localhost:8000/*",
-    "http://192.168.*:*/*",
-    "*://*.youtube.com/*",
-    "*://*.instagram.com/*",
-    "*://*.facebook.com/*",
-    "*://fb.watch/*",
-    "*://*.tiktok.com/*",
-    "*://*.twitter.com/*",
-    "*://*.x.com/*",
-    "*://*.pinterest.com/*",
-    "*://*.reddit.com/*"
+    "<all_urls>"
   ],
   "side_panel": {
     "default_path": "popup.html"

@@ -489,48 +489,43 @@ async function checkServerStatus() {
   } catch {}
 
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 4000);
-    const res = await fetch(`${API_BASE}/api/status`, { signal: ctrl.signal });
-    clearTimeout(t);
-    if (res.ok) { markOnline(); return true; }
+    const bgStatus = await new Promise(resolve => {
+      chrome.runtime.sendMessage({ action: "CHECK_STATUS" }, res => {
+        if (chrome.runtime.lastError || !res) resolve(null);
+        else resolve(res);
+      });
+    });
+    if (bgStatus && bgStatus.online) {
+      markOnline();
+      return true;
+    }
   } catch {}
 
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 4000);
-    const res = await fetch("http://localhost:8000/api/status", { signal: ctrl.signal });
-    clearTimeout(t);
-    if (res.ok) { markOnline(); return true; }
-  } catch {}
-
-  markOffline();
+  markStandalone();
   return false;
 }
 
 function markOnline() {
   const chip = $("statusChip");
   if (chip) chip.className = "status-pill online";
-  if ($("statusText")) $("statusText").textContent = "Online";
+  if ($("statusText")) $("statusText").textContent = "Turbo Core";
   const ob = $("offlineBox");
   if (ob) ob.classList.remove("show");
   if (statusPollInterval) { clearInterval(statusPollInterval); statusPollInterval = null; }
 }
 
-function markOffline() {
+function markStandalone() {
   const chip = $("statusChip");
-  if (chip) chip.className = "status-pill offline";
-  if ($("statusText")) $("statusText").textContent = "Offline";
+  if (chip) chip.className = "status-pill standalone";
+  if ($("statusText")) $("statusText").textContent = "Standalone";
   const ob = $("offlineBox");
-  if (ob) ob.classList.add("show");
-  if ($("loaderBox")) $("loaderBox").style.display = "none";
-  if ($("emptyState")) $("emptyState").style.display = "flex";
+  if (ob) ob.classList.remove("show");
 
   if (!statusPollInterval) {
     statusPollInterval = setInterval(async () => {
       const ok = await checkServerStatus();
       if (ok) onServerConnected();
-    }, 3000);
+    }, 4500);
   }
 }
 
@@ -689,7 +684,7 @@ function renderVideoCard(data, url) {
     icon: "⭐",
     label: "Best Quality",
     sub: "Auto-HD • Maximum speed",
-    onclick: () => triggerDownload("best", false)
+    onclick: () => triggerDownload("best", false, data.directStream)
   }));
 
   // Specific resolutions
@@ -700,7 +695,7 @@ function renderVideoCard(data, url) {
         icon: "🎬",
         label: q.label || (q.height + "p"),
         sub: q.size || "MP4 Video",
-        onclick: () => triggerDownload(String(q.height), false)
+        onclick: () => triggerDownload(String(q.height), false, q.url || data.directStream)
       }));
     });
   } else {
@@ -709,14 +704,14 @@ function renderVideoCard(data, url) {
       icon: "🎬",
       label: "1080p Full HD",
       sub: "MP4 Video",
-      onclick: () => triggerDownload("1080", false)
+      onclick: () => triggerDownload("1080", false, data.directStream)
     }));
     list.appendChild(makeQBtn({
       cls: "",
       icon: "🎬",
       label: "720p HD",
       sub: "MP4 Video",
-      onclick: () => triggerDownload("720", false)
+      onclick: () => triggerDownload("720", false, data.directStream)
     }));
   }
 
@@ -726,7 +721,7 @@ function renderVideoCard(data, url) {
     icon: "🎧",
     label: "MP3 Audio",
     sub: "320kbps • Audio only",
-    onclick: () => triggerDownload("best", true)
+    onclick: () => triggerDownload("best", true, data.directStream)
   }));
 
   // Show the format section
@@ -767,7 +762,7 @@ function makeQBtn({ cls, icon, label, sub, onclick }) {
 }
 
 // ── Trigger Download ──────────────────────────────────────────────
-function triggerDownload(quality, audioOnly) {
+function triggerDownload(quality, audioOnly, directStream) {
   document.querySelectorAll(".fmt-btn").forEach(b => b.disabled = true);
 
   if ($("progressCard")) $("progressCard").classList.add("show");
@@ -781,6 +776,7 @@ function triggerDownload(quality, audioOnly) {
 
   const title = currentVideoData?.title || "Video";
   const thumbnail = currentVideoData?.thumbnail || "";
+  const stream = directStream || currentVideoData?.directStream || "";
 
   let startTime = null, endTime = null;
   if ($("clipCheck") && $("clipCheck").checked) {
@@ -797,6 +793,7 @@ function triggerDownload(quality, audioOnly) {
     audioOnly,
     title,
     thumbnail,
+    directStream: stream,
     startTime,
     endTime,
     turbo: settings.turbo !== false

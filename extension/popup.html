@@ -192,6 +192,12 @@ body::before{
   border-color: rgba(16, 185, 129, 0.35);
   color: #34d399;
 }
+.status-pill.standalone{
+  background: rgba(0, 212, 255, 0.12);
+  border-color: rgba(0, 212, 255, 0.4);
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.18);
+}
 .status-pill.offline{
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.35);
@@ -210,7 +216,8 @@ body::before{
   box-shadow: 0 0 6px currentColor;
   flex-shrink: 0;
 }
-.status-pill.online .status-dot{
+.status-pill.online .status-dot,
+.status-pill.standalone .status-dot{
   animation: zakPulseDot 2s infinite;
 }
 @keyframes zakPulseDot{
@@ -1218,17 +1225,17 @@ body::before{
 <div class="panel active" id="panelDl">
 <div class="dl-body">
 
-  <!-- Friendly Offline Banner -->
+  <!-- Friendly Standalone / Offline Banner -->
   <div class="offline-box" id="offlineBox">
     <div class="offline-top">
-      <span class="offline-title">⚠️ Backend Engine Offline</span>
-      <button class="btn-retry" id="retryBtn">🔄 Check</button>
+      <span class="offline-title">⚡ Standalone Mode Active</span>
+      <button class="btn-retry" id="retryBtn">🔄 Check Turbo</button>
     </div>
     <div class="offline-hint">
-      Backend abhi band hai. 1-Click se start karein ya folder mein <code>start_app.bat</code> run karein:
+      Direct in-browser download active. No Python server needed! (Start <code>start_app.bat</code> anytime for 4K/8K Turbo Mode).
     </div>
-    <button id="autoStartEngineBtn" style="background:linear-gradient(135deg,#00d4ff,#8b5cf6);border:none;color:#fff;border-radius:8px;padding:9px 12px;font-size:11.5px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(139,92,246,0.35);font-family:inherit;">
-      🚀 1-Click Auto-Start Backend
+    <button id="autoStartEngineBtn" style="background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(139,92,246,0.25));border:1px solid rgba(0,212,255,0.4);color:#fff;border-radius:8px;padding:8px 12px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(0,212,255,0.2);font-family:inherit;">
+      🚀 Optional: 1-Click Launch Turbo Backend
     </button>
   </div>
 

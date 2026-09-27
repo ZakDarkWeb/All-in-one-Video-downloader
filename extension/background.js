@@ -240,24 +240,63 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
+// ── Standalone Direct Engine Map ──────────────────────────────
+const standaloneDownloads = new Map();
+
+function broadcastProgress(data) {
+  chrome.runtime.sendMessage({
+    action: "PROGRESS_TICK",
+    data: { ...data, queueLength: downloadQueue.length }
+  }).catch(() => {});
+
+  chrome.tabs.query({}, tabs => {
+    tabs.forEach(tab => {
+      if (tab.id && tab.url && !tab.url.startsWith("chrome://") && !tab.url.startsWith("edge://")) {
+        chrome.tabs.sendMessage(tab.id, {
+          action: "PROGRESS_TICK",
+          data: { ...data, queueLength: downloadQueue.length }
+        }).catch(() => {});
+      }
+    });
+  });
+}
+
 // Handle messages from popup & content script
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === "START_DOWNLOAD") {
     const item = {
       url: msg.url, quality: msg.quality, audioOnly: msg.audioOnly,
       title: msg.title, thumbnail: msg.thumbnail,
-      startTime: msg.startTime, endTime: msg.endTime
+      startTime: msg.startTime, endTime: msg.endTime,
+      directStream: msg.directStream,
+      turbo: msg.turbo !== false
     };
+
     if (activeDownload && !["done","error",null].includes(activeDownload?.status)) {
       // Queue it
       downloadQueue.push(item);
       chrome.runtime.sendMessage({ action: "QUEUE_UPDATE", queue: downloadQueue }).catch(() => {});
       sendResponse({ ok: true, queued: true, position: downloadQueue.length });
-    } else {
-      startDownload(item.url, item.quality, item.audioOnly, item.title, item.startTime, item.endTime, item.thumbnail)
+      return false;
+    }
+
+    // If directStream specified or server is offline, use standalone engine
+    if (item.directStream) {
+      startStandaloneDownload(item)
         .then(res => sendResponse(res))
         .catch(err => sendResponse({ ok: false, error: err.message }));
+      return true;
     }
+
+    // Try Turbo python server first, fallback to standalone
+    startDownload(item.url, item.quality, item.audioOnly, item.title, item.startTime, item.endTime, item.thumbnail, item.turbo)
+      .then(res => sendResponse(res))
+      .catch(err => {
+        // Fallback to standalone direct download
+        startStandaloneDownload(item)
+          .then(res => sendResponse(res))
+          .catch(e => sendResponse({ ok: false, error: e.message || err.message }));
+      });
     return true;
   }
 
@@ -267,30 +306,46 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.action === "CHECK_STATUS") {
-    fetch(`${API_BASE}/api/status`)
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 1600);
+    fetch(`${API_BASE}/api/status`, { signal: ctrl.signal })
       .then(res => res.json())
-      .then(data => sendResponse({ ok: true, data }))
+      .then(data => {
+        clearTimeout(t);
+        sendResponse({ ok: true, online: true, mode: "turbo", data });
+      })
       .catch(() => {
-        fetch("http://localhost:8000/api/status")
-          .then(res => res.json())
-          .then(data => sendResponse({ ok: true, data }))
-          .catch(e => sendResponse({ ok: false, error: e.message }));
+        clearTimeout(t);
+        sendResponse({ ok: true, online: false, mode: "standalone" });
       });
     return true;
   }
 
   if (msg.action === "GET_INFO") {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 2000);
     fetch(`${API_BASE}/api/info`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: msg.url })
+      body: JSON.stringify({ url: msg.url }),
+      signal: ctrl.signal
     })
       .then(async res => {
+        clearTimeout(t);
         const data = await res.json();
-        if (!res.ok) sendResponse({ ok: false, error: data.detail || "Info fetch failed" });
-        else sendResponse({ ok: true, data });
+        if (!res.ok) throw new Error(data.detail || "Info fetch failed");
+        sendResponse({ ok: true, data: { ...data, engine: "turbo" } });
       })
-      .catch(err => sendResponse({ ok: false, error: err.message }));
+      .catch(async () => {
+        clearTimeout(t);
+        // Standalone Direct Extractor (zero Python required)
+        try {
+          const saInfo = await getStandaloneVideoInfo(msg.url);
+          sendResponse(saInfo);
+        } catch (err) {
+          sendResponse({ ok: false, error: err.message });
+        }
+      });
     return true;
   }
 
@@ -304,10 +359,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         audioOnly: !!it.audioOnly,
         title: it.title || "Video",
         thumbnail: it.thumbnail || "",
+        directStream: it.directStream || "",
         turbo: it.turbo !== false
       };
       if (!activeDownload || ["done","error",null].includes(activeDownload?.status)) {
-        startDownload(item.url, item.quality, item.audioOnly, item.title, null, null, item.thumbnail, item.turbo);
+        if (item.directStream) {
+          startStandaloneDownload(item).catch(() => {});
+        } else {
+          startDownload(item.url, item.quality, item.audioOnly, item.title, null, null, item.thumbnail, item.turbo)
+            .catch(() => startStandaloneDownload(item).catch(() => {}));
+        }
       } else {
         downloadQueue.push(item);
       }
@@ -370,10 +431,301 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         .catch(err => sendResponse({ ok: false, error: err.message }));
       return true;
     }
-    sendResponse({ ok: false, message: "No active download to cancel" });
-    return false;
+// ── Standalone Direct Downloader (Zero Python Required) ───────────
+async function startStandaloneDownload(item) {
+  let streamUrl = item.directStream;
+  let title = item.title || "Video";
+  let thumb = item.thumbnail || "";
+
+  if (!streamUrl) {
+    const info = await getStandaloneVideoInfo(item.url);
+    if (info && info.ok && info.data) {
+      streamUrl = info.data.directStream || (info.data.qualities && info.data.qualities[0] ? info.data.qualities[0].url : null);
+      if (info.data.title) title = info.data.title;
+      if (info.data.thumbnail) thumb = info.data.thumbnail;
+    }
   }
-});
+
+  if (!streamUrl) {
+    if (/\.(mp4|webm|mkv|mov|mp3|m4a)(\?.*)?$/i.test(item.url)) {
+      streamUrl = item.url;
+    } else {
+      throw new Error("Could not find direct video stream. Make sure the video is public.");
+    }
+  }
+
+  const ext = item.audioOnly ? "mp3" : "mp4";
+  const cleanTitle = sanitizeFilename(title);
+  const targetFilename = `ZDownloader/${cleanTitle}.${ext}`;
+
+  activeDownload = {
+    jobId: "sa_" + Date.now(),
+    url: item.url,
+    title: title,
+    thumbnail: thumb || getThumbnailForUrl(item.url),
+    quality: item.quality || "best",
+    audioOnly: !!item.audioOnly,
+    status: "downloading",
+    progress: 5,
+    speed: "Direct",
+    eta: "Direct Chrome Download",
+    startTime: Date.now()
+  };
+  broadcastProgress(activeDownload);
+  chrome.action.setBadgeText({ text: "0%" });
+  chrome.action.setBadgeBackgroundColor({ color: "#00d4ff" });
+
+  return new Promise((resolve, reject) => {
+    chrome.downloads.download({
+      url: streamUrl,
+      filename: targetFilename,
+      saveAs: false,
+      conflictAction: "uniquify"
+    }, dlId => {
+      if (chrome.runtime.lastError || !dlId) {
+        chrome.action.setBadgeText({ text: "ERR" });
+        chrome.action.setBadgeBackgroundColor({ color: "#ef4444" });
+        activeDownload = null;
+        reject(new Error(chrome.runtime.lastError ? chrome.runtime.lastError.message : "Download rejected"));
+      } else {
+        standaloneDownloads.set(dlId, { ...activeDownload, dlId });
+        monitorStandaloneDownload(dlId, activeDownload);
+        resolve({ ok: true, jobId: activeDownload.jobId, downloadId: dlId });
+      }
+    });
+  });
+}
+
+function monitorStandaloneDownload(dlId, meta) {
+  const poll = setInterval(() => {
+    chrome.downloads.search({ id: dlId }, res => {
+      if (!res || res.length === 0) {
+        clearInterval(poll);
+        return;
+      }
+      const item = res[0];
+      if (item.state === "complete") {
+        clearInterval(poll);
+        standaloneDownloads.delete(dlId);
+        activeDownload = {
+          ...meta,
+          status: "done",
+          progress: 100,
+          speed: "Direct",
+          eta: "Complete",
+          filename: item.filename ? item.filename.split(/[\/\\]/).pop() : (meta.title + ".mp4")
+        };
+        broadcastProgress(activeDownload);
+        chrome.action.setBadgeText({ text: "✓" });
+        chrome.action.setBadgeBackgroundColor({ color: "#10b981" });
+
+        const notifId = "zdl-done-" + Date.now();
+        _lastDoneNotifId = notifId;
+        chrome.notifications.create(notifId, {
+          type: "basic",
+          iconUrl: "icons/icon128.png",
+          title: "✅ ZDownloader PRO — Complete!",
+          message: activeDownload.filename || meta.title || "Video saved",
+          priority: 2
+        });
+
+        startNextInQueue();
+      } else if (item.state === "interrupted") {
+        clearInterval(poll);
+        standaloneDownloads.delete(dlId);
+        activeDownload = {
+          ...meta,
+          status: "error",
+          error: item.error || "Download interrupted"
+        };
+        broadcastProgress(activeDownload);
+        chrome.action.setBadgeText({ text: "ERR" });
+        chrome.action.setBadgeBackgroundColor({ color: "#ef4444" });
+      } else if (item.state === "in_progress") {
+        const received = item.bytesReceived || 0;
+        const total = item.totalBytes > 0 ? item.totalBytes : 0;
+        const pct = total > 0 ? Math.min(99, Math.round((received / total) * 100)) : 50;
+        const mbRec = (received / 1048576).toFixed(1);
+        const mbTot = total > 0 ? (total / 1048576).toFixed(1) : "?";
+
+        activeDownload = {
+          ...meta,
+          status: "downloading",
+          progress: pct,
+          speed: `${mbRec}MB / ${mbTot}MB`,
+          eta: total > 0 ? `${pct}%` : "Streaming"
+        };
+        broadcastProgress(activeDownload);
+        chrome.action.setBadgeText({ text: `${pct}%` });
+        chrome.action.setBadgeBackgroundColor({ color: "#00d4ff" });
+      }
+    });
+  }, 450);
+}
+
+// ── Standalone Direct Stream Extractor ────────────────────────────
+async function getStandaloneVideoInfo(url) {
+  if (!url) return { ok: false, error: "Empty URL" };
+
+  // 1. Direct media file
+  if (/\.(mp4|webm|mkv|mov|mp3|m4a)(\?.*)?$/i.test(url)) {
+    const filename = url.split("/").pop().split("?")[0] || "Direct Video";
+    return {
+      ok: true,
+      data: {
+        title: decodeURIComponent(filename),
+        thumbnail: "",
+        duration: 0,
+        platform: "Direct Media",
+        engine: "standalone",
+        directStream: url,
+        qualities: [
+          { height: 1080, label: "Direct Stream (Original)", size: "Direct Link", url: url }
+        ]
+      }
+    };
+  }
+
+  // 2. Facebook
+  if (/facebook\.com|fb\.watch/i.test(url)) {
+    try {
+      const res = await fetch(`https://api.siputzx.my.id/api/d/facebook?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
+      const json = await res.json();
+      if (json.status && json.data) {
+        const hd = json.data.urls?.find(u => u.hd)?.hd;
+        const sd = json.data.urls?.find(u => u.sd)?.sd;
+        const stream = hd || sd || json.data.urls?.[0]?.sd || json.data.urls?.[0]?.hd;
+        if (stream) {
+          const qualities = [];
+          if (hd) qualities.push({ height: 1080, label: "HD Video (SnapCDN)", size: "Direct MP4", url: hd });
+          if (sd) qualities.push({ height: 720, label: "SD Video", size: "Direct MP4", url: sd });
+          if (qualities.length === 0) qualities.push({ height: 720, label: "Standard Video", size: "Direct MP4", url: stream });
+          return {
+            ok: true,
+            data: {
+              title: json.data.title || "Facebook Video",
+              thumbnail: json.data.thumbnail || "https://static.xx.fbcdn.net/rsrc.php/yD/r/d4ZIVX-5C-b.ico",
+              duration: 0,
+              platform: "Facebook",
+              engine: "standalone",
+              directStream: stream,
+              qualities: qualities
+            }
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("FB standalone parse error:", e);
+    }
+  }
+
+  // 3. TikTok
+  if (/tiktok\.com/i.test(url)) {
+    try {
+      const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
+      const json = await res.json();
+      if (json.code === 0 && json.data) {
+        const stream = json.data.play || json.data.wmplay;
+        return {
+          ok: true,
+          data: {
+            title: json.data.title || "TikTok Video",
+            thumbnail: json.data.cover || "",
+            duration: json.data.duration || 0,
+            platform: "TikTok",
+            engine: "standalone",
+            directStream: stream,
+            qualities: [
+              { height: 1080, label: "HD (No Watermark)", size: "Direct MP4", url: stream },
+              { height: 720, label: "Watermark Version", size: "Direct MP4", url: json.data.wmplay || stream }
+            ]
+          }
+        };
+      }
+    } catch (e) {
+      console.warn("TikTok standalone parse error:", e);
+    }
+  }
+
+  // 4. Instagram
+  if (/instagram\.com/i.test(url)) {
+    try {
+      const res = await fetch(`https://api.siputzx.my.id/api/d/ig?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
+      const json = await res.json();
+      if (json.status && json.data && json.data.length > 0) {
+        const item = json.data[0];
+        const stream = item.url;
+        if (stream) {
+          return {
+            ok: true,
+            data: {
+              title: "Instagram Reel / Video",
+              thumbnail: item.thumbnail || "",
+              duration: 0,
+              platform: "Instagram",
+              engine: "standalone",
+              directStream: stream,
+              qualities: [
+                { height: 1080, label: "HD Quality", size: "Direct MP4", url: stream }
+              ]
+            }
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("IG standalone parse error:", e);
+    }
+  }
+
+  // 5. Generic Web Video (Open Graph / Scrape with all_urls privileges)
+  try {
+    const pageHtml = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      signal: AbortSignal.timeout(5000)
+    }).then(r => r.text());
+
+    const ogVideoMatch = pageHtml.match(/<meta\s+property=["']og:video(?::secure_url|:url)?["']\s+content=["']([^"']+)["']/i) ||
+                         pageHtml.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:video(?::secure_url|:url)?["']/i);
+    const ogTitleMatch = pageHtml.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+                         pageHtml.match(/<title>([^<]+)<\/title>/i);
+    const ogImageMatch = pageHtml.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+
+    if (ogVideoMatch && ogVideoMatch[1]) {
+      const stream = ogVideoMatch[1].replace(/&amp;/g, '&');
+      return {
+        ok: true,
+        data: {
+          title: ogTitleMatch ? ogTitleMatch[1].trim() : "Web Video",
+          thumbnail: ogImageMatch ? ogImageMatch[1] : "",
+          duration: 0,
+          platform: "Web Video",
+          engine: "standalone",
+          directStream: stream,
+          qualities: [
+            { height: 1080, label: "HD Stream", size: "MP4 Video", url: stream }
+          ]
+        }
+      };
+    }
+  } catch (e) {}
+
+  // 6. YouTube or generic fallback
+  const isYt = /youtu(\.be|be\.com)/i.test(url);
+  return {
+    ok: true,
+    data: {
+      title: isYt ? "YouTube Video" : "Online Video",
+      thumbnail: getThumbnailForUrl(url),
+      duration: 0,
+      platform: isYt ? "YouTube" : "Video",
+      engine: "standalone",
+      qualities: [
+        { height: 1080, label: "Auto-HD Quality", size: "MP4 Video", url: url },
+        { height: 720, label: "720p HD", size: "MP4 Video", url: url }
+      ]
+    }
+  };
+}
 
 // ✅ FIX: thumbnail and turbo parameters in function signature
 async function startDownload(url, quality = "best", audioOnly = false, title = "Video", startTime = null, endTime = null, thumbnail = "", turbo = true) {
