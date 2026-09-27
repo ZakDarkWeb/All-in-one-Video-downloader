@@ -2843,6 +2843,20 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   let activeJobId = null;
   let pollTimer = null;
   let deferredPrompt = null;
+  let currentActiveClipUrl = "";
+  let mUrlInput = null;
+  let mStartDlBtn = null;
+  let mProgCard = null;
+  let mDoneBox = null;
+
+  function initCoreDomElements() {
+    if (!mUrlInput) mUrlInput = document.getElementById('mUrlInput');
+    if (!mStartDlBtn) mStartDlBtn = document.getElementById('mStartDlBtn');
+    if (!mProgCard) mProgCard = document.getElementById('mProgCard');
+    if (!mDoneBox) mDoneBox = document.getElementById('mDoneBox');
+  }
+  document.addEventListener('DOMContentLoaded', initCoreDomElements);
+  setTimeout(initCoreDomElements, 50);
 
   // ── PWA Installation Support ──
   if ('serviceWorker' in navigator) {
@@ -3495,6 +3509,12 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   function openClipSheet(url, source = 'clipboard') {
+    if (!url) return;
+    currentActiveClipUrl = url;
+    initCoreDomElements();
+    if (mUrlInput) {
+      mUrlInput.value = url;
+    }
     const meta = detectPlatform(url);
     const sheet = document.getElementById('mClipSheet');
     const badgeIcon = document.getElementById('mClipPlatformIcon');
@@ -3657,8 +3677,13 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   const btnClipDownloadNow = document.getElementById('btnClipDownloadNow');
   if (btnClipDownloadNow) {
     btnClipDownloadNow.onclick = () => {
-      const raw = mUrlInput.value.trim();
-      if (!raw) return;
+      initCoreDomElements();
+      const raw = (mUrlInput ? mUrlInput.value.trim() : '') || currentActiveClipUrl;
+      if (!raw) {
+        showToast("⚠️ Koi link detect nahi hua. Pehle link paste karein!");
+        return;
+      }
+      if (mUrlInput) mUrlInput.value = raw;
       lastHandledClipUrl = raw;
       sessionStorage.setItem('zdown_last_clip', lastHandledClipUrl);
       closeClipSheet();
@@ -3666,15 +3691,17 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       switchMainTab('dl');
       if (bulkDlSection) bulkDlSection.style.display = 'none';
       if (singleDlSection) singleDlSection.style.display = 'flex';
-      mStartDlBtn.click();
+      if (mStartDlBtn) mStartDlBtn.click();
     };
   }
 
   const btnClipWatchPreview = document.getElementById('btnClipWatchPreview');
   const mClipThumbPlayBtn = document.getElementById('mClipThumbPlayBtn');
   function triggerWatchPreview() {
-    const raw = mUrlInput.value.trim();
+    initCoreDomElements();
+    const raw = (mUrlInput ? mUrlInput.value.trim() : '') || currentActiveClipUrl;
     if (!raw) return;
+    if (mUrlInput) mUrlInput.value = raw;
     closeClipSheet();
     if (mFloatingBubble) mFloatingBubble.style.display = 'none';
     if (/\.(mp4|webm|mov|m4v|mp3|m4a)($|\?)/i.test(raw)) {
@@ -3683,7 +3710,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       switchMainTab('dl');
       if (bulkDlSection) bulkDlSection.style.display = 'none';
       if (singleDlSection) singleDlSection.style.display = 'flex';
-      mStartDlBtn.click();
+      if (mStartDlBtn) mStartDlBtn.click();
     }
   }
   if (btnClipWatchPreview) btnClipWatchPreview.onclick = triggerWatchPreview;
@@ -3741,10 +3768,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }, { once: true });
 
   // ── Start Download ──
-  const mStartDlBtn = document.getElementById('mStartDlBtn');
-  const mUrlInput = document.getElementById('mUrlInput');
-  const mProgCard = document.getElementById('mProgCard');
-  const mDoneBox = document.getElementById('mDoneBox');
+  mStartDlBtn = document.getElementById('mStartDlBtn');
+  mUrlInput = document.getElementById('mUrlInput');
+  mProgCard = document.getElementById('mProgCard');
+  mDoneBox = document.getElementById('mDoneBox');
 
   // ── Toast Notification Helper ──
   function showToast(msg, duration = 3000) {
@@ -4399,6 +4426,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           ok: true,
           isNativeHandled: true,
           title: "Instagram Reel",
+          targetUrl: url,
           message: "Instagram video background me detect ho rahi hai. Notification bar check karein!"
         };
       }
@@ -4438,7 +4466,19 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         }
       }
 
-      throw new Error("Instagram direct stream detect nahi ho saki. Video link public hona zaroori hai.");
+      // Branch 3: In-App 1-Tap Fast Resolver (Zero External Tab Popups)
+      return {
+        ok: true,
+        isExternalResolver: true,
+        platform: 'instagram',
+        title: "Instagram Reel / Video",
+        url: url,
+        primaryResolver: "https://snapinsta.app/",
+        primaryName: "⚡ 1-Tap Download via SnapInsta",
+        altResolver: "https://saveig.app/",
+        altName: "📱 Alternate Server (SaveIG)",
+        desc: "⚡ Instagram stream detected! Link copy ho chuka hai, neeche 1-Tap button se In-App Browser me download karein:"
+      };
     }
 
     throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
@@ -4451,7 +4491,19 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       showToast("⚠️ Valid video stream nahi mili. Download blocked.");
       return;
     }
-    const safeName = filename || `video_${Date.now()}.mp4`;
+    const safeName = (filename || `video_${Date.now()}.mp4`).replace(/[\\/:*?"<>|]/g, '_');
+
+    // 0. Primary Native Android DownloadManager (Saves directly to /Download/ and Gallery with System Notification)
+    if (window.Android && typeof window.Android.startNativeDownload === 'function') {
+      try {
+        window.Android.startNativeDownload(downloadUrl, safeName);
+        showToast("⬇️ Download Android notification bar me shuru ho gaya!");
+        return;
+      } catch (err) {
+        console.warn("Native download trigger error:", err);
+      }
+    }
+
     showToast("⬇️ Device me download shuru ho raha hai…");
 
     // Method 1: Try Blob download (forces real native download on mobile browsers when CORS is open)
@@ -4495,8 +4547,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   function onDownloadDoneDirect(result) {
-    mStartDlBtn.disabled = false;
-    mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+    initCoreDomElements();
+    if (mStartDlBtn) {
+      mStartDlBtn.disabled = false;
+      mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+    }
 
     // 0. Native Android Handled (In-App Instagram Sniffer & Direct Save)
     if (result.isNativeHandled) {
@@ -4505,6 +4560,45 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       document.getElementById('mProgFill').style.width = "100%";
       document.getElementById('mProgSpeed').textContent = "⚡ Direct Native Stream";
       showToast(result.message || "✅ Video download shuru ho gaya hai!");
+
+      const tickEl = document.getElementById('mDoneTick');
+      if (tickEl) tickEl.textContent = "⚡";
+      document.getElementById('mDoneTitle').textContent = result.title || "Instagram Video";
+      const subEl = document.getElementById('mDoneSub');
+      if (subEl) subEl.textContent = "Android Notification Bar me download shuru ho raha hai";
+
+      const hint = document.getElementById('mDoneHint');
+      if (hint) {
+        hint.innerHTML = `📥 Video phone ke Download folder me save ho rahi hai. Live status dekhne ya reel play karne ke liye In-App Browser open karein:`;
+        hint.style.background = "rgba(0, 242, 254, 0.12)";
+        hint.style.borderColor = "rgba(0, 242, 254, 0.35)";
+        hint.style.color = "#38bdf8";
+      }
+
+      const actions = document.getElementById('mDoneActions');
+      if (actions) {
+        const targetUrl = result.targetUrl || (mUrlInput ? mUrlInput.value.trim() : "") || currentActiveClipUrl;
+        actions.innerHTML = `
+          <button class="m-btn-save-phone" id="mOpenMiniBrowserBtn" type="button" style="background:var(--cyber-grad); color:#070a13; font-weight:800; border:none; cursor:pointer; width:100%; border-radius:12px; padding:13px; font-size:14px; box-shadow:0 4px 15px rgba(0,242,254,0.35);">
+            🌐 Open in In-App Browser (Live Sniffer)
+          </button>
+        `;
+        const obBtn = document.getElementById('mOpenMiniBrowserBtn');
+        if (obBtn) {
+          obBtn.onclick = () => {
+            if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
+              window.Android.openMiniBrowser(targetUrl);
+            } else {
+              window.open(targetUrl, '_blank');
+            }
+          };
+        }
+      }
+
+      if (mDoneBox) mDoneBox.classList.add('show');
+      setTimeout(() => {
+        if (mDoneBox) mDoneBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 250);
       return;
     }
 
@@ -4555,8 +4649,12 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           try {
             await navigator.clipboard.writeText(result.url);
           } catch {}
-          showToast("📋 Link copied! Extractor khul raha hai...");
-          window.open(result.primaryResolver, '_blank');
+          showToast("📋 Link copied! In-App Extractor khul raha hai...");
+          if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
+            window.Android.openMiniBrowser(result.primaryResolver);
+          } else {
+            window.open(result.primaryResolver, '_blank');
+          }
         };
 
         document.getElementById('mExtAltBtn').onclick = async () => {
@@ -4564,7 +4662,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
             await navigator.clipboard.writeText(result.url);
           } catch {}
           showToast("📋 Link copied! Server khul raha hai...");
-          window.open(result.altResolver, '_blank');
+          if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
+            window.Android.openMiniBrowser(result.altResolver);
+          } else {
+            window.open(result.altResolver, '_blank');
+          }
         };
 
         document.getElementById('mExtCopyBtn').onclick = async () => {
@@ -4664,11 +4766,13 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   mStartDlBtn.onclick = async () => {
-    const raw = mUrlInput.value.trim();
+    initCoreDomElements();
+    const raw = (mUrlInput ? mUrlInput.value.trim() : '') || currentActiveClipUrl;
     if (!raw) {
       showToast("⚠️ Pehle koi video link paste karein!");
       return;
     }
+    if (mUrlInput) mUrlInput.value = raw;
 
     // Clean URL in case share text was pasted (e.g. from TikTok share)
     const urlMatch = raw.match(/https?:\/\/[^\s]+/i);
@@ -4685,7 +4789,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
     const isAudio = selectedFormat === "audio";
     const quality = isAudio ? "best" : (selectedFormat === "720" ? "720" : "best");
-    const turbo = document.getElementById('mTurboToggle').checked;
+    const turboEl = document.getElementById('mTurboToggle');
+    const turbo = turboEl ? turboEl.checked : false;
 
     if ((isLocalBackend || activeBackendUrl) && backendAvailable) {
       // 1. Laptop Turbo Mode (When PC is On & accessed via localhost or Wi-Fi)

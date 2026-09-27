@@ -1,11 +1,13 @@
 package com.basit.zdownloader;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -16,6 +18,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -93,10 +96,23 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(rootFrameLayout);
 
+        checkRuntimePermissions();
         handleIntent(getIntent());
 
         // Load local bundled web app from assets
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private void checkRuntimePermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Build.VERSION_CODES.Q > Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 102);
+            }
+        }
     }
 
     @Override
@@ -145,11 +161,9 @@ public class MainActivity extends AppCompatActivity {
                             mainHandler.postDelayed(() -> {
                                 String js = "javascript:(function() {" +
                                         "  var inp = document.getElementById('mUrlInput');" +
-                                        "  if (inp && (!inp.value || inp.value !== '" + foundUrl.replace("'", "\\'") + "')) {" +
-                                        "    inp.value = '" + foundUrl.replace("'", "\\'") + "';" +
-                                        "    if (typeof showToast === 'function') showToast('📋 Link clipboard se auto-paste ho gaya!');" +
-                                        "    if (typeof openClipSheet === 'function') openClipSheet('" + foundUrl.replace("'", "\\'") + "', 'clipboard');" +
-                                        "  }" +
+                                        "  if (inp) { inp.value = '" + foundUrl.replace("'", "\\'") + "'; }" +
+                                        "  if (typeof showToast === 'function') showToast('📋 Link clipboard se auto-paste ho gaya!');" +
+                                        "  if (typeof openClipSheet === 'function') openClipSheet('" + foundUrl.replace("'", "\\'") + "', 'clipboard');" +
                                         "})();";
                                 webView.evaluateJavascript(js, null);
                             }, 500);
@@ -197,6 +211,8 @@ public class MainActivity extends AppCompatActivity {
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setSupportMultipleWindows(true);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
@@ -206,7 +222,39 @@ public class MainActivity extends AppCompatActivity {
         // Expose Native Android JS Bridge
         webView.addJavascriptInterface(new WebAppInterface(), "Android");
 
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                WebView newWebView = new WebView(MainActivity.this);
+                newWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
+                        String u = req.getUrl().toString();
+                        if (isMediaUrl(u)) {
+                            triggerDownload(u, "ZDownloader_" + System.currentTimeMillis() + ".mp4");
+                        } else {
+                            showMiniBrowser(u);
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView v, String u) {
+                        if (isMediaUrl(u)) {
+                            triggerDownload(u, "ZDownloader_" + System.currentTimeMillis() + ".mp4");
+                        } else {
+                            showMiniBrowser(u);
+                        }
+                        return true;
+                    }
+                });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(newWebView);
+                resultMsg.sendToTarget();
+                return true;
+            }
+        });
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
@@ -218,16 +266,27 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String targetUrl = request.getUrl().toString();
-                // Block external ad/redirect sites (like snapinsta, fastdl, ads) from taking over
+                return handleNavigation(targetUrl);
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String targetUrl) {
+                return handleNavigation(targetUrl);
+            }
+
+            private boolean handleNavigation(String targetUrl) {
+                if (targetUrl == null) return false;
                 if (targetUrl.startsWith("file:///android_asset/")) {
                     return false;
                 }
-                // If it's a direct media download link, intercept it
                 if (isMediaUrl(targetUrl)) {
-                    triggerDownload(targetUrl, "video_" + System.currentTimeMillis() + ".mp4");
+                    triggerDownload(targetUrl, "ZDownloader_" + System.currentTimeMillis() + ".mp4");
                     return true;
                 }
-                // Do not redirect away from app
+                if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://")) {
+                    showMiniBrowser(targetUrl);
+                    return true;
+                }
                 return true;
             }
         });
@@ -247,41 +306,56 @@ public class MainActivity extends AppCompatActivity {
     private boolean isMediaUrl(String url) {
         if (url == null) return false;
         String u = url.toLowerCase();
+        if (u.contains(".js") || u.contains(".css") || u.contains(".html") || u.contains("login") || u.contains("auth")) return false;
         return u.endsWith(".mp4") || u.endsWith(".mp3") || u.endsWith(".mkv") || u.endsWith(".webm") ||
-                u.contains(".mp4?") || u.contains("snapcdn.app") || (u.contains("fbcdn.net") && u.contains(".mp4"));
+                u.contains(".mp4?") || u.contains(".mp3?") || u.contains(".webm?") ||
+                u.contains("snapcdn") || u.contains("fbcdn.net") || u.contains("cdninstagram.com") ||
+                u.contains("tiktokcdn") || u.contains("akamaized.net") || u.contains("tikwm.com") ||
+                u.contains("googlevideo.com") || u.contains("mime=video") || u.contains("videoplayback") ||
+                u.contains("twimg.com/video") || u.contains("v.redd.it");
     }
 
     public void triggerDownload(String url, String filename) {
+        if (url == null || url.trim().isEmpty()) {
+            Toast.makeText(MainActivity.this, "Invalid download URL", Toast.LENGTH_SHORT).show();
+            return;
+        }
         try {
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-            if (!filename.toLowerCase().endsWith(".mp4") && !filename.toLowerCase().endsWith(".mp3")) {
-                filename = "ZDownloader_" + System.currentTimeMillis() + ".mp4";
+            String cleanUrl = url.trim().replace("&amp;", "&");
+            String safeFilename = (filename != null && !filename.trim().isEmpty())
+                    ? filename.replaceAll("[\\\\/:*?\"<>|]", "_")
+                    : ("ZDownloader_" + System.currentTimeMillis() + ".mp4");
+
+            if (!safeFilename.toLowerCase().endsWith(".mp4") && !safeFilename.toLowerCase().endsWith(".mp3")) {
+                safeFilename = safeFilename + ".mp4";
             }
 
-            String mimeType = filename.endsWith(".mp3") ? "audio/mpeg" : "video/mp4";
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(cleanUrl));
+            String mimeType = safeFilename.endsWith(".mp3") ? "audio/mpeg" : "video/mp4";
             request.setMimeType(mimeType);
             request.addRequestHeader("User-Agent", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36");
 
-            String cookies = CookieManager.getInstance().getCookie(url);
-            if (cookies != null) {
-                request.addRequestHeader("Cookie", cookies);
-            }
+            try {
+                String cookies = CookieManager.getInstance().getCookie(cleanUrl);
+                if (cookies != null && !cookies.isEmpty()) {
+                    request.addRequestHeader("Cookie", cookies);
+                }
+            } catch (Exception ignored) {}
 
-            request.setTitle(filename);
+            request.setTitle(safeFilename);
             request.setDescription("Downloading video via ZDownloader PRO");
-            request.allowScanningByMediaScanner();
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, safeFilename);
 
             DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
             if (dm != null) {
                 dm.enqueue(request);
-                Toast.makeText(MainActivity.this, "⬇️ Direct Download Started: " + filename, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "⬇️ Direct Download Started: " + safeFilename, Toast.LENGTH_LONG).show();
             }
 
             // Notify webView of success and reset buttons
             mainHandler.post(() -> {
-                String js = "if (typeof showToast === 'function') showToast('✅ Video aapke phone me direct save ho rahi hai!');" +
+                String js = "if (typeof showToast === 'function') showToast('✅ Video phone ke Download folder me save ho rahi hai!');" +
                         "var st = document.getElementById('mProgStatus'); if (st) st.textContent = '✅ Download Started in Android Bar!';" +
                         "var pct = document.getElementById('mProgPct'); if (pct) pct.textContent = '100%';" +
                         "var fill = document.getElementById('mProgFill'); if (fill) fill.style.width = '100%';" +
@@ -289,7 +363,13 @@ public class MainActivity extends AppCompatActivity {
                 webView.evaluateJavascript(js, null);
             });
         } catch (Exception e) {
+            e.printStackTrace();
             Toast.makeText(MainActivity.this, "Download error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            mainHandler.post(() -> {
+                String js = "if (typeof showToast === 'function') showToast('⚠️ Download error: " + e.getMessage().replace("'", "\\'") + "');" +
+                        "var btn = document.getElementById('mStartDlBtn'); if (btn) { btn.disabled = false; btn.innerHTML = '<span>⚡ Start Download</span>'; }";
+                webView.evaluateJavascript(js, null);
+            });
         }
     }
 
@@ -310,6 +390,15 @@ public class MainActivity extends AppCompatActivity {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 CookieManager.getInstance().setAcceptThirdPartyCookies(snifferWebView, true);
+            }
+
+            // Attach to rootFrameLayout invisibly so WebKit activates rendering & media decoding
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(1, 1);
+            lp.gravity = Gravity.BOTTOM | Gravity.END;
+            snifferWebView.setLayoutParams(lp);
+            snifferWebView.setAlpha(0.01f);
+            if (rootFrameLayout != null) {
+                rootFrameLayout.addView(snifferWebView);
             }
 
             // Interface for the injected JS extractor
@@ -381,26 +470,27 @@ public class MainActivity extends AppCompatActivity {
                             "  if (play) { try { play.click(); } catch(e) {} }" +
                             "  if (!check()) {" +
                             "    var iv = setInterval(function() { if (check()) clearInterval(iv); }, 500);" +
-                            "    setTimeout(function() { clearInterval(iv); }, 12000);" +
+                            "    setTimeout(function() { clearInterval(iv); }, 8000);" +
                             "  }" +
                             "})();";
                     view.evaluateJavascript(js, null);
                 }
             });
 
-            // Auto-cancel after 15 seconds if not captured
+            // If not auto-captured within 7 seconds, smoothly switch to Mini Browser so user sees the Reel and 1-tap sniffer button!
             snifferTimeoutRunnable = () -> {
                 if (snifferWebView != null) {
                     destroySniffer();
                     mainHandler.post(() -> {
-                        String js = "if (typeof showToast === 'function') showToast('⚠️ Instagram video direct detect nahi ho saki. Account ya link public hona zaroori hai.');" +
-                                "var st = document.getElementById('mProgStatus'); if (st) st.textContent = '❌ Download Timeout: Link public hona zaroori hai.';" +
+                        String js = "if (typeof showToast === 'function') showToast('⚡ Video detect karne ke liye In-App Browser khul raha hai...');" +
+                                "var st = document.getElementById('mProgStatus'); if (st) st.textContent = '🌐 In-App Browser Active';" +
                                 "var btn = document.getElementById('mStartDlBtn'); if (btn) { btn.disabled = false; btn.innerHTML = '<span>⚡ Start Download</span>'; }";
                         webView.evaluateJavascript(js, null);
+                        showMiniBrowser(igUrl);
                     });
                 }
             };
-            mainHandler.postDelayed(snifferTimeoutRunnable, 15000);
+            mainHandler.postDelayed(snifferTimeoutRunnable, 7000);
 
             // Clean shortcode and choose best URL
             String shortcode = extractInstagramShortcode(igUrl);
@@ -443,8 +533,13 @@ public class MainActivity extends AppCompatActivity {
             snifferTimeoutRunnable = null;
         }
         if (snifferWebView != null) {
-            snifferWebView.stopLoading();
-            snifferWebView.destroy();
+            try {
+                if (rootFrameLayout != null) {
+                    rootFrameLayout.removeView(snifferWebView);
+                }
+                snifferWebView.stopLoading();
+                snifferWebView.destroy();
+            } catch (Exception ignored) {}
             snifferWebView = null;
         }
     }
