@@ -1,16 +1,26 @@
 package com.basit.zdownloader;
 
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
@@ -22,19 +32,27 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
-import android.media.MediaScannerConnection;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONArray;
@@ -42,6 +60,7 @@ import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
 
+    private FrameLayout rootFrameLayout;
     private WebView webView;
     private WebView snifferWebView = null;
     private String pendingSharedUrl = null;
@@ -49,14 +68,31 @@ public class MainActivity extends AppCompatActivity {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Runnable snifferTimeoutRunnable = null;
 
+    // ── Native In-App Mini Browser Components ──
+    private LinearLayout miniBrowserLayout;
+    private WebView miniBrowserWebView;
+    private EditText browserUrlInput;
+    private ProgressBar browserProgressBar;
+    private Button btnBrowserSniffer;
+    private final List<String> detectedMediaUrls = new CopyOnWriteArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        rootFrameLayout = new FrameLayout(this);
+        rootFrameLayout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
         webView = new WebView(this);
-        setContentView(webView);
+        webView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        rootFrameLayout.addView(webView);
 
         setupWebView();
+        setupMiniBrowser();
+        rootFrameLayout.addView(miniBrowserLayout);
+
+        setContentView(rootFrameLayout);
+
         handleIntent(getIntent());
 
         // Load local bundled web app from assets
@@ -605,6 +641,28 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        @JavascriptInterface
+        public void openMiniBrowser(String url) {
+            mainHandler.post(() -> showMiniBrowser(url));
+        }
+
+        @JavascriptInterface
+        public void closeMiniBrowser() {
+            mainHandler.post(() -> MainActivity.this.closeMiniBrowser());
+        }
+
+        @JavascriptInterface
+        public void setStatusBarColor(String hexColor) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mainHandler.post(() -> {
+                    try {
+                        int color = Color.parseColor(hexColor);
+                        getWindow().setStatusBarColor(color);
+                    } catch (Exception ignored) {}
+                });
+            }
+        }
+
         private String formatFileSize(long bytes) {
             if (bytes <= 0) return "0 B";
             if (bytes < 1024) return bytes + " B";
@@ -613,8 +671,385 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // ── Native In-App Mini Browser & Smart Video Sniffer Engine ──
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private void setupMiniBrowser() {
+        miniBrowserLayout = new LinearLayout(this);
+        miniBrowserLayout.setOrientation(LinearLayout.VERTICAL);
+        miniBrowserLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        miniBrowserLayout.setBackgroundColor(Color.parseColor("#070a13"));
+        miniBrowserLayout.setVisibility(View.GONE);
+
+        // Top Bar
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+        topBar.setBackgroundColor(Color.parseColor("#080c18"));
+        topBar.setGravity(Gravity.CENTER_VERTICAL);
+        topBar.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
+        topBar.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(54)));
+
+        // Close / Home Button (✕)
+        TextView btnClose = new TextView(this);
+        btnClose.setText("✕");
+        btnClose.setTextColor(Color.parseColor("#f8fafc"));
+        btnClose.setTextSize(18);
+        btnClose.setTypeface(Typeface.DEFAULT_BOLD);
+        btnClose.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+        btnClose.setOnClickListener(v -> closeMiniBrowser());
+        topBar.addView(btnClose);
+
+        // Back button (◀)
+        TextView btnBack = new TextView(this);
+        btnBack.setText("◀");
+        btnBack.setTextColor(Color.parseColor("#94a3b8"));
+        btnBack.setTextSize(14);
+        btnBack.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
+        btnBack.setOnClickListener(v -> {
+            if (miniBrowserWebView != null && miniBrowserWebView.canGoBack()) {
+                miniBrowserWebView.goBack();
+            }
+        });
+        topBar.addView(btnBack);
+
+        // Forward button (▶)
+        TextView btnFwd = new TextView(this);
+        btnFwd.setText("▶");
+        btnFwd.setTextColor(Color.parseColor("#94a3b8"));
+        btnFwd.setTextSize(14);
+        btnFwd.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
+        btnFwd.setOnClickListener(v -> {
+            if (miniBrowserWebView != null && miniBrowserWebView.canGoForward()) {
+                miniBrowserWebView.goForward();
+            }
+        });
+        topBar.addView(btnFwd);
+
+        // URL / Search Input
+        browserUrlInput = new EditText(this);
+        LinearLayout.LayoutParams urlParams = new LinearLayout.LayoutParams(0, dpToPx(38), 1.0f);
+        urlParams.setMargins(dpToPx(4), 0, dpToPx(4), 0);
+        browserUrlInput.setLayoutParams(urlParams);
+        browserUrlInput.setTextColor(Color.WHITE);
+        browserUrlInput.setHintTextColor(Color.parseColor("#64748b"));
+        browserUrlInput.setHint("Search or enter web address...");
+        browserUrlInput.setTextSize(12);
+        browserUrlInput.setSingleLine(true);
+        browserUrlInput.setImeOptions(EditorInfo.IME_ACTION_GO);
+        browserUrlInput.setPadding(dpToPx(12), dpToPx(4), dpToPx(12), dpToPx(4));
+
+        GradientDrawable inputBg = new GradientDrawable();
+        inputBg.setColor(Color.parseColor("#141c2e"));
+        inputBg.setCornerRadius(dpToPx(19));
+        inputBg.setStroke(dpToPx(1), Color.parseColor("#2a3b5c"));
+        browserUrlInput.setBackground(inputBg);
+
+        browserUrlInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
+                hideKeyboard(browserUrlInput);
+                String query = browserUrlInput.getText().toString().trim();
+                navigateToMiniBrowserUrl(query);
+                return true;
+            }
+            return false;
+        });
+        topBar.addView(browserUrlInput);
+
+        // Refresh Button (🔄)
+        TextView btnRefresh = new TextView(this);
+        btnRefresh.setText("🔄");
+        btnRefresh.setTextColor(Color.parseColor("#94a3b8"));
+        btnRefresh.setTextSize(14);
+        btnRefresh.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
+        btnRefresh.setOnClickListener(v -> {
+            if (miniBrowserWebView != null) miniBrowserWebView.reload();
+        });
+        topBar.addView(btnRefresh);
+
+        miniBrowserLayout.addView(topBar);
+
+        // Progress Bar (horizontal)
+        browserProgressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        browserProgressBar.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(3)));
+        browserProgressBar.setMax(100);
+        browserProgressBar.setProgress(0);
+        miniBrowserLayout.addView(browserProgressBar);
+
+        // FrameLayout containing miniBrowserWebView and floating Sniffer Button
+        FrameLayout browserContainer = new FrameLayout(this);
+        browserContainer.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f));
+
+        miniBrowserWebView = new WebView(this);
+        miniBrowserWebView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        setupMiniBrowserWebView();
+        browserContainer.addView(miniBrowserWebView);
+
+        // Floating Action Sniffer Button
+        btnBrowserSniffer = new Button(this);
+        FrameLayout.LayoutParams snifferParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dpToPx(46));
+        snifferParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+        snifferParams.bottomMargin = dpToPx(20);
+        btnBrowserSniffer.setLayoutParams(snifferParams);
+        btnBrowserSniffer.setText("⚡ 1 Video Detected • Download");
+        btnBrowserSniffer.setTextColor(Color.parseColor("#070a13"));
+        btnBrowserSniffer.setTextSize(13);
+        btnBrowserSniffer.setTypeface(Typeface.DEFAULT_BOLD);
+        btnBrowserSniffer.setPadding(dpToPx(20), dpToPx(6), dpToPx(20), dpToPx(6));
+
+        GradientDrawable btnBg = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{Color.parseColor("#00f2fe"), Color.parseColor("#8b5cf6")}
+        );
+        btnBg.setCornerRadius(dpToPx(23));
+        btnBrowserSniffer.setBackground(btnBg);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            btnBrowserSniffer.setElevation(dpToPx(8));
+        }
+        btnBrowserSniffer.setVisibility(View.GONE);
+        btnBrowserSniffer.setOnClickListener(v -> showDetectedVideosDialog());
+        browserContainer.addView(btnBrowserSniffer);
+
+        miniBrowserLayout.addView(browserContainer);
+    }
+
+    private void setupMiniBrowserWebView() {
+        WebSettings s = miniBrowserWebView.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setDatabaseEnabled(true);
+        s.setAllowFileAccess(true);
+        s.setAllowContentAccess(true);
+        s.setMediaPlaybackRequiresUserGesture(false);
+        s.setUseWideViewPort(true);
+        s.setLoadWithOverviewMode(true);
+        s.setSupportZoom(true);
+        s.setBuiltInZoomControls(true);
+        s.setDisplayZoomControls(false);
+        s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            CookieManager.getInstance().setAcceptThirdPartyCookies(miniBrowserWebView, true);
+        }
+
+        // Bridge for Injected DOM Video Sniffer
+        miniBrowserWebView.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void onStreamFound(String streamUrl, String title) {
+                if (streamUrl != null && !streamUrl.isEmpty()) {
+                    addDetectedVideo(streamUrl);
+                }
+            }
+        }, "NativeMiniSniffer");
+
+        miniBrowserWebView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onProgressChanged(WebView view, int newProgress) {
+                super.onProgressChanged(view, newProgress);
+                if (browserProgressBar != null) {
+                    browserProgressBar.setProgress(newProgress);
+                    browserProgressBar.setVisibility(newProgress == 100 ? View.GONE : View.VISIBLE);
+                }
+            }
+        });
+
+        miniBrowserWebView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                if (browserUrlInput != null && !browserUrlInput.hasFocus()) {
+                    browserUrlInput.setText(url);
+                }
+                detectedMediaUrls.clear();
+                updateSnifferButton();
+            }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                String reqUrl = request.getUrl().toString();
+                if (isSniffableVideoUrl(reqUrl)) {
+                    addDetectedVideo(reqUrl);
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                if (browserUrlInput != null && !browserUrlInput.hasFocus()) {
+                    browserUrlInput.setText(url);
+                }
+
+                // Inject DOM video & stream observer
+                String js = "(function() {" +
+                        "  function checkDomStreams() {" +
+                        "    try {" +
+                        "      var vids = document.querySelectorAll('video');" +
+                        "      for (var i = 0; i < vids.length; i++) {" +
+                        "        var s = vids[i].currentSrc || vids[i].src;" +
+                        "        if (!s) { var sc = vids[i].querySelector('source'); if (sc) s = sc.src; }" +
+                        "        if (s && s.startsWith('http') && !s.startsWith('blob:')) {" +
+                        "          if (window.NativeMiniSniffer) window.NativeMiniSniffer.onStreamFound(s, document.title || 'Video');" +
+                        "        }" +
+                        "      }" +
+                        "      var og = document.querySelector('meta[property=\"og:video\"]') || document.querySelector('meta[property=\"og:video:secure_url\"]');" +
+                        "      if (og && og.content && og.content.startsWith('http')) {" +
+                        "        if (window.NativeMiniSniffer) window.NativeMiniSniffer.onStreamFound(og.content, document.title || 'Video');" +
+                        "      }" +
+                        "    } catch(e) {}" +
+                        "  }" +
+                        "  checkDomStreams();" +
+                        "  if (!window.__miniSniffIv) window.__miniSniffIv = setInterval(checkDomStreams, 2000);" +
+                        "})();";
+                view.evaluateJavascript(js, null);
+            }
+        });
+    }
+
+    private void hideKeyboard(View view) {
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
+    private void navigateToMiniBrowserUrl(String query) {
+        if (query == null || query.isEmpty()) return;
+        String target = query;
+        if (!target.startsWith("http://") && !target.startsWith("https://")) {
+            if (target.contains(".") && !target.contains(" ")) {
+                target = "https://" + target;
+            } else {
+                try {
+                    target = "https://www.google.com/search?q=" + URLEncoder.encode(target, "UTF-8");
+                } catch (Exception e) {
+                    target = "https://www.google.com/search?q=" + target;
+                }
+            }
+        }
+        if (miniBrowserWebView != null) {
+            miniBrowserWebView.loadUrl(target);
+        }
+    }
+
+    private boolean isSniffableVideoUrl(String url) {
+        if (url == null) return false;
+        String u = url.toLowerCase();
+        if (u.contains(".js") || u.contains(".css") || u.contains(".png") || u.contains(".jpg") ||
+                u.contains(".jpeg") || u.contains(".gif") || u.contains(".webp") || u.contains(".svg") ||
+                u.contains(".ico") || u.contains(".woff") || u.contains("google-analytics") ||
+                u.contains("doubleclick") || u.contains("facebook.com/tr") || u.contains("/ad/") || u.contains("pagead")) {
+            return false;
+        }
+        if (u.contains(".mp4") || u.contains(".m3u8") || u.contains(".webm") || u.contains(".mpd") || u.contains(".m4v") || u.contains(".mkv")) {
+            return true;
+        }
+        if (u.contains("mime=video") || u.contains("video_dashinit") || u.contains("/videoplayback") ||
+                (u.contains("fbcdn.net") && (u.contains("/v/") || u.contains(".mp4"))) ||
+                (u.contains("cdninstagram.com") && (u.contains("/t50.") || u.contains(".mp4"))) ||
+                u.contains("v.redd.it") || u.contains("tiktokcdn.com") || u.contains("twimg.com/video") ||
+                u.contains("video.twimg.com") || u.contains("dailymotion.com/cdn") || u.contains("vimeocdn.com")) {
+            return true;
+        }
+        return false;
+    }
+
+    private void addDetectedVideo(String streamUrl) {
+        if (!detectedMediaUrls.contains(streamUrl)) {
+            detectedMediaUrls.add(streamUrl);
+            mainHandler.post(this::updateSnifferButton);
+        }
+    }
+
+    private void updateSnifferButton() {
+        if (btnBrowserSniffer == null) return;
+        int count = detectedMediaUrls.size();
+        if (count > 0) {
+            btnBrowserSniffer.setText("⚡ " + count + " Video" + (count > 1 ? "s" : "") + " Found • Tap to Download");
+            btnBrowserSniffer.setVisibility(View.VISIBLE);
+        } else {
+            btnBrowserSniffer.setVisibility(View.GONE);
+        }
+    }
+
+    private void showDetectedVideosDialog() {
+        if (detectedMediaUrls.isEmpty()) {
+            Toast.makeText(MainActivity.this, "No video stream detected yet. Play a video on this page!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("⚡ Detected Streams (" + detectedMediaUrls.size() + ")");
+
+        String[] items = new String[detectedMediaUrls.size()];
+        for (int i = 0; i < detectedMediaUrls.size(); i++) {
+            String u = detectedMediaUrls.get(i);
+            String label = "Stream #" + (i + 1) + " • ";
+            if (u.contains(".m3u8")) label += "HLS Stream (.m3u8)";
+            else if (u.contains(".mp3")) label += "Audio (.mp3)";
+            else label += "Direct Video (.mp4)";
+            items[i] = label;
+        }
+
+        builder.setItems(items, (dialog, which) -> {
+            String chosen = detectedMediaUrls.get(which);
+            String ext = chosen.contains(".mp3") ? ".mp3" : ".mp4";
+            triggerDownload(chosen, "Browser_Video_" + System.currentTimeMillis() + ext);
+        });
+
+        builder.setPositiveButton("⬇️ Download Latest", (dialog, which) -> {
+            String last = detectedMediaUrls.get(detectedMediaUrls.size() - 1);
+            String ext = last.contains(".mp3") ? ".mp3" : ".mp4";
+            triggerDownload(last, "Browser_Video_" + System.currentTimeMillis() + ext);
+        });
+
+        builder.setNeutralButton("📋 Copy Link", (dialog, which) -> {
+            String last = detectedMediaUrls.get(detectedMediaUrls.size() - 1);
+            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null) {
+                cm.setPrimaryClip(ClipData.newPlainText("Stream URL", last));
+                Toast.makeText(MainActivity.this, "📋 Stream link copied to clipboard!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    public void showMiniBrowser(String url) {
+        if (miniBrowserLayout != null) {
+            miniBrowserLayout.setVisibility(View.VISIBLE);
+            if (url != null && !url.trim().isEmpty()) {
+                navigateToMiniBrowserUrl(url.trim());
+            } else {
+                if (miniBrowserWebView != null && (miniBrowserWebView.getUrl() == null || miniBrowserWebView.getUrl().isEmpty())) {
+                    miniBrowserWebView.loadUrl("https://www.google.com");
+                }
+            }
+        }
+    }
+
+    public void closeMiniBrowser() {
+        if (miniBrowserLayout != null) {
+            miniBrowserLayout.setVisibility(View.GONE);
+        }
+        if (webView != null) {
+            webView.evaluateJavascript("if (typeof onMiniBrowserClosed === 'function') onMiniBrowserClosed();", null);
+        }
+    }
+
     @Override
     public void onBackPressed() {
+        if (miniBrowserLayout != null && miniBrowserLayout.getVisibility() == View.VISIBLE) {
+            if (miniBrowserWebView != null && miniBrowserWebView.canGoBack()) {
+                miniBrowserWebView.goBack();
+            } else {
+                closeMiniBrowser();
+            }
+            return;
+        }
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
@@ -625,6 +1060,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         destroySniffer();
+        if (miniBrowserWebView != null) {
+            miniBrowserWebView.stopLoading();
+            miniBrowserWebView.destroy();
+            miniBrowserWebView = null;
+        }
         if (webView != null) {
             webView.destroy();
         }

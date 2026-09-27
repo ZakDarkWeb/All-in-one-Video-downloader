@@ -54,6 +54,70 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     --radius-md: 10px;
   }
 
+  /* ── Luxury Color Palettes & AMOLED Themes ── */
+  [data-theme="amoled"] {
+    --bg: #000000;
+    --bg-card: rgba(18, 18, 22, 0.96);
+    --border: rgba(255, 255, 255, 0.12);
+    --border-glow: rgba(255, 255, 255, 0.35);
+    --cyan: #ffffff;
+    --blue: #e2e8f0;
+    --purple: #94a3b8;
+    --cyber-grad: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+  }
+  body[data-theme="amoled"] {
+    background-image: none !important;
+    background-color: #000000 !important;
+  }
+
+  [data-theme="sunset"] {
+    --bg: #0c0608;
+    --bg-card: rgba(26, 12, 16, 0.9);
+    --border: rgba(255, 94, 58, 0.22);
+    --border-glow: rgba(255, 94, 58, 0.45);
+    --cyan: #ff5e3a;
+    --blue: #ff9020;
+    --purple: #f43f5e;
+    --cyber-grad: linear-gradient(135deg, #ff5e3a 0%, #ff9020 50%, #f43f5e 100%);
+  }
+  body[data-theme="sunset"] {
+    background-image: 
+      radial-gradient(circle at 10% 10%, rgba(255, 94, 58, 0.14) 0%, transparent 45%),
+      radial-gradient(circle at 90% 90%, rgba(244, 63, 94, 0.16) 0%, transparent 45%) !important;
+  }
+
+  [data-theme="emerald"] {
+    --bg: #040e09;
+    --bg-card: rgba(8, 24, 16, 0.9);
+    --border: rgba(16, 185, 129, 0.22);
+    --border-glow: rgba(16, 185, 129, 0.45);
+    --cyan: #10b981;
+    --blue: #34d399;
+    --purple: #059669;
+    --cyber-grad: linear-gradient(135deg, #10b981 0%, #34d399 50%, #059669 100%);
+  }
+  body[data-theme="emerald"] {
+    background-image: 
+      radial-gradient(circle at 10% 10%, rgba(16, 185, 129, 0.14) 0%, transparent 45%),
+      radial-gradient(circle at 90% 90%, rgba(5, 150, 105, 0.16) 0%, transparent 45%) !important;
+  }
+
+  [data-theme="amethyst"] {
+    --bg: #0a0614;
+    --bg-card: rgba(22, 12, 38, 0.9);
+    --border: rgba(168, 85, 247, 0.22);
+    --border-glow: rgba(168, 85, 247, 0.45);
+    --cyan: #c084fc;
+    --blue: #a855f7;
+    --purple: #e879f9;
+    --cyber-grad: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #e879f9 100%);
+  }
+  body[data-theme="amethyst"] {
+    background-image: 
+      radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.14) 0%, transparent 45%),
+      radial-gradient(circle at 90% 90%, rgba(232, 121, 249, 0.16) 0%, transparent 45%) !important;
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   body {
@@ -67,6 +131,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     min-height: 100vh;
     padding-bottom: 90px;
     overflow-x: hidden;
+    transition: background-color 0.25s ease;
   }
 
   /* ── Top Bar ── */
@@ -184,6 +249,283 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   .m-btn-install:hover {
     background: rgba(0, 242, 254, 0.22);
     box-shadow: 0 0 14px rgba(0, 242, 254, 0.4);
+  }
+
+  /* ── Header Theme Toggle Button ── */
+  .m-btn-theme {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 7px 11px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .m-btn-theme:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--cyan);
+  }
+  .m-theme-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    flex-shrink: 0;
+  }
+
+  /* ── Theme Selection Modal Cards ── */
+  .m-theme-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .m-theme-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .m-theme-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--cyan);
+  }
+  .m-theme-card.active {
+    background: rgba(0, 242, 254, 0.08);
+    border-color: var(--cyan);
+    box-shadow: 0 0 16px rgba(0, 242, 254, 0.2);
+  }
+  .m-theme-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .m-theme-swatches {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .m-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .m-theme-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .m-theme-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .m-theme-sub {
+    font-size: 10.5px;
+    color: var(--text-dim);
+  }
+  .m-theme-badge {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+  }
+  .m-theme-card.active .m-theme-badge {
+    background: var(--cyber-grad);
+    color: #070a13;
+  }
+
+  /* ── In-App Mini Browser & Video Sniffer View ── */
+  .m-browser-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glow);
+    border-radius: var(--radius-xl);
+    padding: 18px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .m-browser-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .m-browser-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .m-browser-sub {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+  .m-browser-search-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .m-browser-input-row {
+    display: flex;
+    align-items: center;
+    background: rgba(8, 12, 24, 0.85);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 4px 6px 4px 12px;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+  .m-browser-input-row:focus-within {
+    border-color: var(--cyan);
+    box-shadow: 0 0 16px rgba(0, 242, 254, 0.25);
+  }
+  .m-browser-icon {
+    font-size: 14px;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+  .m-browser-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    min-width: 0;
+  }
+  .m-browser-input::placeholder {
+    color: var(--text-dim);
+  }
+  .m-btn-browser-go {
+    background: var(--cyber-grad);
+    color: #070a13;
+    font-weight: 800;
+    font-size: 12px;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 8px 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+  .m-btn-browser-go:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+  }
+
+  .m-sniffer-banner {
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .m-sniffer-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--cyber-grad);
+    color: #070a13;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+  }
+  .m-sniffer-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .m-sniffer-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .m-sniffer-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .m-speed-dial-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  @media (min-width: 480px) {
+    .m-speed-dial-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .m-bookmark-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+  .m-bookmark-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 18px rgba(0, 242, 254, 0.2);
+  }
+  .m-bm-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .m-bm-name {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .m-bm-badge {
+    font-size: 9.5px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   /* ── Page Layout ── */
@@ -1591,6 +1933,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     <!-- Desktop Navigation Tabs (Visible on >= 768px screens) -->
     <nav class="m-desktop-tabs">
       <button class="m-desk-tab active" id="deskTabSingle" type="button">⚡ Downloader</button>
+      <button class="m-desk-tab" id="deskTabBrowser" type="button">🌐 Mini Browser</button>
       <button class="m-desk-tab" id="deskTabBulk" type="button">📋 Bulk Queue</button>
       <button class="m-desk-tab" id="deskTabLib" type="button">📂 My Files</button>
       <button class="m-desk-tab" id="deskTabStatus" type="button">🟢 Status Saver</button>
@@ -1599,6 +1942,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     </nav>
 
     <div class="m-header-actions">
+      <button class="m-btn-theme" id="btnHeaderTheme" type="button" title="Change App Theme &amp; AMOLED Black">
+        <span class="m-theme-dot" id="themeHeaderDot"></span>
+        <span id="themeHeaderLabel">Theme</span>
+      </button>
       <button id="btnCookieModal" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#f59e0b;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Instagram &amp; Account Cookies Sync">🍪</button>
       <button id="btnWifiModal" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#c084fc;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Laptop Turbo Link (Wi-Fi)">📶</button>
       <button id="btnForceRefresh" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#00f2fe;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;" title="Refresh & Clear Cache">🔄</button>
@@ -1972,6 +2319,133 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     </div>
   </div>
 
+  <!-- VIEW 5: IN-APP MINI BROWSER & SMART VIDEO SNIFFER -->
+  <div class="m-library-view" id="viewBrowser" style="display:none;">
+    <!-- Top Search & Address Launchpad -->
+    <div class="m-browser-card">
+      <div class="m-browser-header">
+        <div class="m-browser-title">
+          <span>🌐 In-App Mini Browser &amp; Smart Sniffer</span>
+          <span class="m-badge-hot">LIVE SNIFFER</span>
+        </div>
+        <div class="m-browser-sub">
+          Kisi bhi website par jao. Video chalte hi glowing <strong>⚡ Download Button</strong> automatically stream URL detect kar lega!
+        </div>
+      </div>
+
+      <div class="m-browser-search-wrap">
+        <div class="m-browser-input-row">
+          <span class="m-browser-icon">🔍</span>
+          <input type="text" id="mBrowserInput" class="m-browser-input" placeholder="Search Google or type URL (e.g. reddit.com)...">
+          <button type="button" id="btnBrowserGo" class="m-btn-browser-go">Launch ➔</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Sniffer Engine Pro-Tip Banner -->
+    <div class="m-sniffer-banner">
+      <div class="m-sniffer-icon">⚡</div>
+      <div class="m-sniffer-body">
+        <div class="m-sniffer-title">Direct Video Stream Sniffer Active</div>
+        <div class="m-sniffer-desc">
+          Works seamlessly on <strong>Reddit, Twitter/X, Dailymotion, Vimeo, Facebook, Anime, Streaming portals</strong> and direct MP4/M3U8 links. Zero popups, zero redirects!
+        </div>
+      </div>
+    </div>
+
+    <!-- Speed Dial Bookmarks Grid (12 Popular Platforms) -->
+    <div style="font-size:13px; font-weight:800; color:#fff; margin-top:6px; display:flex; align-items:center; justify-content:space-between;">
+      <span>🚀 Quick Bookmarks &amp; Video Portals</span>
+      <span style="font-size:10px; color:var(--cyan); font-weight:700;">1-TAP OPEN</span>
+    </div>
+
+    <div class="m-speed-dial-grid">
+      <!-- YouTube -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://m.youtube.com')">
+        <div class="m-bm-icon" style="background:rgba(239,68,68,0.15); color:#ef4444;">▶</div>
+        <div class="m-bm-name">YouTube</div>
+        <div class="m-bm-badge">m.youtube.com</div>
+      </div>
+
+      <!-- Instagram -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://www.instagram.com')">
+        <div class="m-bm-icon" style="background:rgba(236,72,153,0.15); color:#ec4899;">📸</div>
+        <div class="m-bm-name">Instagram</div>
+        <div class="m-bm-badge">instagram.com</div>
+      </div>
+
+      <!-- Facebook -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://m.facebook.com')">
+        <div class="m-bm-icon" style="background:rgba(59,130,246,0.15); color:#3b82f6;">🔵</div>
+        <div class="m-bm-name">Facebook</div>
+        <div class="m-bm-badge">m.facebook.com</div>
+      </div>
+
+      <!-- TikTok -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://www.tiktok.com')">
+        <div class="m-bm-icon" style="background:rgba(0,242,254,0.15); color:#00f2fe;">🎵</div>
+        <div class="m-bm-name">TikTok</div>
+        <div class="m-bm-badge">tiktok.com</div>
+      </div>
+
+      <!-- Twitter / X -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://x.com')">
+        <div class="m-bm-icon" style="background:rgba(255,255,255,0.1); color:#fff;">𝕏</div>
+        <div class="m-bm-name">Twitter (X)</div>
+        <div class="m-bm-badge">x.com</div>
+      </div>
+
+      <!-- Reddit -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://www.reddit.com')">
+        <div class="m-bm-icon" style="background:rgba(255,87,34,0.15); color:#ff5722;">🟠</div>
+        <div class="m-bm-name">Reddit</div>
+        <div class="m-bm-badge">reddit.com</div>
+      </div>
+
+      <!-- Pinterest -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://www.pinterest.com')">
+        <div class="m-bm-icon" style="background:rgba(220,38,38,0.15); color:#dc2626;">📌</div>
+        <div class="m-bm-name">Pinterest</div>
+        <div class="m-bm-badge">pinterest.com</div>
+      </div>
+
+      <!-- Dailymotion -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://www.dailymotion.com')">
+        <div class="m-bm-icon" style="background:rgba(0,180,216,0.15); color:#00b4d8;">📺</div>
+        <div class="m-bm-name">Dailymotion</div>
+        <div class="m-bm-badge">dailymotion.com</div>
+      </div>
+
+      <!-- Vimeo -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://vimeo.com')">
+        <div class="m-bm-icon" style="background:rgba(26,183,234,0.15); color:#1ab7ea;">🎬</div>
+        <div class="m-bm-name">Vimeo</div>
+        <div class="m-bm-badge">vimeo.com</div>
+      </div>
+
+      <!-- Twitch -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://www.twitch.tv')">
+        <div class="m-bm-icon" style="background:rgba(145,71,255,0.15); color:#9146ff;">🟣</div>
+        <div class="m-bm-name">Twitch</div>
+        <div class="m-bm-badge">twitch.tv</div>
+      </div>
+
+      <!-- SoundCloud -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://soundcloud.com')">
+        <div class="m-bm-icon" style="background:rgba(255,85,0,0.15); color:#ff5500;">🎶</div>
+        <div class="m-bm-name">SoundCloud</div>
+        <div class="m-bm-badge">soundcloud.com</div>
+      </div>
+
+      <!-- Google Video Search -->
+      <div class="m-bookmark-card" onclick="openMiniBrowserPortal('https://www.google.com/videohp')">
+        <div class="m-bm-icon" style="background:rgba(66,133,244,0.15); color:#4285f4;">🔍</div>
+        <div class="m-bm-name">Google Search</div>
+        <div class="m-bm-badge">google.com</div>
+      </div>
+    </div>
+  </div>
+
   <div style="text-align:center; padding: 20px 0 10px; font-size: 11px; font-weight: 800; color: rgba(148, 163, 184, 0.6); letter-spacing: 1px;">
     ⚡ CREATED BY BASIT • ZDOWNLOADER PRO
   </div>
@@ -2061,21 +2535,21 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     <span>Downloader</span>
   </button>
+  <button class="m-nav-item" id="navBrowser" type="button">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/></svg>
+    <span>Browser</span>
+  </button>
   <button class="m-nav-item" id="navLib" type="button">
     <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
     <span>My Files</span>
   </button>
   <button class="m-nav-item" id="navStatus" type="button">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M16 8l-8 8"/><path d="M8 8l8 8"/></svg>
-    <span style="color:#25d366; font-weight:800;">WA Status</span>
+    <span style="color:#25d366; font-weight:800;">Status</span>
   </button>
   <button class="m-nav-item" id="navAudio" type="button">
     <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-    <span>Audio Studio</span>
-  </button>
-  <button class="m-nav-item" id="navInstall" type="button">
-    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-    <span>Apps Hub</span>
+    <span>Audio</span>
   </button>
 </nav>
 
@@ -2183,6 +2657,102 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     </div>
 
     <button class="m-btn-modal-close" id="btnCloseInstallModal">Band Karein ✓</button>
+  </div>
+</div>
+
+<!-- Theme Selection Modal (AMOLED, Cyber, Sunset, Emerald, Amethyst) -->
+<div class="m-modal-backdrop" id="mThemeModal">
+  <div class="m-modal" style="max-height:85vh; overflow-y:auto;">
+    <div class="m-modal-title">
+      <span>🎨 App Theme &amp; Color Style</span>
+    </div>
+    <div class="m-modal-desc">
+      Apna pasandeeda color style select karein. <strong>AMOLED Pure Black</strong> OLED screens par 0% battery use karta hai:
+    </div>
+
+    <div class="m-theme-grid">
+      <!-- 1. Cyberpunk Neon (Default) -->
+      <div class="m-theme-card active" data-theme-id="cyber" onclick="applyAppTheme('cyber')">
+        <div class="m-theme-info">
+          <div class="m-theme-swatches">
+            <span class="m-swatch" style="background:#00f2fe;"></span>
+            <span class="m-swatch" style="background:#8b5cf6;"></span>
+            <span class="m-swatch" style="background:#070a13; border-color:#00f2fe;"></span>
+          </div>
+          <div class="m-theme-meta">
+            <div class="m-theme-title">⚡ Cyberpunk Neon</div>
+            <div class="m-theme-sub">Default Electric Cyan &amp; Violet Glow</div>
+          </div>
+        </div>
+        <div class="m-theme-badge">DEFAULT</div>
+      </div>
+
+      <!-- 2. Midnight AMOLED (Pure Black) -->
+      <div class="m-theme-card" data-theme-id="amoled" onclick="applyAppTheme('amoled')">
+        <div class="m-theme-info">
+          <div class="m-theme-swatches">
+            <span class="m-swatch" style="background:#000000; border-color:#fff;"></span>
+            <span class="m-swatch" style="background:#ffffff;"></span>
+            <span class="m-swatch" style="background:#94a3b8;"></span>
+          </div>
+          <div class="m-theme-meta">
+            <div class="m-theme-title">🖤 Midnight AMOLED</div>
+            <div class="m-theme-sub">100% Pure Pitch Black · Zero Battery Drain</div>
+          </div>
+        </div>
+        <div class="m-theme-badge">0% BATTERY</div>
+      </div>
+
+      <!-- 3. Sunset Crimson (Fire & Amber) -->
+      <div class="m-theme-card" data-theme-id="sunset" onclick="applyAppTheme('sunset')">
+        <div class="m-theme-info">
+          <div class="m-theme-swatches">
+            <span class="m-swatch" style="background:#ff5e3a;"></span>
+            <span class="m-swatch" style="background:#ff9020;"></span>
+            <span class="m-swatch" style="background:#0c0608; border-color:#ff5e3a;"></span>
+          </div>
+          <div class="m-theme-meta">
+            <div class="m-theme-title">🔥 Sunset Crimson</div>
+            <div class="m-theme-sub">Fiery Orange &amp; Warm Amber Glow</div>
+          </div>
+        </div>
+        <div class="m-theme-badge">VIBRANT</div>
+      </div>
+
+      <!-- 4. Emerald Matrix (Neon Mint) -->
+      <div class="m-theme-card" data-theme-id="emerald" onclick="applyAppTheme('emerald')">
+        <div class="m-theme-info">
+          <div class="m-theme-swatches">
+            <span class="m-swatch" style="background:#10b981;"></span>
+            <span class="m-swatch" style="background:#34d399;"></span>
+            <span class="m-swatch" style="background:#040e09; border-color:#10b981;"></span>
+          </div>
+          <div class="m-theme-meta">
+            <div class="m-theme-title">🌲 Emerald Matrix</div>
+            <div class="m-theme-sub">Deep Night Jade &amp; Cyber Mint</div>
+          </div>
+        </div>
+        <div class="m-theme-badge">MATRIX</div>
+      </div>
+
+      <!-- 5. Royal Amethyst (Ultraviolet) -->
+      <div class="m-theme-card" data-theme-id="amethyst" onclick="applyAppTheme('amethyst')">
+        <div class="m-theme-info">
+          <div class="m-theme-swatches">
+            <span class="m-swatch" style="background:#c084fc;"></span>
+            <span class="m-swatch" style="background:#a855f7;"></span>
+            <span class="m-swatch" style="background:#0a0614; border-color:#c084fc;"></span>
+          </div>
+          <div class="m-theme-meta">
+            <div class="m-theme-title">🔮 Royal Amethyst</div>
+            <div class="m-theme-sub">Deep Velvet Violet &amp; Ultraviolet</div>
+          </div>
+        </div>
+        <div class="m-theme-badge">LUXURY</div>
+      </div>
+    </div>
+
+    <button class="m-btn-modal-close" id="btnCloseThemeModal" style="margin-top:16px;">Band Karein</button>
   </div>
 </div>
 
@@ -2353,6 +2923,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   // ── Navigation Tabs (Mobile Bottom Nav & Desktop Top Nav) ──
   const deskTabSingle = document.getElementById('deskTabSingle');
+  const deskTabBrowser = document.getElementById('deskTabBrowser');
   const deskTabBulk = document.getElementById('deskTabBulk');
   const deskTabLib = document.getElementById('deskTabLib');
   const deskTabStatus = document.getElementById('deskTabStatus');
@@ -2360,12 +2931,14 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   const deskTabApps = document.getElementById('deskTabApps');
 
   const navDl = document.getElementById('navDl');
+  const navBrowser = document.getElementById('navBrowser');
   const navLib = document.getElementById('navLib');
   const navStatus = document.getElementById('navStatus');
   const navAudio = document.getElementById('navAudio');
   const navInstall = document.getElementById('navInstall');
 
   const viewDownload = document.getElementById('viewDownload');
+  const viewBrowser = document.getElementById('viewBrowser');
   const viewLibrary = document.getElementById('viewLibrary');
   const viewStatus = document.getElementById('viewStatus');
   const viewAudio = document.getElementById('viewAudio');
@@ -2375,9 +2948,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   const singleDlSection = document.getElementById('singleDlSection');
   const bulkDlSection = document.getElementById('bulkDlSection');
 
-  const allNavItems = [navDl, navLib, navStatus, navAudio, navInstall];
-  const allViews = [viewDownload, viewLibrary, viewStatus, viewAudio];
-  const allDeskTabs = [deskTabSingle, deskTabBulk, deskTabLib, deskTabStatus, deskTabAudio, deskTabApps];
+  const allNavItems = [navDl, navBrowser, navLib, navStatus, navAudio, navInstall];
+  const allViews = [viewDownload, viewBrowser, viewLibrary, viewStatus, viewAudio];
+  const allDeskTabs = [deskTabSingle, deskTabBrowser, deskTabBulk, deskTabLib, deskTabStatus, deskTabAudio, deskTabApps];
 
   function switchMainTab(tab) {
     allNavItems.forEach(n => { if (n) n.classList.remove('active'); });
@@ -2393,6 +2966,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       } else if (deskTabBulk) {
         deskTabBulk.classList.add('active');
       }
+    } else if (tab === 'browser') {
+      if (navBrowser) navBrowser.classList.add('active');
+      if (viewBrowser) viewBrowser.style.display = 'block';
+      if (deskTabBrowser) deskTabBrowser.classList.add('active');
     } else if (tab === 'lib') {
       if (navLib) navLib.classList.add('active');
       if (viewLibrary) viewLibrary.style.display = 'block';
@@ -2440,17 +3017,110 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   if (modeBulkBtn) modeBulkBtn.onclick = switchToBulkMode;
 
   if (navDl) navDl.onclick = () => switchMainTab('dl');
+  if (navBrowser) navBrowser.onclick = () => switchMainTab('browser');
   if (navLib) navLib.onclick = () => switchMainTab('lib');
   if (navStatus) navStatus.onclick = () => switchMainTab('status');
   if (navAudio) navAudio.onclick = () => switchMainTab('audio');
   if (navInstall) navInstall.onclick = () => switchMainTab('install');
 
   if (deskTabSingle) deskTabSingle.onclick = switchToSingleMode;
+  if (deskTabBrowser) deskTabBrowser.onclick = () => switchMainTab('browser');
   if (deskTabBulk) deskTabBulk.onclick = switchToBulkMode;
   if (deskTabLib) deskTabLib.onclick = () => switchMainTab('lib');
   if (deskTabStatus) deskTabStatus.onclick = () => switchMainTab('status');
   if (deskTabAudio) deskTabAudio.onclick = () => switchMainTab('audio');
   if (deskTabApps) deskTabApps.onclick = () => showInstallModal('ext');
+
+  // ── Luxury Theme & AMOLED Black Engine ──
+  const THEME_DATA = {
+    cyber: { bg: '#070a13', label: 'Cyber' },
+    amoled: { bg: '#000000', label: 'AMOLED' },
+    sunset: { bg: '#0c0608', label: 'Sunset' },
+    emerald: { bg: '#040e09', label: 'Emerald' },
+    amethyst: { bg: '#0a0614', label: 'Amethyst' }
+  };
+
+  function applyAppTheme(themeId, showToastMsg = true) {
+    if (!THEME_DATA[themeId]) themeId = 'cyber';
+    document.documentElement.setAttribute('data-theme', themeId);
+    try { localStorage.setItem('zdown_theme', themeId); } catch(e) {}
+
+    const info = THEME_DATA[themeId];
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', info.bg);
+
+    if (window.Android && typeof window.Android.setStatusBarColor === 'function') {
+      try { window.Android.setStatusBarColor(info.bg); } catch (e) {}
+    }
+
+    const headerLabel = document.getElementById('themeHeaderLabel');
+    if (headerLabel) headerLabel.textContent = info.label;
+
+    document.querySelectorAll('.m-theme-card').forEach(card => {
+      if (card.getAttribute('data-theme-id') === themeId) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+
+    if (showToastMsg && typeof showToast === 'function') {
+      showToast('🎨 Theme: ' + info.label + (themeId === 'amoled' ? ' (100% OLED Pure Black)' : ''));
+    }
+  }
+
+  function initAppTheme() {
+    let saved = 'cyber';
+    try { saved = localStorage.getItem('zdown_theme') || 'cyber'; } catch(e) {}
+    applyAppTheme(saved, false);
+  }
+  initAppTheme();
+
+  const btnHeaderTheme = document.getElementById('btnHeaderTheme');
+  const mThemeModal = document.getElementById('mThemeModal');
+  const btnCloseThemeModal = document.getElementById('btnCloseThemeModal');
+
+  if (btnHeaderTheme && mThemeModal) {
+    btnHeaderTheme.onclick = () => mThemeModal.classList.add('show');
+  }
+  if (btnCloseThemeModal && mThemeModal) {
+    btnCloseThemeModal.onclick = () => mThemeModal.classList.remove('show');
+  }
+  if (mThemeModal) {
+    mThemeModal.onclick = (e) => {
+      if (e.target === mThemeModal) mThemeModal.classList.remove('show');
+    };
+  }
+
+  // ── In-App Mini Browser & Video Sniffer Handler ──
+  function openMiniBrowserPortal(url) {
+    if (!url) return;
+    if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
+      window.Android.openMiniBrowser(url);
+    } else {
+      window.open(url, '_blank');
+      if (typeof showToast === 'function') {
+        showToast('🌐 Web browser opened for ' + url + ' — Link copy karein!');
+      }
+    }
+  }
+
+  const mBrowserInput = document.getElementById('mBrowserInput');
+  const btnBrowserGo = document.getElementById('btnBrowserGo');
+
+  function handleBrowserLaunch() {
+    if (!mBrowserInput) return;
+    const raw = mBrowserInput.value.trim();
+    if (!raw) return;
+    openMiniBrowserPortal(raw);
+  }
+
+  if (btnBrowserGo) btnBrowserGo.onclick = handleBrowserLaunch;
+  if (mBrowserInput) {
+    mBrowserInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleBrowserLaunch();
+    });
+  }
 
   // ── Single Link Format Selection ──
   document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(btn => {
