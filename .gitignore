@@ -18,6 +18,7 @@ aria2c.exe
 *.zip
 !docs/zdownloader_extension.zip
 !frontend/zdownloader_extension.zip
+!mobile_app/zdownloader_extension.zip
 
 
 # User downloads & private cookies

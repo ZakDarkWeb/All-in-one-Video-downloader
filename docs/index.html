@@ -1968,7 +1968,13 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   if (mBulkPasteBtn) {
     mBulkPasteBtn.onclick = async () => {
       try {
-        const text = await navigator.clipboard.readText();
+        let text = "";
+        if (window.Android && typeof window.Android.getClipboardText === 'function') {
+          text = window.Android.getClipboardText();
+        }
+        if (!text && navigator.clipboard && navigator.clipboard.readText) {
+          text = await navigator.clipboard.readText();
+        }
         if (text) {
           if (mBulkInput.value.trim()) {
             mBulkInput.value += '\n' + text.trim();
@@ -1977,6 +1983,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           }
           updateBulkCount();
           showToast("📋 Clipboard content added to batch list!");
+        } else {
+          showToast("⚠️ Clipboard khali hai.");
         }
       } catch {
         showToast("⚠️ Clipboard permission allow karein ya direct paste karein.");
@@ -2328,45 +2336,64 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   async function checkClipboardForVideoLink(isUserTriggered = false) {
-    if (!navigator.clipboard || !navigator.clipboard.readText) {
-      if (isUserTriggered) showToast("⚠️ Aapke browser me clipboard reading support nahi hai. Box me direct link paste karein.");
-      return;
+    let text = "";
+    if (window.Android && typeof window.Android.getClipboardText === 'function') {
+      try {
+        text = window.Android.getClipboardText();
+      } catch (e) {
+        console.warn("Android native clipboard error:", e);
+      }
     }
-
-    try {
-      const text = await navigator.clipboard.readText();
-      if (!text || typeof text !== 'string') return;
-      const trimmed = text.trim();
-      if (!trimmed) return;
-
-      const detectedUrl = extractVideoUrl(trimmed);
-      if (!detectedUrl) {
+    if (!text && navigator.clipboard && navigator.clipboard.readText) {
+      try {
+        text = await navigator.clipboard.readText();
+      } catch (err) {
         if (isUserTriggered) {
-          mUrlInput.value = trimmed;
-          showToast("📋 Text paste ho gaya");
+          showToast("⚠️ Clipboard permission allow karein ya box me link paste karein.");
         }
         return;
       }
-
-      // If user clicked Paste button, always open prompt
-      if (isUserTriggered) {
-        mUrlInput.value = detectedUrl;
-        openClipSheet(detectedUrl, 'clipboard');
-        return;
-      }
-
-      // Passive check: avoid prompting if already dismissed or downloaded
-      if (detectedUrl === clipSheetDismissedUrl || detectedUrl === lastHandledClipUrl) {
-        return;
-      }
-
-      mUrlInput.value = detectedUrl;
-      openClipSheet(detectedUrl, 'clipboard');
-    } catch (err) {
-      if (isUserTriggered) {
-        showToast("⚠️ Clipboard permission allow karein ya direct 'Paste' karein.");
-      }
     }
+
+    if (!text || typeof text !== 'string') {
+      if (isUserTriggered) {
+        showToast("⚠️ Clipboard khali hai ya koi link copy nahi kiya gaya.");
+      }
+      return;
+    }
+
+    const trimmed = text.trim();
+    if (!trimmed) {
+      if (isUserTriggered) {
+        showToast("⚠️ Clipboard khali hai.");
+      }
+      return;
+    }
+
+    const detectedUrl = extractVideoUrl(trimmed);
+    if (!detectedUrl) {
+      if (isUserTriggered) {
+        mUrlInput.value = trimmed;
+        showToast("📋 Text paste ho gaya");
+      }
+      return;
+    }
+
+    mUrlInput.value = detectedUrl;
+
+    // If user clicked Paste button, always open prompt
+    if (isUserTriggered) {
+      openClipSheet(detectedUrl, 'clipboard');
+      showToast("📋 Link paste ho gaya!");
+      return;
+    }
+
+    // Passive check: avoid prompting if already dismissed or downloaded
+    if (detectedUrl === clipSheetDismissedUrl || detectedUrl === lastHandledClipUrl) {
+      return;
+    }
+
+    openClipSheet(detectedUrl, 'clipboard');
   }
 
   // Format chip clicks inside bottom sheet
@@ -3091,52 +3118,60 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       };
     }
 
-    // 8. Instagram (Clean Standalone Resolution)
+    // 8. Instagram (Direct In-App Engine - Zero External Redirects!)
     if (/instagram\.com/i.test(url)) {
       document.getElementById('mProgStatus').textContent = "⚡ Decoding Instagram Reel…";
-      document.getElementById('mProgPct').textContent = "50%";
-      document.getElementById('mProgFill').style.width = "50%";
-      document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
+      document.getElementById('mProgPct').textContent = "60%";
+      document.getElementById('mProgFill').style.width = "60%";
+      document.getElementById('mProgSpeed').textContent = "⚡ In-App Engine…";
 
-      // Method A: Direct stream scraper via CORS Proxy (Extracts video from meta tags)
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 8000);
-        const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, { signal: ctrl.signal });
-        clearTimeout(t);
-        if (res.ok) {
-          const text = await res.text();
-          const pMatch = text.match(/<meta[^>]+property=["']og:video["'][^>]+content=["']([^"']+)["']/i) ||
-                         text.match(/content=["']([^"']+)["'][^>]+property=["']og:video["']/i) ||
-                         text.match(/<meta[^>]+name=["']twitter:player:stream["'][^>]+content=["']([^"']+)["']/i) ||
-                         text.match(/(https:\/\/[^\s"'><]+(?:cdninstagram\.com|fbcdn\.net)[^\s"'><]*\.mp4[^\s"'><]*)/i);
-          if (pMatch && pMatch[1] && !isBadAdUrl(pMatch[1])) {
-            const rawUrl = pMatch[1].replace(/&amp;/g, '&').replace(/\\u0026/g, '&').replace(/\\\//g, '/');
-            return {
-              ok: true,
-              title: "Instagram Reel",
-              downloadUrl: rawUrl,
-              filename: `Instagram_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
-            };
-          }
-        }
-      } catch (e) {
-        console.warn("IG CORS stream error:", e);
+      // Branch 1: If in Android APK Native Shell, use Native Background Sniffer & DownloadManager
+      if (window.Android && typeof window.Android.sniffAndDownloadInstagram === 'function') {
+        window.Android.sniffAndDownloadInstagram(url);
+        return {
+          ok: true,
+          isNativeHandled: true,
+          title: "Instagram Reel",
+          message: "Instagram video background me detect ho rahi hai. Notification bar check karein!"
+        };
       }
 
-      // Method B: In-App 1-Tap Fast Resolver (Zero Localhost Needed)
-      return {
-        ok: true,
-        isExternalResolver: true,
-        platform: 'instagram',
-        title: "Instagram Reel / Video",
-        url: url,
-        primaryResolver: "https://snapinsta.to/",
-        primaryName: "⚡ 1-Tap Download via SnapInsta",
-        altResolver: "https://fastdl.app/",
-        altName: "📱 Alternate Server (FastDl)",
-        desc: "⚡ Meta protection bypassed! Video link copy ho chuka hai, neeche 1-Tap button dabayein:"
-      };
+      // Branch 2: Web Direct Scraper (Embed & Page)
+      const shortcodeMatch = url.match(/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
+      const shortcode = shortcodeMatch ? shortcodeMatch[1] : null;
+      const urlsToTry = [
+        url,
+        shortcode ? `https://www.instagram.com/p/${shortcode}/embed/captioned/` : null
+      ].filter(Boolean);
+
+      for (const target of urlsToTry) {
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 6000);
+          const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(target)}`, { signal: ctrl.signal });
+          clearTimeout(t);
+          if (res.ok) {
+            const text = await res.text();
+            const pMatch = text.match(/<meta[^>]+property=["']og:video["'][^>]+content=["']([^"']+)["']/i) ||
+                           text.match(/content=["']([^"']+)["'][^>]+property=["']og:video["']/i) ||
+                           text.match(/<meta[^>]+name=["']twitter:player:stream["'][^>]+content=["']([^"']+)["']/i) ||
+                           text.match(/(https:\/\/[^\s"'><]+(?:cdninstagram\.com|fbcdn\.net)[^\s"'><]*(?:\.mp4|\/t50\.)[^\s"'><]*)/i);
+            if (pMatch && pMatch[1] && !isBadAdUrl(pMatch[1])) {
+              const rawUrl = pMatch[1].replace(/&amp;/g, '&').replace(/\\u0026/g, '&').replace(/\\\//g, '/');
+              return {
+                ok: true,
+                title: "Instagram Reel",
+                downloadUrl: rawUrl,
+                filename: `Instagram_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+              };
+            }
+          }
+        } catch (e) {
+          console.warn("IG scraper error:", e);
+        }
+      }
+
+      throw new Error("Instagram direct stream detect nahi ho saki. Video link public hona zaroori hai.");
     }
 
     throw new Error("Direct extraction support nahi hui. Video link dobara check karein.");
@@ -3195,6 +3230,16 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   function onDownloadDoneDirect(result) {
     mStartDlBtn.disabled = false;
     mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+
+    // 0. Native Android Handled (In-App Instagram Sniffer & Direct Save)
+    if (result.isNativeHandled) {
+      document.getElementById('mProgStatus').textContent = "⬇️ Downloading in Android Notification Bar...";
+      document.getElementById('mProgPct').textContent = "100%";
+      document.getElementById('mProgFill').style.width = "100%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Direct Native Stream";
+      showToast(result.message || "✅ Video download shuru ho gaya hai!");
+      return;
+    }
 
     // 1. Smart In-App Resolver Card (Meta Login Protected Media)
     if (result.isExternalResolver) {
