@@ -11,6 +11,8 @@ import requests
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlparse, quote
+import urllib.request
+import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 
 import yt_dlp
@@ -390,6 +392,246 @@ def extract_pinterest(url):
     }
 
 
+# ------------------------------------------------------------
+# Facebook & Instagram Fallback Resolvers
+# ------------------------------------------------------------
+
+def decode_snapsave(h, u, n, t, e, r_arg=None):
+    alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/"
+    h_chars = alphabet[:e]
+
+    def to_dec(d, base):
+        val = 0
+        for i, char in enumerate(reversed(d)):
+            idx = h_chars.find(char)
+            if idx != -1:
+                val += idx * (base ** i)
+        return val
+
+    res_chars = []
+    i = 0
+    len_h = len(h)
+    sep = n[e]
+    while i < len_h:
+        s = []
+        while i < len_h and h[i] != sep:
+            s.append(h[i])
+            i += 1
+        i += 1
+        s_str = "".join(s)
+        for j, char in enumerate(n):
+            s_str = s_str.replace(char, str(j))
+        code = to_dec(s_str, e) - t
+        res_chars.append(chr(code))
+    raw = "".join(res_chars)
+    return raw.encode('latin1').decode('utf-8', errors='ignore')
+
+
+def extract_facebook_snapsave(fb_url):
+    data = quote_payload = urllib.parse.urlencode({'url': fb_url}).encode()
+    req = urllib.request.Request(
+        'https://snapsave.app/action.php',
+        data=data,
+        headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Referer': 'https://snapsave.app/'
+        }
+    )
+    with urllib.request.urlopen(req, timeout=14) as r:
+        text = r.read().decode('utf-8', errors='ignore')
+
+    m = re.search(r'\(\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)', text)
+    if not m:
+        raise Exception("Snapsave response structure altered")
+
+    h, u, n, t, e, r_arg = m.group(1), int(m.group(2)), m.group(3), int(m.group(4)), int(m.group(5)), int(m.group(6))
+    html = decode_snapsave(h, u, n, t, e, r_arg)
+
+    thumb = ""
+    video_url = ""
+    title = "Facebook Video"
+
+    title_m = re.search(r'<strong>Video Facebook</strong>\s*<span[^>]*>(.*?)</span>', html, re.DOTALL)
+    if title_m:
+        raw_t = re.sub(r'<[^>]+>', '', title_m.group(1)).strip()
+        if raw_t and raw_t != "...":
+            title = raw_t[:80]
+
+    tokens = re.findall(r'token=([a-zA-Z0-9_\-\.]+)', html)
+    for tok in tokens:
+        parts = tok.split('.')
+        if len(parts) >= 2:
+            body = parts[1] + '=' * (-len(parts[1]) % 4)
+            try:
+                import base64
+                d = json.loads(base64.urlsafe_b64decode(body).decode())
+                u_val = d.get('url') or d.get('video_url')
+                if u_val:
+                    if any(img_ext in u_val.lower() for img_ext in ['.jpg', '.jpeg', '.png', '.webp']) or 'scontent' in u_val:
+                        if not thumb:
+                            thumb = u_val
+                    elif any(v_ext in u_val.lower() for v_ext in ['.mp4', '.m4v', '.webm']) or 'video' in u_val or 'fbcdn.net' in u_val:
+                        video_url = u_val
+                        if d.get('filename'):
+                            title = d.get('filename').replace('.mp4', '').replace('_', ' ')
+            except Exception:
+                pass
+
+    if not video_url:
+        for l in re.findall(r'href=["\'](https:[^"\']+)["\']', html):
+            if 'rapidcdn.app' in l or 'fbcdn.net' in l:
+                video_url = l
+                break
+
+    if not video_url:
+        raise Exception("Facebook video stream URL nahi mila.")
+
+    return {
+        "title": title,
+        "thumbnail": thumb,
+        "url": video_url,
+        "height": 720,
+        "platform": "Facebook"
+    }
+
+
+def extract_facebook_siputzx(fb_url):
+    api = 'https://api.siputzx.my.id/api/d/facebook?url=' + quote(fb_url)
+    req = urllib.request.Request(
+        api,
+        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    )
+    with urllib.request.urlopen(req, timeout=14) as r:
+        d = json.loads(r.read().decode('utf-8'))
+
+    if not d.get('status') or not d.get('data'):
+        raise Exception("Siputzx API error")
+
+    downloads = d['data'].get('downloads', [])
+    hd = next((x['url'] for x in downloads if 'hd' in (x.get('quality') or '').lower()), None)
+    sd = next((x['url'] for x in downloads if 'sd' in (x.get('quality') or '').lower()), None)
+    chosen = hd or sd or (downloads[0]['url'] if downloads else None)
+
+    if not chosen:
+        raise Exception("No video URL in Siputzx response")
+
+    return {
+        "title": d['data'].get('title') or "Facebook Video",
+        "thumbnail": d['data'].get('thumbnail') or "",
+        "url": chosen,
+        "height": 720 if hd else 360,
+        "platform": "Facebook"
+    }
+
+
+def extract_facebook(fb_url):
+    try:
+        return extract_facebook_snapsave(fb_url)
+    except Exception:
+        return extract_facebook_siputzx(fb_url)
+
+
+def extract_instagram_gallery_dl(url):
+    cookie_file = get_cookie_file(url)
+    cmd = [sys.executable, "-m", "gallery_dl", "-g"]
+    if cookie_file:
+        cmd.extend(["--cookies", cookie_file])
+    cmd.append(url)
+    import subprocess
+    res = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+    urls = re.findall(r'https?://[^\s]+', res.stdout)
+    if urls:
+        # Pick the actual media URL (usually ends in .mp4 or last valid URL)
+        stream_url = urls[-1]
+        for u in reversed(urls):
+            if ".mp4" in u.lower() or "fbcdn.net" in u.lower():
+                stream_url = u
+                break
+        return {
+            "title": "Instagram Video",
+            "thumbnail": "",
+            "url": stream_url,
+            "height": 1080,
+            "platform": "Instagram"
+        }
+    raise Exception("Instagram video direct stream nahi mila.")
+
+
+def download_direct_stream(job_id, stream_url, title, audio_only, start_time=None, end_time=None, cancel_event=None, thumb=""):
+    with JOBS_LOCK:
+        job = JOBS.get(job_id, {})
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Referer": "https://www.facebook.com/" if "fbcdn" in stream_url else "https://www.instagram.com/"
+    }
+    r = requests.get(stream_url, headers=headers, stream=True, timeout=30)
+    total_size = int(r.headers.get("content-length", 0))
+    downloaded = 0
+    raw_file = DOWNLOAD_DIR / f"{job_id}.mp4"
+    with open(raw_file, "wb") as f:
+        for chunk in r.iter_content(chunk_size=1048576):
+            if cancel_event and cancel_event.is_set():
+                raw_file.unlink(missing_ok=True)
+                raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
+            if chunk:
+                f.write(chunk)
+                downloaded += len(chunk)
+                if total_size:
+                    pct = round((downloaded / total_size) * 100, 1)
+                    with JOBS_LOCK:
+                        job.update({
+                            "status": "downloading",
+                            "progress": pct,
+                            "speed": "Turbo",
+                            "eta": ""
+                        })
+
+    if cancel_event and cancel_event.is_set():
+        raw_file.unlink(missing_ok=True)
+        raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
+
+    ff = find_ffmpeg() or "ffmpeg"
+    import subprocess
+    if audio_only:
+        with JOBS_LOCK:
+            job.update({"status": "processing", "progress": 95, "speed": "Converting to MP3"})
+        mp3_file = DOWNLOAD_DIR / f"{job_id}.mp3"
+        cmd = [ff, "-y", "-i", str(raw_file), "-vn", "-c:a", "libmp3lame", "-b:a", "192k", str(mp3_file)]
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        raw_file.unlink(missing_ok=True)
+        final_file = mp3_file
+    else:
+        final_file = raw_file
+
+    final_file = trim_file_if_needed(final_file, start_time, end_time, job_id)
+    safe_t = safe_filename(title or "Video")
+    final_file = rename_to_clean_title(final_file, safe_t, DOWNLOAD_DIR)
+    stat = final_file.stat()
+    with JOBS_LOCK:
+        job.update({
+            "status": "done",
+            "progress": 100,
+            "speed": "",
+            "eta": "",
+            "file": str(final_file),
+            "filename": final_file.name,
+            "title": safe_t,
+            "thumbnail": thumb
+        })
+    db_update_job(
+        job_id,
+        status="done",
+        progress=100,
+        title=safe_t,
+        filename=final_file.name,
+        file_path=str(final_file),
+        raw_size=stat.st_size,
+        file_size=format_bytes(stat.st_size),
+        completed_at=time.time()
+    )
+
+
 def trim_file_if_needed(file_path, start_time, end_time, job_id):
     if not start_time and not end_time:
         return file_path
@@ -710,6 +952,27 @@ def api_local_ip():
     }
 
 
+@app.get("/api/tunnel")
+def api_tunnel():
+    tunnel_file = DATA_DIR / "tunnel_url.txt"
+    if tunnel_file.exists():
+        try:
+            content = tunnel_file.read_text(encoding="utf-8").strip()
+            if content.startswith("https://") and "trycloudflare.com" in content:
+                return {
+                    "ok": True,
+                    "active": True,
+                    "tunnel_url": content
+                }
+        except Exception:
+            pass
+    return {
+        "ok": True,
+        "active": False,
+        "tunnel_url": None
+    }
+
+
 @app.post("/api/open-downloads")
 def open_downloads():
     DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -907,6 +1170,44 @@ def get_video_info(request: URLRequest):
         information = first_video(information)
 
     except Exception as error:
+        # Fallback 1: Facebook video resolver
+        if any(d in url.lower() for d in ["facebook.com", "fb.watch", "fb.me"]):
+            try:
+                fb_info = extract_facebook(url)
+                return {
+                    "title": fb_info["title"],
+                    "thumbnail": fb_info.get("thumbnail") or "",
+                    "duration": None,
+                    "uploader": "Facebook",
+                    "platform": "Facebook",
+                    "qualities": [
+                        {"height": fb_info.get("height") or 720, "label": f"{fb_info.get('height') or 720}p (HD)", "size": None}
+                    ],
+                    "cookies_used": bool(get_cookie_file(url)),
+                    "subtitles": []
+                }
+            except Exception:
+                pass
+
+        # Fallback 2: Instagram resolver
+        if "instagram.com" in url.lower():
+            try:
+                ig_info = extract_instagram_gallery_dl(url)
+                return {
+                    "title": ig_info["title"],
+                    "thumbnail": ig_info.get("thumbnail") or "",
+                    "duration": None,
+                    "uploader": "Instagram",
+                    "platform": "Instagram",
+                    "qualities": [
+                        {"height": 1080, "label": "1080p (HD)", "size": None}
+                    ],
+                    "cookies_used": bool(get_cookie_file(url)),
+                    "subtitles": []
+                }
+            except Exception:
+                pass
+
         raise HTTPException(
             status_code=400,
             detail=clean_error(error)
@@ -945,6 +1246,9 @@ def get_video_info(request: URLRequest):
             "label": f"{height}p",
             "size": format_bytes(sizes[height]),
         })
+
+    if not qualities:
+        qualities = [{"height": 720, "label": "Auto HD", "size": None}]
 
     # Extract available subtitles / captions
     subs = list(set(list((information.get("subtitles") or {}).keys()) + list((information.get("automatic_captions") or {}).keys())))
@@ -1442,6 +1746,48 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
         db_update_job(job_id, status="cancelled", error="Cancelled by user")
 
     except Exception as error:
+        # Fallback for Facebook videos if yt-dlp fails
+        if any(d in url.lower() for d in ["facebook.com", "fb.watch", "fb.me"]):
+            try:
+                with JOBS_LOCK:
+                    job.update({"status": "downloading", "speed": "Facebook Engine", "progress": 15})
+                fb_data = extract_facebook(url)
+                if fb_data and fb_data.get("url"):
+                    download_direct_stream(
+                        job_id,
+                        fb_data["url"],
+                        fb_data.get("title") or "Facebook Video",
+                        audio_only,
+                        start_time,
+                        end_time,
+                        cancel_event,
+                        thumb=fb_data.get("thumbnail") or ""
+                    )
+                    return
+            except Exception:
+                pass
+
+        # Fallback for Instagram reels/videos if yt-dlp fails
+        if "instagram.com" in url.lower():
+            try:
+                with JOBS_LOCK:
+                    job.update({"status": "downloading", "speed": "Instagram Engine", "progress": 15})
+                ig_data = extract_instagram_gallery_dl(url)
+                if ig_data and ig_data.get("url"):
+                    download_direct_stream(
+                        job_id,
+                        ig_data["url"],
+                        ig_data.get("title") or "Instagram Reel",
+                        audio_only,
+                        start_time,
+                        end_time,
+                        cancel_event,
+                        thumb=ig_data.get("thumbnail") or ""
+                    )
+                    return
+            except Exception:
+                pass
+
         err_msg = clean_error(error)
         with JOBS_LOCK:
             job.update({
