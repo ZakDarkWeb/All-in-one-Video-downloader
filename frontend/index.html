@@ -3566,6 +3566,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       }
     });
 
+    currentActiveClipUrl = url;
+
     // Update Detected Video Link Card
     const detCard = document.getElementById('mDetectedCard');
     const detBadge = document.getElementById('mDetectedBadge');
@@ -3581,12 +3583,17 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       if (detUrl) detUrl.textContent = url;
       if (detNote) {
         if (/facebook|fb\.watch|instagram/i.test(url)) {
-          detNote.textContent = "⚡ In-App Browser Ready • 'Start Download' dabayein aur direct save karein";
+          detNote.textContent = "⚡ In-App Browser Ready • Tap to Start Download";
         } else {
           detNote.textContent = "⚡ High Speed Download Ready • 1-Tap Save";
         }
       }
       detCard.style.display = 'flex';
+      detCard.style.cursor = 'pointer';
+      detCard.onclick = (e) => {
+        if (e.target && (e.target.id === 'mDismissDetectedBtn' || e.target.closest('#mDismissDetectedBtn'))) return;
+        if (mStartDlBtn) mStartDlBtn.click();
+      };
     }
 
     // Switch to single download tab
@@ -3638,6 +3645,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   if (mUrlInput) {
     mUrlInput.addEventListener('input', () => {
       const val = (mUrlInput.value || '').trim();
+      currentActiveClipUrl = val;
       const clearBtn = document.getElementById('mClearBtn');
       if (clearBtn) clearBtn.style.display = val ? 'flex' : 'none';
       if (!val) {
@@ -4371,61 +4379,27 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       };
     }
 
-    // 8. Instagram (Direct In-App Engine - Zero External Redirects!)
+    // 8. Instagram (Clean Direct In-App Engine - Zero Dead Ends!)
     if (/instagram\.com/i.test(url)) {
-      document.getElementById('mProgStatus').textContent = "⚡ Decoding Instagram Reel…";
-      document.getElementById('mProgPct').textContent = "60%";
-      document.getElementById('mProgFill').style.width = "60%";
-      document.getElementById('mProgSpeed').textContent = "⚡ In-App Engine…";
-
-      // Branch 1: If in Android APK Native Shell, use Native Background Sniffer & DownloadManager
-      if (window.Android && typeof window.Android.sniffAndDownloadInstagram === 'function') {
-        window.Android.sniffAndDownloadInstagram(url);
-        return {
-          ok: true,
-          isNativeHandled: true,
-          title: "Instagram Reel",
-          targetUrl: url,
-          message: "Instagram video background me detect ho rahi hai. Notification bar check karein!"
-        };
-      }
-
-      // Branch 2: Web Direct Scraper (Embed & Page)
-      const shortcodeMatch = url.match(/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
-      const shortcode = shortcodeMatch ? shortcodeMatch[1] : null;
-      const urlsToTry = [
-        url,
-        shortcode ? `https://www.instagram.com/p/${shortcode}/embed/captioned/` : null
-      ].filter(Boolean);
-
-      for (const target of urlsToTry) {
-        try {
-          const ctrl = new AbortController();
-          const t = setTimeout(() => ctrl.abort(), 6000);
-          const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(target)}`, { signal: ctrl.signal });
-          clearTimeout(t);
-          if (res.ok) {
-            const text = await res.text();
-            const pMatch = text.match(/<meta[^>]+property=["']og:video["'][^>]+content=["']([^"']+)["']/i) ||
-                           text.match(/content=["']([^"']+)["'][^>]+property=["']og:video["']/i) ||
-                           text.match(/<meta[^>]+name=["']twitter:player:stream["'][^>]+content=["']([^"']+)["']/i) ||
-                           text.match(/(https:\/\/[^\s"'><]+(?:cdninstagram\.com|fbcdn\.net)[^\s"'><]*(?:\.mp4|\/t50\.)[^\s"'><]*)/i);
-            if (pMatch && pMatch[1] && !isBadAdUrl(pMatch[1])) {
-              const rawUrl = pMatch[1].replace(/&amp;/g, '&').replace(/\\u0026/g, '&').replace(/\\\//g, '/');
-              return {
-                ok: true,
-                title: "Instagram Reel",
-                downloadUrl: rawUrl,
-                filename: `Instagram_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
-              };
-            }
+      // In Android APK, open directly in In-App Mini Browser with live stream sniffer!
+      if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
+        document.getElementById('mProgStatus').textContent = "🌐 Opening In-App Browser for Instagram Reel...";
+        document.getElementById('mProgPct').textContent = "100%";
+        document.getElementById('mProgFill').style.width = "100%";
+        document.getElementById('mProgSpeed').textContent = "⚡ In-App Browser Active";
+        showToast("🌐 Instagram Reel detect karne ke liye In-App Browser khul raha hai...");
+        setTimeout(() => {
+          window.Android.openMiniBrowser(url);
+          if (mStartDlBtn) {
+            mStartDlBtn.disabled = false;
+            mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
           }
-        } catch (e) {
-          console.warn("IG scraper error:", e);
-        }
+          if (mProgCard) mProgCard.classList.remove('show');
+        }, 350);
+        return { ok: true, handledByMiniBrowser: true };
       }
 
-      // Branch 3: In-App 1-Tap Fast Resolver (Zero External Tab Popups)
+      // Branch 2: Web Mode (Fast 1-Tap Resolver)
       return {
         ok: true,
         isExternalResolver: true,
@@ -4436,7 +4410,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         primaryName: "⚡ 1-Tap Download via SnapInsta",
         altResolver: "https://saveig.app/",
         altName: "📱 Alternate Server (SaveIG)",
-        desc: "⚡ Instagram stream detected! Link copy ho chuka hai, neeche 1-Tap button se In-App Browser me download karein:"
+        desc: "⚡ Instagram Reel link ready! Neeche diye gaye 1-Tap button se foran HD video save karein:"
       };
     }
 
@@ -4800,6 +4774,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
       try {
         const res = await resolveDirectVideo(url, isAudio);
+        if (res && res.handledByMiniBrowser) return;
         document.getElementById('mProgPct').textContent = "95%";
         document.getElementById('mProgFill').style.width = "95%";
         document.getElementById('mProgStatus').textContent = "🎬 Video Ready!";

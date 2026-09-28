@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar browserProgressBar;
     private Button btnBrowserSniffer;
     private final List<String> detectedMediaUrls = new CopyOnWriteArrayList<>();
+    private String lastMiniBrowserHost = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -345,6 +346,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception ignored) {}
 
+            if (cleanUrl.contains("cdninstagram.com") || cleanUrl.contains("instagram.com")) {
+                request.addRequestHeader("Referer", "https://www.instagram.com/");
+            } else if (cleanUrl.contains("fbcdn.net") || cleanUrl.contains("facebook.com")) {
+                request.addRequestHeader("Referer", "https://www.facebook.com/");
+            }
+
             request.setTitle(safeFilename);
             request.setDescription("Downloading video via ZDownloader PRO");
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
@@ -572,7 +579,7 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void sniffAndDownloadInstagram(String igUrl) {
-            startInstagramSniffer(igUrl);
+            mainHandler.post(() -> showMiniBrowser(igUrl));
         }
 
         @JavascriptInterface
@@ -906,7 +913,19 @@ public class MainActivity extends AppCompatActivity {
             btnBrowserSniffer.setElevation(dpToPx(8));
         }
         btnBrowserSniffer.setVisibility(View.GONE);
-        btnBrowserSniffer.setOnClickListener(v -> showDetectedVideosDialog());
+        btnBrowserSniffer.setOnClickListener(v -> {
+            if (detectedMediaUrls.isEmpty()) {
+                Toast.makeText(MainActivity.this, "No video stream detected yet. Play video on page!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (detectedMediaUrls.size() == 1) {
+                String chosen = detectedMediaUrls.get(0);
+                String ext = chosen.contains(".mp3") ? ".mp3" : ".mp4";
+                triggerDownload(chosen, "ZDownloader_" + System.currentTimeMillis() + ext);
+            } else {
+                showDetectedVideosDialog();
+            }
+        });
         browserContainer.addView(btnBrowserSniffer);
 
         miniBrowserLayout.addView(browserContainer);
@@ -960,8 +979,14 @@ public class MainActivity extends AppCompatActivity {
                 if (browserUrlInput != null && !browserUrlInput.hasFocus()) {
                     browserUrlInput.setText(url);
                 }
-                detectedMediaUrls.clear();
-                updateSnifferButton();
+                try {
+                    String host = Uri.parse(url).getHost();
+                    if (host != null && !host.equalsIgnoreCase(lastMiniBrowserHost)) {
+                        lastMiniBrowserHost = host;
+                        detectedMediaUrls.clear();
+                        updateSnifferButton();
+                    }
+                } catch (Exception ignored) {}
             }
 
             @Override
@@ -1037,18 +1062,30 @@ public class MainActivity extends AppCompatActivity {
         String u = url.toLowerCase();
         if (u.contains(".js") || u.contains(".css") || u.contains(".png") || u.contains(".jpg") ||
                 u.contains(".jpeg") || u.contains(".gif") || u.contains(".webp") || u.contains(".svg") ||
-                u.contains(".ico") || u.contains(".woff") || u.contains("google-analytics") ||
-                u.contains("doubleclick") || u.contains("facebook.com/tr") || u.contains("/ad/") || u.contains("pagead")) {
+                u.contains(".ico") || u.contains(".woff") || u.contains(".woff2") || u.contains(".ttf") ||
+                u.contains("google-analytics") || u.contains("doubleclick") || u.contains("facebook.com/tr") ||
+                u.contains("/ad/") || u.contains("pagead") || u.contains("/logging/") || u.contains("analytics")) {
             return false;
         }
         if (u.contains(".mp4") || u.contains(".m3u8") || u.contains(".webm") || u.contains(".mpd") || u.contains(".m4v") || u.contains(".mkv")) {
             return true;
         }
-        if (u.contains("mime=video") || u.contains("video_dashinit") || u.contains("/videoplayback") ||
-                (u.contains("fbcdn.net") && (u.contains("/v/") || u.contains("video") || u.contains(".mp4") || u.contains("bytestart") || u.contains("oe="))) ||
-                (u.contains("cdninstagram.com") && (u.contains("/t50.") || u.contains(".mp4") || u.contains("/v/") || u.contains("video") || u.contains("bytestart"))) ||
-                u.contains("v.redd.it") || u.contains("tiktokcdn.com") || u.contains("twimg.com/video") ||
-                u.contains("video.twimg.com") || u.contains("dailymotion.com/cdn") || u.contains("vimeocdn.com")) {
+        if (u.contains("mime=video") || u.contains("video_dashinit") || u.contains("/videoplayback")) {
+            return true;
+        }
+        if (u.contains("cdninstagram.com")) {
+            return true;
+        }
+        if (u.contains("fbcdn.net")) {
+            if (u.contains("/v/") || u.contains("video") || u.contains(".mp4") || u.contains("bytestart") ||
+                    u.contains("oe=") || u.contains("t16.") || u.contains("t50.") || u.contains("t51.") ||
+                    u.contains("t66.") || u.contains("/o1/")) {
+                return true;
+            }
+        }
+        if (u.contains("v.redd.it") || u.contains("tiktokcdn.com") || u.contains("tikwm.com") ||
+                u.contains("twimg.com/video") || u.contains("video.twimg.com") ||
+                u.contains("dailymotion.com/cdn") || u.contains("vimeocdn.com")) {
             return true;
         }
         return false;
@@ -1133,6 +1170,9 @@ public class MainActivity extends AppCompatActivity {
         if (miniBrowserLayout != null) {
             miniBrowserLayout.setVisibility(View.GONE);
         }
+        detectedMediaUrls.clear();
+        lastMiniBrowserHost = "";
+        updateSnifferButton();
         if (webView != null) {
             webView.evaluateJavascript("if (typeof onMiniBrowserClosed === 'function') onMiniBrowserClosed();", null);
         }
