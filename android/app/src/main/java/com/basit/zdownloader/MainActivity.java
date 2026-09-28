@@ -160,10 +160,13 @@ public class MainActivity extends AppCompatActivity {
                             lastAutoPastedUrl = foundUrl;
                             mainHandler.postDelayed(() -> {
                                 String js = "javascript:(function() {" +
-                                        "  var inp = document.getElementById('mUrlInput');" +
-                                        "  if (inp) { inp.value = '" + foundUrl.replace("'", "\\'") + "'; }" +
-                                        "  if (typeof showToast === 'function') showToast('📋 Link clipboard se auto-paste ho gaya!');" +
-                                        "  if (typeof openClipSheet === 'function') openClipSheet('" + foundUrl.replace("'", "\\'") + "', 'clipboard');" +
+                                        "  if (typeof onNewLinkDetected === 'function') {" +
+                                        "    onNewLinkDetected('" + foundUrl.replace("'", "\\'") + "', 'clipboard');" +
+                                        "  } else {" +
+                                        "    var inp = document.getElementById('mUrlInput');" +
+                                        "    if (inp) { inp.value = '" + foundUrl.replace("'", "\\'") + "'; }" +
+                                        "    if (typeof showToast === 'function') showToast('📋 Link clipboard se auto-paste ho gaya!');" +
+                                        "  }" +
                                         "})();";
                                 webView.evaluateJavascript(js, null);
                             }, 500);
@@ -190,15 +193,15 @@ public class MainActivity extends AppCompatActivity {
 
         mainHandler.postDelayed(() -> {
             String js = "javascript:(function() {" +
-                    "  var inp = document.getElementById('mUrlInput');" +
-                    "  if (inp) {" +
-                    "    inp.value = '" + cleanUrl.replace("'", "\\'") + "';" +
-                    "    var btn = document.getElementById('mStartDlBtn');" +
-                    "    if (btn) btn.click();" +
+                    "  if (typeof onNewLinkDetected === 'function') {" +
+                    "    onNewLinkDetected('" + cleanUrl.replace("'", "\\'") + "', 'share');" +
+                    "  } else {" +
+                    "    var inp = document.getElementById('mUrlInput');" +
+                    "    if (inp) inp.value = '" + cleanUrl.replace("'", "\\'") + "';" +
                     "  }" +
                     "})();";
             webView.evaluateJavascript(js, null);
-        }, 1000);
+        }, 800);
     }
 
     private void setupWebView() {
@@ -1042,8 +1045,8 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         if (u.contains("mime=video") || u.contains("video_dashinit") || u.contains("/videoplayback") ||
-                (u.contains("fbcdn.net") && (u.contains("/v/") || u.contains(".mp4"))) ||
-                (u.contains("cdninstagram.com") && (u.contains("/t50.") || u.contains(".mp4"))) ||
+                (u.contains("fbcdn.net") && (u.contains("/v/") || u.contains("video") || u.contains(".mp4") || u.contains("bytestart") || u.contains("oe="))) ||
+                (u.contains("cdninstagram.com") && (u.contains("/t50.") || u.contains(".mp4") || u.contains("/v/") || u.contains("video") || u.contains("bytestart"))) ||
                 u.contains("v.redd.it") || u.contains("tiktokcdn.com") || u.contains("twimg.com/video") ||
                 u.contains("video.twimg.com") || u.contains("dailymotion.com/cdn") || u.contains("vimeocdn.com")) {
             return true;

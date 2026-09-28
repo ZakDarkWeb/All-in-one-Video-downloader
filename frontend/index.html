@@ -941,6 +941,81 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
   .m-btn-paste:active { transform: scale(0.95); }
 
+  .m-btn-clear {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 800;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 4px;
+    transition: all 0.15s;
+  }
+  .m-btn-clear:hover {
+    color: #fff;
+    background: rgba(239, 68, 68, 0.35);
+    border-color: rgba(239, 68, 68, 0.6);
+  }
+
+  /* ── Detected Video Link Inline Card ── */
+  .m-detected-card {
+    background: rgba(0, 242, 254, 0.06);
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: fadeInDetected 0.25s ease-out;
+  }
+  .m-detected-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .m-detected-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--cyan);
+  }
+  .m-detected-clear-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .m-detected-clear-btn:hover {
+    color: #fff;
+  }
+  .m-detected-url {
+    font-size: 11px;
+    color: #38bdf8;
+    word-break: break-all;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .m-detected-note {
+    font-size: 10.5px;
+    color: var(--text-muted);
+  }
+  @keyframes fadeInDetected {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   /* ── Platform Pills ── */
   .m-platforms {
     display: flex;
@@ -1333,17 +1408,15 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     white-space: nowrap; backdrop-filter: blur(12px);
   }
   .m-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  /* ── Smart Clipboard & Instant Download Bottom Sheet ── */
+  /* ── Smart Clipboard & Instant Download Bottom Sheet (Disabled in favor of sleek inline UI) ── */
   .m-clip-sheet {
-    position: fixed;
-    inset: 0;
-    z-index: 500;
-    display: none;
-    align-items: flex-end;
-    justify-content: center;
+    display: none !important;
   }
   .m-clip-sheet.show {
-    display: flex;
+    display: none !important;
+  }
+  .m-floating-bubble {
+    display: none !important;
   }
   .m-clip-sheet-backdrop {
     position: absolute;
@@ -1525,6 +1598,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     border-radius: var(--radius-md);
     padding: 9px 12px;
     margin-top: 10px;
+  }
   /* ── In-App Downloads & Player Cards ── */
   .m-file-card {
     background: var(--bg-card);
@@ -1994,16 +2068,30 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         </div>
 
         <div class="m-input-wrap">
-          <input type="url" class="m-input" id="mUrlInput" placeholder="Paste TikTok, Snapchat, YouTube, X link…" />
+          <input type="url" class="m-input" id="mUrlInput" placeholder="Paste Facebook, Insta, TikTok, YouTube link…" />
+          <button class="m-btn-clear" id="mClearBtn" type="button" style="display:none;" title="Clear Link">✕</button>
           <button class="m-btn-paste" id="mPasteBtn" type="button">📋 Paste</button>
         </div>
 
-        <!-- Pro Tip for Mobile Clipboard / Share -->
+        <!-- Live Detected Video Banner / Card -->
+        <div class="m-detected-card" id="mDetectedCard" style="display:none;">
+          <div class="m-detected-header">
+            <div class="m-detected-badge" id="mDetectedBadge">
+              <span id="mDetectedIcon">⚡</span>
+              <span id="mDetectedPlatform">Video Link Ready</span>
+            </div>
+            <button class="m-detected-clear-btn" id="mDismissDetectedBtn" type="button" title="Dismiss">✕</button>
+          </div>
+          <div class="m-detected-url" id="mDetectedUrl">https://...</div>
+          <div class="m-detected-note" id="mDetectedNote">⚡ Ready for 1-Tap Download</div>
+        </div>
+
+        <!-- Clean Pro Tip for Mobile Clipboard / Share -->
         <div class="m-clip-hint-card" id="mClipHintBanner">
           <div style="display:flex; align-items:flex-start; gap:8px;">
-            <span style="font-size:15px; line-height:1;">💡</span>
+            <span style="font-size:15px; line-height:1;">⚡</span>
             <div style="font-size:11px; line-height:1.45; color:#94a3b8;">
-              <strong style="color:#00f2fe;">Auto-Prompt Feature:</strong> YouTube, TikTok ya Insta me link <span style="color:#fff; font-weight:700;">Copy</span> karke ZDownloader kholein — download prompt khud ba khud pop-up hoga! Ya direct <span style="color:#fff; font-weight:700;">Share ➔ ZDownloader</span> use karein.
+              <strong style="color:#00f2fe;">Auto-Fill Active:</strong> Kisi bhi app (FB, Insta, YouTube, TikTok) se link <span style="color:#fff; font-weight:700;">Copy</span> karein — link yahan khud ba khud fill ho jayega! Foran <span style="color:#00f2fe; font-weight:800;">⚡ Start Download</span> dabayein.
             </div>
           </div>
         </div>
@@ -2452,82 +2540,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
 </div>
 
-<!-- Smart Clipboard & Video Preview Bottom Sheet -->
-<div class="m-clip-sheet" id="mClipSheet" role="dialog" aria-modal="true" aria-labelledby="mClipPromptTitle">
-  <div class="m-clip-sheet-backdrop" id="mClipBackdrop"></div>
-  <div class="m-clip-sheet-content">
-    <div class="m-clip-drag-bar"></div>
-    <div class="m-clip-top-row">
-      <div class="m-clip-badge" id="mClipPlatformBadge">
-        <span id="mClipPlatformIcon">⚡</span>
-        <span id="mClipPlatformName">Video Link Detected</span>
-      </div>
-      <button class="m-clip-close-btn" id="btnClipDismiss" type="button" title="Close">✕</button>
-    </div>
-    
-    <div class="m-clip-title" id="mClipPromptTitle">⚡ Video Preview &amp; Quality</div>
-    <div class="m-clip-sub" id="mClipPromptSub">Quality select karein aur foran direct download shuru karein:</div>
-    
-    <!-- Smart Video Preview Card -->
-    <div class="m-preview-card" id="mClipPreviewCard" style="margin-top:0; margin-bottom:14px;">
-      <div class="m-preview-header">
-        <div class="m-preview-thumb-box" id="mClipThumbBox">
-          <img id="mClipThumbImg" src="icons/icon192.png" alt="Thumbnail" />
-          <div class="m-preview-thumb-play" id="mClipThumbPlayBtn">▶️</div>
-        </div>
-        <div class="m-preview-details">
-          <div class="m-preview-platform-badge" id="mClipPreviewBadge" style="background:rgba(0,242,254,0.15); color:#00f2fe;">
-            <span>🎬</span> <span id="mClipBadgeText">Reel / Video</span>
-          </div>
-          <div class="m-preview-title" id="mClipVideoTitle">Social Media Video Ready</div>
-          <div class="m-clip-url-text" id="mClipUrlPreview" style="font-size:11px;">https://...</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:8px;">
-      Select Download Quality:
-    </div>
-    <div class="m-clip-fmt-selector">
-      <div class="m-clip-fmt-chip active" data-clipfmt="best" id="clipFmtBest">
-        <div class="m-clip-fmt-chip-title">🎬 1080p HD</div>
-        <div class="m-clip-fmt-chip-sub">Best Quality</div>
-      </div>
-      <div class="m-clip-fmt-chip" data-clipfmt="720" id="clipFmt720">
-        <div class="m-clip-fmt-chip-title">📺 720p HD</div>
-        <div class="m-clip-fmt-chip-sub">Fast Size</div>
-      </div>
-      <div class="m-clip-fmt-chip" data-clipfmt="audio" id="clipFmtAudio">
-        <div class="m-clip-fmt-chip-title">🎵 MP3 Audio</div>
-        <div class="m-clip-fmt-chip-sub">320kbps</div>
-      </div>
-    </div>
-
-    <div class="m-clip-btn-row">
-      <button class="m-clip-btn-download" id="btnClipDownloadNow" type="button">
-        <span>⚡ 1-Tap Download Now</span>
-      </button>
-      <div style="display:flex; gap:8px;">
-        <button class="m-clip-btn-paste-only" id="btnClipWatchPreview" type="button" style="flex:1; background:rgba(0,242,254,0.1); border:1px solid rgba(0,242,254,0.3); color:#00f2fe;">
-          ▶️ Watch Preview
-        </button>
-        <button class="m-clip-btn-paste-only" id="btnClipPasteOnly" type="button" style="flex:1;">
-          📋 Paste in Box
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Floating Quick Download Bubble (Appears on Link Copy) -->
-<div class="m-floating-bubble" id="mFloatingBubble" style="display:none;" title="Quick Download">
-  <div class="m-bubble-icon">⚡</div>
-  <div class="m-bubble-text">
-    <div class="m-bubble-title">Download Copied Link</div>
-    <div class="m-bubble-sub" id="mBubblePlatform">Tap to Save Video</div>
-  </div>
-  <button class="m-bubble-close" id="mBubbleClose" type="button">✕</button>
-</div>
+<!-- Smart Clipboard sheet disabled in favor of sleek inline UI -->
 
 <!-- Bottom Navigation Bar (Mobile App Style - 5 Tabs) -->
 <nav class="m-bottom-nav">
@@ -3502,245 +3515,188 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     return isVideo ? clean : null;
   }
 
-  function syncClipSheetFormat(fmt) {
-    document.querySelectorAll('.m-clip-fmt-chip').forEach(chip => {
-      chip.classList.toggle('active', chip.dataset.clipfmt === fmt);
-    });
+  // ── Core DOM Elements Initialization ──
+  mStartDlBtn = document.getElementById('mStartDlBtn');
+  mUrlInput = document.getElementById('mUrlInput');
+  mProgCard = document.getElementById('mProgCard');
+  mDoneBox = document.getElementById('mDoneBox');
+
+  function initCoreDomElements() {
+    if (!mStartDlBtn) mStartDlBtn = document.getElementById('mStartDlBtn');
+    if (!mUrlInput) mUrlInput = document.getElementById('mUrlInput');
+    if (!mProgCard) mProgCard = document.getElementById('mProgCard');
+    if (!mDoneBox) mDoneBox = document.getElementById('mDoneBox');
   }
 
-  function openClipSheet(url, source = 'clipboard') {
+  // ── Link Detection & Inline UI Updater (100% Non-Blocking, Zero Popups) ──
+  function onNewLinkDetected(url, source = 'clipboard') {
     if (!url) return;
-    currentActiveClipUrl = url;
     initCoreDomElements();
     if (mUrlInput) {
       mUrlInput.value = url;
+      mUrlInput.style.borderColor = "var(--cyan)";
+      mUrlInput.style.boxShadow = "0 0 20px rgba(0, 242, 254, 0.4)";
+      setTimeout(() => {
+        if (mUrlInput) {
+          mUrlInput.style.borderColor = "";
+          mUrlInput.style.boxShadow = "";
+        }
+      }, 2500);
     }
+
+    const clearBtn = document.getElementById('mClearBtn');
+    if (clearBtn) clearBtn.style.display = 'flex';
+
     const meta = detectPlatform(url);
-    const sheet = document.getElementById('mClipSheet');
-    const badgeIcon = document.getElementById('mClipPlatformIcon');
-    const badgeName = document.getElementById('mClipPlatformName');
-    const urlPreview = document.getElementById('mClipUrlPreview');
-    const badgeWrap = document.getElementById('mClipPlatformBadge');
-    const titleEl = document.getElementById('mClipPromptTitle');
-    const subEl = document.getElementById('mClipPromptSub');
-    const thumbImg = document.getElementById('mClipThumbImg');
-    const videoTitle = document.getElementById('mClipVideoTitle');
-    const previewBadge = document.getElementById('mClipBadgeText');
 
-    if (badgeIcon) badgeIcon.textContent = meta.icon;
-    if (badgeName) badgeName.textContent = meta.name;
-    if (previewBadge) previewBadge.textContent = meta.name;
-    if (badgeWrap) {
-      badgeWrap.style.borderColor = meta.color;
-      badgeWrap.style.color = meta.color;
-      badgeWrap.style.background = `${meta.color}20`;
-    }
-    if (urlPreview) urlPreview.textContent = url;
-    if (videoTitle) videoTitle.textContent = `${meta.name} ready for 1-Tap Download`;
-
-    // Smart thumbnail detection
-    if (thumbImg) {
-      const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{11})/i);
-      if (ytMatch && ytMatch[1]) {
-        thumbImg.src = `https://i.ytimg.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+    // Highlight active platform pill
+    document.querySelectorAll('.m-pill').forEach(p => {
+      const txt = (p.textContent || '').toLowerCase();
+      const metaKey = (meta && meta.name ? meta.name.toLowerCase().split(' ')[0] : '');
+      if (metaKey && txt.includes(metaKey)) {
+        p.style.borderColor = meta.color || 'var(--cyan)';
+        p.style.background = `${meta.color || 'var(--cyan)'}25`;
+        p.style.color = '#fff';
+        p.style.boxShadow = `0 0 12px ${meta.color || 'rgba(0,242,254,0.4)'}`;
       } else {
-        thumbImg.src = 'icons/icon192.png';
+        p.style.borderColor = '';
+        p.style.background = '';
+        p.style.color = '';
+        p.style.boxShadow = '';
       }
+    });
+
+    // Update Detected Video Link Card
+    const detCard = document.getElementById('mDetectedCard');
+    const detBadge = document.getElementById('mDetectedBadge');
+    const detIcon = document.getElementById('mDetectedIcon');
+    const detPlat = document.getElementById('mDetectedPlatform');
+    const detUrl = document.getElementById('mDetectedUrl');
+    const detNote = document.getElementById('mDetectedNote');
+
+    if (detCard) {
+      if (detIcon) detIcon.textContent = meta.icon || '⚡';
+      if (detPlat) detPlat.textContent = `${meta.name || 'Video'} Link Detected`;
+      if (detBadge) detBadge.style.color = meta.color || 'var(--cyan)';
+      if (detUrl) detUrl.textContent = url;
+      if (detNote) {
+        if (/facebook|fb\.watch|instagram/i.test(url)) {
+          detNote.textContent = "⚡ In-App Browser Ready • 'Start Download' dabayein aur direct save karein";
+        } else {
+          detNote.textContent = "⚡ High Speed Download Ready • 1-Tap Save";
+        }
+      }
+      detCard.style.display = 'flex';
     }
 
-    if (titleEl) {
-      titleEl.innerHTML = source === 'share' ? '📲 Shared Video Detected!' : '⚡ Copied Link Detected!';
-    }
-    if (subEl) {
-      subEl.textContent = source === 'share'
-        ? `${meta.name} share hui hai. Quality select karein aur foran download karein:`
-        : `${meta.name} ka link copy mila hai. Foran download ya preview karein:`;
-    }
+    // Switch to single download tab
+    switchMainTab('dl');
+    if (bulkDlSection) bulkDlSection.style.display = 'none';
+    if (singleDlSection) singleDlSection.style.display = 'flex';
 
-    syncClipSheetFormat(selectedFormat);
-
-    // Hide floating bubble if open
-    const bubble = document.getElementById('mFloatingBubble');
-    if (bubble) bubble.style.display = 'none';
-
-    if (sheet) {
-      sheet.classList.add('show');
-      try { navigator.vibrate?.([35, 50, 35]); } catch {}
-    }
+    showToast(`📋 ${meta.name || 'Video'} link ready! ⚡ Start Download dabayein`);
   }
 
+  // Backward compatibility
+  function openClipSheet(url, source = 'clipboard') {
+    onNewLinkDetected(url, source);
+  }
   function closeClipSheet() {
     const sheet = document.getElementById('mClipSheet');
     if (sheet) sheet.classList.remove('show');
   }
 
-  function showFloatingBubble(url) {
-    const bubble = document.getElementById('mFloatingBubble');
-    const bubblePlat = document.getElementById('mBubblePlatform');
-    if (!bubble) return;
-    const meta = detectPlatform(url);
-    if (bubblePlat) bubblePlat.textContent = `${meta.name} • 1-Tap Save`;
-    bubble.style.display = 'flex';
-  }
-
-  const mFloatingBubble = document.getElementById('mFloatingBubble');
-  const mBubbleClose = document.getElementById('mBubbleClose');
-  if (mBubbleClose) {
-    mBubbleClose.onclick = (e) => {
-      e.stopPropagation();
-      if (mFloatingBubble) mFloatingBubble.style.display = 'none';
-      clipSheetDismissedUrl = mUrlInput.value.trim();
-    };
-  }
-  if (mFloatingBubble) {
-    mFloatingBubble.onclick = () => {
-      mFloatingBubble.style.display = 'none';
-      const raw = mUrlInput.value.trim();
-      if (raw) openClipSheet(raw, 'clipboard');
+  // ── Clear Button (✕) & Dismiss Handlers ──
+  const mClearBtn = document.getElementById('mClearBtn');
+  if (mClearBtn) {
+    mClearBtn.onclick = () => {
+      initCoreDomElements();
+      if (mUrlInput) {
+        mUrlInput.value = '';
+        mUrlInput.focus();
+      }
+      mClearBtn.style.display = 'none';
+      const detCard = document.getElementById('mDetectedCard');
+      if (detCard) detCard.style.display = 'none';
+      if (mDoneBox) mDoneBox.classList.remove('show');
+      if (mProgCard) mProgCard.classList.remove('show');
+      document.querySelectorAll('.m-pill').forEach(p => {
+        p.style.borderColor = ''; p.style.background = ''; p.style.color = ''; p.style.boxShadow = '';
+      });
+      showToast("🗑️ Link clear ho gaya");
     };
   }
 
+  const mDismissDetectedBtn = document.getElementById('mDismissDetectedBtn');
+  if (mDismissDetectedBtn) {
+    mDismissDetectedBtn.onclick = () => {
+      const detCard = document.getElementById('mDetectedCard');
+      if (detCard) detCard.style.display = 'none';
+    };
+  }
+
+  if (mUrlInput) {
+    mUrlInput.addEventListener('input', () => {
+      const val = (mUrlInput.value || '').trim();
+      const clearBtn = document.getElementById('mClearBtn');
+      if (clearBtn) clearBtn.style.display = val ? 'flex' : 'none';
+      if (!val) {
+        const detCard = document.getElementById('mDetectedCard');
+        if (detCard) detCard.style.display = 'none';
+      }
+    });
+  }
+
+  // ── Native Clipboard Reader ──
   async function checkClipboardForVideoLink(isUserTriggered = false) {
     let text = "";
     if (window.Android && typeof window.Android.getClipboardText === 'function') {
       try {
         text = window.Android.getClipboardText();
-      } catch (e) {
-        console.warn("Android native clipboard error:", e);
-      }
+      } catch (e) {}
     }
     if (!text && navigator.clipboard && navigator.clipboard.readText) {
       try {
         text = await navigator.clipboard.readText();
       } catch (err) {
         if (isUserTriggered) {
-          showToast("⚠️ Clipboard permission allow karein ya box me link paste karein.");
+          showToast("⚠️ Box me video link paste karein.");
         }
         return;
       }
     }
 
     if (!text || typeof text !== 'string') {
-      if (isUserTriggered) {
-        showToast("⚠️ Clipboard khali hai ya koi link copy nahi kiya gaya.");
-      }
+      if (isUserTriggered) showToast("⚠️ Clipboard khali hai.");
       return;
     }
 
     const trimmed = text.trim();
     if (!trimmed) {
-      if (isUserTriggered) {
-        showToast("⚠️ Clipboard khali hai.");
-      }
+      if (isUserTriggered) showToast("⚠️ Clipboard khali hai.");
       return;
     }
 
     const detectedUrl = extractVideoUrl(trimmed);
     if (!detectedUrl) {
       if (isUserTriggered) {
-        mUrlInput.value = trimmed;
+        initCoreDomElements();
+        if (mUrlInput) {
+          mUrlInput.value = trimmed;
+          const clearBtn = document.getElementById('mClearBtn');
+          if (clearBtn) clearBtn.style.display = 'flex';
+        }
         showToast("📋 Text paste ho gaya");
       }
       return;
     }
 
-    mUrlInput.value = detectedUrl;
-
-    // If user clicked Paste button, always open prompt
-    if (isUserTriggered) {
-      openClipSheet(detectedUrl, 'clipboard');
-      showToast("📋 Link paste ho gaya!");
+    if (!isUserTriggered && detectedUrl === lastHandledClipUrl) {
       return;
     }
+    lastHandledClipUrl = detectedUrl;
 
-    // Passive check: avoid prompting if already dismissed or downloaded
-    if (detectedUrl === clipSheetDismissedUrl || detectedUrl === lastHandledClipUrl) {
-      return;
-    }
-
-    openClipSheet(detectedUrl, 'clipboard');
-    showFloatingBubble(detectedUrl);
-  }
-
-  // Format chip clicks inside bottom sheet
-  document.querySelectorAll('.m-clip-fmt-chip').forEach(chip => {
-    chip.onclick = () => {
-      const fmt = chip.dataset.clipfmt;
-      selectedFormat = fmt;
-      syncClipSheetFormat(fmt);
-      document.querySelectorAll('#singleDlSection .m-fmt-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.fmt === fmt);
-      });
-    };
-  });
-
-  const btnClipDownloadNow = document.getElementById('btnClipDownloadNow');
-  if (btnClipDownloadNow) {
-    btnClipDownloadNow.onclick = () => {
-      initCoreDomElements();
-      const raw = (mUrlInput ? mUrlInput.value.trim() : '') || currentActiveClipUrl;
-      if (!raw) {
-        showToast("⚠️ Koi link detect nahi hua. Pehle link paste karein!");
-        return;
-      }
-      if (mUrlInput) mUrlInput.value = raw;
-      lastHandledClipUrl = raw;
-      sessionStorage.setItem('zdown_last_clip', lastHandledClipUrl);
-      closeClipSheet();
-      if (mFloatingBubble) mFloatingBubble.style.display = 'none';
-      switchMainTab('dl');
-      if (bulkDlSection) bulkDlSection.style.display = 'none';
-      if (singleDlSection) singleDlSection.style.display = 'flex';
-      if (mStartDlBtn) mStartDlBtn.click();
-    };
-  }
-
-  const btnClipWatchPreview = document.getElementById('btnClipWatchPreview');
-  const mClipThumbPlayBtn = document.getElementById('mClipThumbPlayBtn');
-  function triggerWatchPreview() {
-    initCoreDomElements();
-    const raw = (mUrlInput ? mUrlInput.value.trim() : '') || currentActiveClipUrl;
-    if (!raw) return;
-    if (mUrlInput) mUrlInput.value = raw;
-    closeClipSheet();
-    if (mFloatingBubble) mFloatingBubble.style.display = 'none';
-    if (/\.(mp4|webm|mov|m4v|mp3|m4a)($|\?)/i.test(raw)) {
-      openMobilePlayer(raw, "Media Preview");
-    } else {
-      switchMainTab('dl');
-      if (bulkDlSection) bulkDlSection.style.display = 'none';
-      if (singleDlSection) singleDlSection.style.display = 'flex';
-      if (mStartDlBtn) mStartDlBtn.click();
-    }
-  }
-  if (btnClipWatchPreview) btnClipWatchPreview.onclick = triggerWatchPreview;
-  if (mClipThumbPlayBtn) mClipThumbPlayBtn.onclick = triggerWatchPreview;
-
-  const btnClipDismiss = document.getElementById('btnClipDismiss');
-  if (btnClipDismiss) {
-    btnClipDismiss.onclick = () => {
-      clipSheetDismissedUrl = mUrlInput.value.trim();
-      closeClipSheet();
-    };
-  }
-
-  const mClipBackdrop = document.getElementById('mClipBackdrop');
-  if (mClipBackdrop) {
-    mClipBackdrop.onclick = () => {
-      clipSheetDismissedUrl = mUrlInput.value.trim();
-      closeClipSheet();
-    };
-  }
-
-  const btnClipPasteOnly = document.getElementById('btnClipPasteOnly');
-  if (btnClipPasteOnly) {
-    btnClipPasteOnly.onclick = () => {
-      clipSheetDismissedUrl = mUrlInput.value.trim();
-      closeClipSheet();
-      if (mFloatingBubble) mFloatingBubble.style.display = 'none';
-      showToast("📋 Link input me paste kar diya gaya!");
-      mUrlInput.focus();
-    };
+    onNewLinkDetected(detectedUrl, isUserTriggered ? 'paste' : 'clipboard');
   }
 
   // ── Paste Button ──
@@ -3751,25 +3707,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     };
   }
 
-  // Auto-listen to window focus, app resume, and first tap
+  // Gentle focus listener without aggressive pointerdown
   window.addEventListener('focus', () => {
-    setTimeout(() => checkClipboardForVideoLink(false), 300);
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      setTimeout(() => checkClipboardForVideoLink(false), 300);
-    }
-  });
-  window.addEventListener('pageshow', () => {
     setTimeout(() => checkClipboardForVideoLink(false), 500);
   });
-  document.addEventListener('pointerdown', () => {
-    checkClipboardForVideoLink(false);
-  }, { once: true });
-
-  // ── Start Download ──
-  mStartDlBtn = document.getElementById('mStartDlBtn');
-  mUrlInput = document.getElementById('mUrlInput');
   mProgCard = document.getElementById('mProgCard');
   mDoneBox = document.getElementById('mDoneBox');
 
@@ -4305,6 +4246,24 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
     // 5. Facebook (Clean Standalone Resolution)
     if (/facebook\.com|fb\.watch|fb\.me/i.test(url)) {
+      // In Android APK, open directly in In-App Mini Browser with live stream sniffer!
+      if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
+        document.getElementById('mProgStatus').textContent = "🌐 Opening In-App Browser for Facebook HD Video...";
+        document.getElementById('mProgPct').textContent = "100%";
+        document.getElementById('mProgFill').style.width = "100%";
+        document.getElementById('mProgSpeed').textContent = "⚡ In-App Browser Active";
+        showToast("🌐 Facebook video detect karne ke liye In-App Browser khul raha hai...");
+        setTimeout(() => {
+          window.Android.openMiniBrowser(url);
+          if (mStartDlBtn) {
+            mStartDlBtn.disabled = false;
+            mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
+          }
+          if (mProgCard) mProgCard.classList.remove('show');
+        }, 350);
+        return { ok: true, handledByMiniBrowser: true };
+      }
+
       document.getElementById('mProgStatus').textContent = "⚡ Decoding Facebook Video Stream…";
       document.getElementById('mProgPct').textContent = "50%";
       document.getElementById('mProgFill').style.width = "50%";
@@ -4547,6 +4506,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   function onDownloadDoneDirect(result) {
+    if (!result || result.handledByMiniBrowser) return;
     initCoreDomElements();
     if (mStartDlBtn) {
       mStartDlBtn.disabled = false;
