@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnBrowserSniffer;
     private final List<String> detectedMediaUrls = new CopyOnWriteArrayList<>();
     private String lastMiniBrowserHost = "";
+    private Runnable autoDownloadRunnable = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -159,15 +160,20 @@ public class MainActivity extends AppCompatActivity {
                         String foundUrl = matcher.group(0);
                         if (isSupportedUrl(foundUrl) && !foundUrl.equals(lastAutoPastedUrl)) {
                             lastAutoPastedUrl = foundUrl;
+                            final String autoUrl = foundUrl;
                             mainHandler.postDelayed(() -> {
                                 String js = "javascript:(function() {" +
                                         "  if (typeof onNewLinkDetected === 'function') {" +
-                                        "    onNewLinkDetected('" + foundUrl.replace("'", "\\'") + "', 'clipboard');" +
+                                        "    onNewLinkDetected('" + autoUrl.replace("'", "\\'") + "', 'clipboard');" +
                                         "  } else {" +
                                         "    var inp = document.getElementById('mUrlInput');" +
-                                        "    if (inp) { inp.value = '" + foundUrl.replace("'", "\\'") + "'; }" +
+                                        "    if (inp) { inp.value = '" + autoUrl.replace("'", "\\'") + "'; }" +
                                         "    if (typeof showToast === 'function') showToast('📋 Link clipboard se auto-paste ho gaya!');" +
                                         "  }" +
+                                        "  setTimeout(function() {" +
+                                        "    var btn = document.getElementById('mStartDlBtn');" +
+                                        "    if (btn && !btn.disabled) btn.click();" +
+                                        "  }, 900);" +
                                         "})();";
                                 webView.evaluateJavascript(js, null);
                             }, 500);
@@ -200,6 +206,10 @@ public class MainActivity extends AppCompatActivity {
                     "    var inp = document.getElementById('mUrlInput');" +
                     "    if (inp) inp.value = '" + cleanUrl.replace("'", "\\'") + "';" +
                     "  }" +
+                    "  setTimeout(function() {" +
+                    "    var btn = document.getElementById('mStartDlBtn');" +
+                    "    if (btn && !btn.disabled) btn.click();" +
+                    "  }, 900);" +
                     "})();";
             webView.evaluateJavascript(js, null);
         }, 800);
@@ -1092,9 +1102,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addDetectedVideo(String streamUrl) {
+        if (streamUrl == null || streamUrl.isEmpty()) return;
         if (!detectedMediaUrls.contains(streamUrl)) {
             detectedMediaUrls.add(streamUrl);
             mainHandler.post(this::updateSnifferButton);
+
+            // Auto-download: first video stream found → trigger download after short delay
+            // Cancel any previous pending auto-download
+            if (autoDownloadRunnable != null) {
+                mainHandler.removeCallbacks(autoDownloadRunnable);
+            }
+            autoDownloadRunnable = () -> {
+                if (!detectedMediaUrls.isEmpty()) {
+                    // Pick best stream: prefer .mp4 over .m3u8
+                    String best = detectedMediaUrls.get(0);
+                    for (String u : detectedMediaUrls) {
+                        if (u.contains(".mp4") && !best.contains(".mp4")) { best = u; break; }
+                    }
+                    final String chosen = best;
+                    String ext = chosen.contains(".mp3") ? ".mp3" : ".mp4";
+                    String filename = "ZDownloader_" + System.currentTimeMillis() + ext;
+                    triggerDownload(chosen, filename);
+
+                    // Notify JS UI
+                    mainHandler.post(() -> {
+                        String js = "if (typeof showToast === 'function') showToast('\u2705 Video detect ho gayi! Download shuru ho rahi hai...');" +
+                                "var card = document.getElementById('mProgCard'); if (card) card.classList.remove('show');";
+                        webView.evaluateJavascript(js, null);
+                    });
+                }
+                autoDownloadRunnable = null;
+            };
+            // Wait 1.2 seconds to collect best stream, then auto-download
+            mainHandler.postDelayed(autoDownloadRunnable, 1200);
         }
     }
 
@@ -1172,6 +1212,11 @@ public class MainActivity extends AppCompatActivity {
         }
         detectedMediaUrls.clear();
         lastMiniBrowserHost = "";
+        // Cancel any pending auto-download
+        if (autoDownloadRunnable != null) {
+            mainHandler.removeCallbacks(autoDownloadRunnable);
+            autoDownloadRunnable = null;
+        }
         updateSnifferButton();
         if (webView != null) {
             webView.evaluateJavascript("if (typeof onMiniBrowserClosed === 'function') onMiniBrowserClosed();", null);

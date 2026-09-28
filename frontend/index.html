@@ -3606,7 +3606,18 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     if (bulkDlSection) bulkDlSection.style.display = 'none';
     if (singleDlSection) singleDlSection.style.display = 'flex';
 
-    showToast(`📋 ${meta.name || 'Video'} link ready! ⚡ Start Download dabayein`);
+    // Auto-trigger download if running inside Android APK
+    if (window.Android) {
+      showToast(`⚡ ${meta.name || 'Video'} link detect hua! Auto-download shuru ho raha hai...`);
+      setTimeout(() => {
+        initCoreDomElements();
+        if (mStartDlBtn && !mStartDlBtn.disabled) {
+          mStartDlBtn.click();
+        }
+      }, 1100);
+    } else {
+      showToast(`📋 ${meta.name || 'Video'} link ready! ⚡ Start Download dabayein`);
+    }
   }
 
   // Backward compatibility
