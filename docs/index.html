@@ -2884,7 +2884,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     document.getElementById('installCallout').style.display = 'flex';
   });
 
-  document.getElementById('calloutInstallBtn').onclick = () => {
+  const _calloutInstallBtn = document.getElementById('calloutInstallBtn');
+  if (_calloutInstallBtn) _calloutInstallBtn.onclick = () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
@@ -2892,8 +2893,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       showInstallModal('android');
     }
   };
-  document.getElementById('btnOpenInstallModal').onclick = () => showInstallModal('ext');
-  document.getElementById('navInstall').onclick = () => showInstallModal('ext');
+  const _btnOpenInstallModal = document.getElementById('btnOpenInstallModal');
+  if (_btnOpenInstallModal) _btnOpenInstallModal.onclick = () => showInstallModal('ext');
+  const _navInstall = document.getElementById('navInstall');
+  if (_navInstall) _navInstall.onclick = () => showInstallModal('ext');
 
   const tabExt = document.getElementById('tabExt');
   const tabAndroid = document.getElementById('tabAndroid');
@@ -2935,8 +2938,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     if (m) m.classList.add('show');
   }
 
-  document.getElementById('btnCloseInstallModal').onclick = () => {
-    document.getElementById('mInstallModal').classList.remove('show');
+  const _btnCloseInstallModal = document.getElementById('btnCloseInstallModal');
+  if (_btnCloseInstallModal) _btnCloseInstallModal.onclick = () => {
+    const _instModal = document.getElementById('mInstallModal');
+    if (_instModal) _instModal.classList.remove('show');
   };
 
   const quickExtBtn = document.getElementById('quickExtBtn');
