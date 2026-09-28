@@ -3,10 +3,12 @@ package com.basit.zdownloader;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -100,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
 
         checkRuntimePermissions();
         handleIntent(getIntent());
+        registerDownloadCompleteReceiver();
 
         // Load local bundled web app from assets
         webView.loadUrl("file:///android_asset/index.html");
@@ -246,8 +249,6 @@ public class MainActivity extends AppCompatActivity {
                         String u = req.getUrl().toString();
                         if (isMediaUrl(u)) {
                             triggerDownload(u, "ZDownloader_" + System.currentTimeMillis() + ".mp4");
-                        } else {
-                            showMiniBrowser(u);
                         }
                         return true;
                     }
@@ -256,8 +257,6 @@ public class MainActivity extends AppCompatActivity {
                     public boolean shouldOverrideUrlLoading(WebView v, String u) {
                         if (isMediaUrl(u)) {
                             triggerDownload(u, "ZDownloader_" + System.currentTimeMillis() + ".mp4");
-                        } else {
-                            showMiniBrowser(u);
                         }
                         return true;
                     }
@@ -297,11 +296,8 @@ public class MainActivity extends AppCompatActivity {
                     triggerDownload(targetUrl, "ZDownloader_" + System.currentTimeMillis() + ".mp4");
                     return true;
                 }
-                if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://")) {
-                    showMiniBrowser(targetUrl);
-                    return true;
-                }
-                return true;
+                // Do not hijack screen with mini browser on background link navigations
+                return false;
             }
         });
 
@@ -393,8 +389,62 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ── In-App Background Sniffer for Instagram (No External Redirects!) ──
-    private void startInstagramSniffer(String igUrl) {
+    private void registerDownloadCompleteReceiver() {
+        try {
+            BroadcastReceiver downloadCompleteReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())) {
+                        long downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                        if (downloadId != -1) {
+                            scanCompletedDownload(downloadId);
+                        }
+                    }
+                }
+            };
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(downloadCompleteReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(downloadCompleteReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void scanCompletedDownload(long downloadId) {
+        try {
+            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (dm == null) return;
+            DownloadManager.Query q = new DownloadManager.Query();
+            q.setFilterById(downloadId);
+            try (android.database.Cursor c = dm.query(q)) {
+                if (c != null && c.moveToFirst()) {
+                    int statusIdx = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                    if (statusIdx != -1 && c.getInt(statusIdx) == DownloadManager.STATUS_SUCCESSFUL) {
+                        int uriIdx = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
+                        if (uriIdx != -1) {
+                            String localUri = c.getString(uriIdx);
+                            if (localUri != null) {
+                                String path = Uri.parse(localUri).getPath();
+                                if (path != null) {
+                                    File f = new File(path);
+                                    if (f.exists()) {
+                                        MediaScannerConnection.scanFile(MainActivity.this, new String[]{f.getAbsolutePath()}, null, null);
+                                    }
+                                }
+                            }
+                        }
+                        mainHandler.post(() -> Toast.makeText(MainActivity.this, "🎬 Video Gallery me save ho gayi!", Toast.LENGTH_SHORT).show());
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // ── Headless Background Video Stream Sniffer (Zero UI, Zero Popups) ──
+    private void startBackgroundSniffer(String targetUrl) {
+        if (targetUrl == null || targetUrl.trim().isEmpty()) return;
+        final String cleanUrl = targetUrl.trim();
+
         mainHandler.post(() -> {
             destroySniffer();
 
@@ -406,13 +456,15 @@ public class MainActivity extends AppCompatActivity {
             s.setAllowFileAccess(true);
             s.setAllowContentAccess(true);
             s.setMediaPlaybackRequiresUserGesture(false);
+            s.setJavaScriptCanOpenWindowsAutomatically(true);
             s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36");
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                 CookieManager.getInstance().setAcceptThirdPartyCookies(snifferWebView, true);
             }
 
-            // Attach to rootFrameLayout invisibly so WebKit activates rendering & media decoding
+            // Headless: 1x1 dp, completely invisible, attached so WebKit executes JS & rendering
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(1, 1);
             lp.gravity = Gravity.BOTTOM | Gravity.END;
             snifferWebView.setLayoutParams(lp);
@@ -421,13 +473,13 @@ public class MainActivity extends AppCompatActivity {
                 rootFrameLayout.addView(snifferWebView);
             }
 
-            // Interface for the injected JS extractor
             snifferWebView.addJavascriptInterface(new Object() {
                 @JavascriptInterface
                 public void onStreamFound(String streamUrl) {
                     if (streamUrl != null && !streamUrl.isEmpty()) {
                         mainHandler.post(() -> {
-                            triggerDownload(streamUrl, "Instagram_Reel_" + System.currentTimeMillis() + ".mp4");
+                            String ext = streamUrl.contains(".mp3") ? ".mp3" : ".mp4";
+                            triggerDownload(streamUrl, "Video_" + System.currentTimeMillis() + ext);
                             destroySniffer();
                         });
                     }
@@ -442,10 +494,11 @@ public class MainActivity extends AppCompatActivity {
                     if (streamCaptured) return super.shouldInterceptRequest(view, request);
                     String reqUrl = request.getUrl().toString();
 
-                    if (isInstagramStream(reqUrl)) {
+                    if (isSniffableVideoUrl(reqUrl)) {
                         streamCaptured = true;
                         mainHandler.post(() -> {
-                            triggerDownload(reqUrl, "Instagram_Reel_" + System.currentTimeMillis() + ".mp4");
+                            String ext = reqUrl.contains(".mp3") ? ".mp3" : ".mp4";
+                            triggerDownload(reqUrl, "Video_" + System.currentTimeMillis() + ext);
                             destroySniffer();
                         });
                     }
@@ -457,14 +510,15 @@ public class MainActivity extends AppCompatActivity {
                     super.onPageFinished(view, url);
                     if (streamCaptured) return;
 
-                    // Inject smart extractor to scrape video tags, meta tags, or inline JSON
+                    // Inject smart extractor to scrape video tags, meta tags, and trigger playback
                     String js = "(function() {" +
                             "  function check() {" +
                             "    var vids = document.querySelectorAll('video');" +
                             "    for (var i = 0; i < vids.length; i++) {" +
+                            "      try { vids[i].muted = true; vids[i].play(); } catch(e) {}" +
                             "      var s = vids[i].currentSrc || vids[i].src;" +
                             "      if (!s) { var sc = vids[i].querySelector('source'); if (sc) s = sc.src; }" +
-                            "      if (s && s.startsWith('http') && !s.startsWith('blob:') && (s.includes('fbcdn.net') || s.includes('cdninstagram.com') || s.includes('.mp4'))) {" +
+                            "      if (s && s.startsWith('http') && !s.startsWith('blob:')) {" +
                             "        if (window.NativeSniffer) window.NativeSniffer.onStreamFound(s);" +
                             "        return true;" +
                             "      }" +
@@ -477,7 +531,7 @@ public class MainActivity extends AppCompatActivity {
                             "    var scripts = document.querySelectorAll('script');" +
                             "    for (var j = 0; j < scripts.length; j++) {" +
                             "      var t = scripts[j].textContent || '';" +
-                            "      var m = t.match(/https:\\/\\/[^\\s\"'><\\\\]+(?:fbcdn\\.net|cdninstagram\\.com)[^\\s\"'><\\\\]*(?:\\.mp4|\\/t50\\.)[^\\s\"'><\\\\]*/);" +
+                            "      var m = t.match(/https:\\/\\/[^\\s\"'><\\\\]+(?:fbcdn\\.net|cdninstagram\\.com)[^\\s\"'><\\\\]*(?:\\.mp4|\\/t50\\.|bytestart)[^\\s\"'><\\\\]*/);" +
                             "      if (m && m[0]) {" +
                             "        var clean = m[0].replace(/\\\\u0026/g, '&').replace(/\\\\\\//g, '/');" +
                             "        if (window.NativeSniffer) window.NativeSniffer.onStreamFound(clean);" +
@@ -489,36 +543,38 @@ public class MainActivity extends AppCompatActivity {
                             "  var play = document.querySelector('[aria-label=\"Play\"]') || document.querySelector('video') || document.querySelector('.EmbeddedMedia') || document.querySelector('div[role=\"button\"]');" +
                             "  if (play) { try { play.click(); } catch(e) {} }" +
                             "  if (!check()) {" +
-                            "    var iv = setInterval(function() { if (check()) clearInterval(iv); }, 500);" +
-                            "    setTimeout(function() { clearInterval(iv); }, 8000);" +
+                            "    var iv = setInterval(function() { if (check()) clearInterval(iv); }, 600);" +
+                            "    setTimeout(function() { clearInterval(iv); }, 9000);" +
                             "  }" +
                             "})();";
                     view.evaluateJavascript(js, null);
                 }
             });
 
-            // If not auto-captured within 7 seconds, smoothly switch to Mini Browser so user sees the Reel and 1-tap sniffer button!
+            // 10 second timeout: destroy silently WITHOUT opening any mini browser!
             snifferTimeoutRunnable = () -> {
                 if (snifferWebView != null) {
                     destroySniffer();
                     mainHandler.post(() -> {
-                        String js = "if (typeof showToast === 'function') showToast('⚡ Video detect karne ke liye In-App Browser khul raha hai...');" +
-                                "var st = document.getElementById('mProgStatus'); if (st) st.textContent = '🌐 In-App Browser Active';" +
+                        String js = "if (typeof showToast === 'function') showToast('⚠️ Video automatically detect nahi ho saki. Public link check karein.');" +
+                                "var card = document.getElementById('mProgCard'); if (card) card.classList.remove('show');" +
                                 "var btn = document.getElementById('mStartDlBtn'); if (btn) { btn.disabled = false; btn.innerHTML = '<span>⚡ Start Download</span>'; }";
                         webView.evaluateJavascript(js, null);
-                        showMiniBrowser(igUrl);
                     });
                 }
             };
-            mainHandler.postDelayed(snifferTimeoutRunnable, 7000);
+            mainHandler.postDelayed(snifferTimeoutRunnable, 10000);
 
-            // Clean shortcode and choose best URL
-            String shortcode = extractInstagramShortcode(igUrl);
-            if (shortcode != null) {
-                // Embed URL bypasses login restrictions and triggers media load immediately
-                snifferWebView.loadUrl("https://www.instagram.com/p/" + shortcode + "/embed/captioned/");
+            // If Instagram link: try embed url which bypasses login barriers
+            if (cleanUrl.contains("instagram.com")) {
+                String shortcode = extractInstagramShortcode(cleanUrl);
+                if (shortcode != null) {
+                    snifferWebView.loadUrl("https://www.instagram.com/p/" + shortcode + "/embed/captioned/");
+                } else {
+                    snifferWebView.loadUrl(cleanUrl);
+                }
             } else {
-                snifferWebView.loadUrl(igUrl);
+                snifferWebView.loadUrl(cleanUrl);
             }
         });
     }
@@ -530,21 +586,6 @@ public class MainActivity extends AppCompatActivity {
             return m.group(1);
         }
         return null;
-    }
-
-    private boolean isInstagramStream(String url) {
-        if (url == null) return false;
-        String u = url.toLowerCase();
-        if (u.contains(".js") || u.contains(".css") || u.contains("analytics") || u.contains("logging") || u.contains("favicon")) {
-            return false;
-        }
-        boolean isCdn = u.contains("fbcdn.net") || u.contains("cdninstagram.com");
-        if (isCdn) {
-            if (u.contains(".mp4") || u.contains("/t50.") || u.contains("video") || u.contains("bytestart") || u.contains("mime=video") || u.contains("video_dashinit")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void destroySniffer() {
@@ -588,8 +629,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public void startBackgroundSniffer(String url) {
+            mainHandler.post(() -> MainActivity.this.startBackgroundSniffer(url));
+        }
+
+        @JavascriptInterface
         public void sniffAndDownloadInstagram(String igUrl) {
-            mainHandler.post(() -> showMiniBrowser(igUrl));
+            mainHandler.post(() -> MainActivity.this.startBackgroundSniffer(igUrl));
         }
 
         @JavascriptInterface

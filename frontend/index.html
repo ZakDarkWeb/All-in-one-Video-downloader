@@ -3587,11 +3587,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       if (detBadge) detBadge.style.color = meta.color || 'var(--cyan)';
       if (detUrl) detUrl.textContent = url;
       if (detNote) {
-        if (/facebook|fb\.watch|instagram/i.test(url)) {
-          detNote.textContent = "⚡ In-App Browser Ready • Tap to Start Download";
-        } else {
-          detNote.textContent = "⚡ High Speed Download Ready • 1-Tap Save";
-        }
+        detNote.textContent = "⚡ High Speed Direct Download Ready • 1-Tap Save";
       }
       detCard.style.display = 'flex';
       detCard.style.cursor = 'pointer';
@@ -4270,24 +4266,6 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
     // 5. Facebook (Clean Standalone Resolution)
     if (/facebook\.com|fb\.watch|fb\.me/i.test(url)) {
-      // In Android APK, open directly in In-App Mini Browser with live stream sniffer!
-      if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
-        document.getElementById('mProgStatus').textContent = "🌐 Opening In-App Browser for Facebook HD Video...";
-        document.getElementById('mProgPct').textContent = "100%";
-        document.getElementById('mProgFill').style.width = "100%";
-        document.getElementById('mProgSpeed').textContent = "⚡ In-App Browser Active";
-        showToast("🌐 Facebook video detect karne ke liye In-App Browser khul raha hai...");
-        setTimeout(() => {
-          window.Android.openMiniBrowser(url);
-          if (mStartDlBtn) {
-            mStartDlBtn.disabled = false;
-            mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
-          }
-          if (mProgCard) mProgCard.classList.remove('show');
-        }, 350);
-        return { ok: true, handledByMiniBrowser: true };
-      }
-
       document.getElementById('mProgStatus').textContent = "⚡ Decoding Facebook Video Stream…";
       document.getElementById('mProgPct').textContent = "50%";
       document.getElementById('mProgFill').style.width = "50%";
@@ -4296,7 +4274,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       // Method A: Direct stream resolver (Siputzx API -> SnapCDN direct MP4 stream)
       try {
         const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 12000);
+        const t = setTimeout(() => ctrl.abort(), 10000);
         const res = await fetch(`https://api.siputzx.my.id/api/d/facebook?url=${encodeURIComponent(url)}`, { signal: ctrl.signal });
         clearTimeout(t);
         if (res.ok) {
@@ -4322,7 +4300,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       // Method B: Direct plain-text scraper fallback
       try {
         const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 8000);
+        const t = setTimeout(() => ctrl.abort(), 7000);
         const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, { signal: ctrl.signal });
         clearTimeout(t);
         if (res.ok) {
@@ -4344,7 +4322,18 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         console.warn("FB proxy stream error:", e);
       }
 
-      // Method C: In-App 1-Tap Fast Resolver (Zero Localhost Needed)
+      // Method C: Headless background sniffer in Android (Zero Popups, Zero Browser Windows)
+      if (window.Android && typeof window.Android.startBackgroundSniffer === 'function') {
+        document.getElementById('mProgStatus').textContent = "⚡ Detecting Facebook Video in Background…";
+        document.getElementById('mProgPct').textContent = "65%";
+        document.getElementById('mProgFill').style.width = "65%";
+        document.getElementById('mProgSpeed').textContent = "⚡ Silent Sniffer Active";
+        showToast("⏳ Facebook video detect ho rahi hai (Background)...");
+        window.Android.startBackgroundSniffer(url);
+        return { ok: true, handledByBackgroundSniffer: true };
+      }
+
+      // Method D: Web Fallback Resolver
       return {
         ok: true,
         isExternalResolver: true,
@@ -4395,24 +4384,16 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       };
     }
 
-    // 8. Instagram (Clean Direct In-App Engine - Zero Dead Ends!)
+    // 8. Instagram (Headless In-App Background Sniffer - Zero Browser Popups!)
     if (/instagram\.com/i.test(url)) {
-      // In Android APK, open directly in In-App Mini Browser with live stream sniffer!
-      if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
-        document.getElementById('mProgStatus').textContent = "🌐 Opening In-App Browser for Instagram Reel...";
-        document.getElementById('mProgPct').textContent = "100%";
-        document.getElementById('mProgFill').style.width = "100%";
-        document.getElementById('mProgSpeed').textContent = "⚡ In-App Browser Active";
-        showToast("🌐 Instagram Reel detect karne ke liye In-App Browser khul raha hai...");
-        setTimeout(() => {
-          window.Android.openMiniBrowser(url);
-          if (mStartDlBtn) {
-            mStartDlBtn.disabled = false;
-            mStartDlBtn.innerHTML = `<span>⚡ Start Download</span>`;
-          }
-          if (mProgCard) mProgCard.classList.remove('show');
-        }, 350);
-        return { ok: true, handledByMiniBrowser: true };
+      if (window.Android && typeof window.Android.startBackgroundSniffer === 'function') {
+        document.getElementById('mProgStatus').textContent = "⚡ Detecting Instagram Reel in Background…";
+        document.getElementById('mProgPct').textContent = "65%";
+        document.getElementById('mProgFill').style.width = "65%";
+        document.getElementById('mProgSpeed').textContent = "⚡ Silent Sniffer Active";
+        showToast("⏳ Instagram video detect ho rahi hai (Background)...");
+        window.Android.startBackgroundSniffer(url);
+        return { ok: true, handledByBackgroundSniffer: true };
       }
 
       // Branch 2: Web Mode (Fast 1-Tap Resolver)
@@ -4519,7 +4500,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
       const hint = document.getElementById('mDoneHint');
       if (hint) {
-        hint.innerHTML = `📥 Video phone ke Download folder me save ho rahi hai. Live status dekhne ya reel play karne ke liye In-App Browser open karein:`;
+        hint.innerHTML = `📥 Video phone ke Download folder aur Gallery me direct save ho rahi hai.`;
         hint.style.background = "rgba(0, 242, 254, 0.12)";
         hint.style.borderColor = "rgba(0, 242, 254, 0.35)";
         hint.style.color = "#38bdf8";
@@ -4527,20 +4508,16 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
       const actions = document.getElementById('mDoneActions');
       if (actions) {
-        const targetUrl = result.targetUrl || (mUrlInput ? mUrlInput.value.trim() : "") || currentActiveClipUrl;
         actions.innerHTML = `
-          <button class="m-btn-save-phone" id="mOpenMiniBrowserBtn" type="button" style="background:var(--cyber-grad); color:#070a13; font-weight:800; border:none; cursor:pointer; width:100%; border-radius:12px; padding:13px; font-size:14px; box-shadow:0 4px 15px rgba(0,242,254,0.35);">
-            🌐 Open in In-App Browser (Live Sniffer)
+          <button class="m-btn-save-phone" id="mCopyDoneLinkBtn" type="button" style="background:var(--cyber-grad); color:#070a13; font-weight:800; border:none; cursor:pointer; width:100%; border-radius:12px; padding:13px; font-size:14px; box-shadow:0 4px 15px rgba(0,242,254,0.35);">
+            📋 Copy Video Link
           </button>
         `;
-        const obBtn = document.getElementById('mOpenMiniBrowserBtn');
-        if (obBtn) {
-          obBtn.onclick = () => {
-            if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
-              window.Android.openMiniBrowser(targetUrl);
-            } else {
-              window.open(targetUrl, '_blank');
-            }
+        const cbBtn = document.getElementById('mCopyDoneLinkBtn');
+        if (cbBtn) {
+          cbBtn.onclick = () => {
+            const u = result.targetUrl || (mUrlInput ? mUrlInput.value.trim() : "") || currentActiveClipUrl;
+            try { navigator.clipboard.writeText(u); showToast("📋 Link copied!"); } catch {}
           };
         }
       }
@@ -4599,10 +4576,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           try {
             await navigator.clipboard.writeText(result.url);
           } catch {}
-          showToast("📋 Link copied! In-App Extractor khul raha hai...");
-          if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
-            window.Android.openMiniBrowser(result.primaryResolver);
+          if (window.Android && typeof window.Android.startBackgroundSniffer === 'function') {
+            showToast("⚡ Sniffing video stream in background...");
+            window.Android.startBackgroundSniffer(result.url);
           } else {
+            showToast("🌐 External downloader khul raha hai...");
             window.open(result.primaryResolver, '_blank');
           }
         };
@@ -4611,10 +4589,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           try {
             await navigator.clipboard.writeText(result.url);
           } catch {}
-          showToast("📋 Link copied! Server khul raha hai...");
-          if (window.Android && typeof window.Android.openMiniBrowser === 'function') {
-            window.Android.openMiniBrowser(result.altResolver);
+          if (window.Android && typeof window.Android.startBackgroundSniffer === 'function') {
+            showToast("⚡ Sniffing video stream in background...");
+            window.Android.startBackgroundSniffer(result.url);
           } else {
+            showToast("🌐 Server khul raha hai...");
             window.open(result.altResolver, '_blank');
           }
         };
@@ -4769,6 +4748,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         document.getElementById('mProgStatus').textContent = "⚠️ Laptop unreachable. Switching to Standalone Engine…";
         try {
           const res = await resolveDirectVideo(url, isAudio);
+          if (res && (res.handledByBackgroundSniffer || res.handledByMiniBrowser)) return;
           document.getElementById('mProgPct').textContent = "95%";
           document.getElementById('mProgFill').style.width = "95%";
           document.getElementById('mProgStatus').textContent = "🎬 Video Ready!";
@@ -4790,7 +4770,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
       try {
         const res = await resolveDirectVideo(url, isAudio);
-        if (res && res.handledByMiniBrowser) return;
+        if (res && (res.handledByBackgroundSniffer || res.handledByMiniBrowser)) return;
         document.getElementById('mProgPct').textContent = "95%";
         document.getElementById('mProgFill').style.width = "95%";
         document.getElementById('mProgStatus').textContent = "🎬 Video Ready!";
