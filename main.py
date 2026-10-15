@@ -286,10 +286,27 @@ def extract_snapchat(url):
         return urls
 
     media_urls = find_urls(data, "mediaUrl")
-    if not media_urls:
+
+    # Extra candidates: public share-page tags (JSON-LD contentUrl / og:video)
+    extra = []
+    for ld in re.findall(r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>', r.text, re.DOTALL):
+        try:
+            extra.extend(find_urls(json.loads(ld), "contentUrl"))
+        except Exception:
+            pass
+    for og in re.findall(r'<meta[^>]+property="og:video(?::secure_url)?"[^>]+content="([^"]+)"', r.text):
+        extra.append(og.replace("&amp;", "&"))
+
+    def looks_watermarked(u):
+        low = u.lower()
+        return any(w in low for w in ("watermark", "wm=", "overlay", "branded"))
+
+    candidates = [u for u in (extra + media_urls) if u.startswith("http")]
+    clean_candidates = [u for u in candidates if not looks_watermarked(u)]
+    if not candidates:
         raise Exception("Snapchat video link nahi mila.")
-        
-    media_url = media_urls[0]
+
+    media_url = (clean_candidates or candidates)[0]
     title = "Snapchat Video"
     
     pp = data.get("props", {}).get("pageProps", {})
