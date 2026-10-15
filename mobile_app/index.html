@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v10.1_fb_ig_fix';
+const BUILD_VERSION = 'v10.2_snap_fix';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -4034,7 +4034,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v10.1_fb_ig_fix';
+  const APP_VERSION = 'v10.2_snap_fix';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -4110,6 +4110,35 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       document.getElementById('mProgFill').style.width = "50%";
       document.getElementById('mProgSpeed').textContent = "⚡ Decoding CDN…";
 
+      const snapLooksWm = (u) => /watermark|wm=|overlay|branded/i.test(u);
+      const snapName = (t) => `${(t || 'Snapchat').replace(/[^\w\s-]/g, '').slice(0, 40) || 'Snapchat'}_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`;
+
+      // Method A: raw page HTML -> clean share-page video (og:video / JSON-LD) before watermarked mediaUrl
+      try {
+        const ctrl0 = new AbortController();
+        const timer0 = setTimeout(() => ctrl0.abort(), 12000);
+        const raw = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`, { signal: ctrl0.signal });
+        clearTimeout(timer0);
+        if (raw.ok) {
+          const html = await raw.text();
+          const cands = [];
+          for (const m of html.matchAll(/<meta[^>]+property=["']og:video(?::secure_url)?["'][^>]+content=["']([^"']+)["']/gi)) cands.push(m[1]);
+          for (const m of html.matchAll(/"contentUrl"\s*:\s*"([^"]+)"/g)) cands.push(m[1]);
+          for (const m of html.matchAll(/"mediaUrl"\s*:\s*"([^"]+)"/g)) cands.push(m[1]);
+          const clean = cands
+            .map(u => u.replace(/\\u0026/g, '&').replace(/\\\//g, '/').replace(/&amp;/g, '&'))
+            .filter(u => /^https:/.test(u) && !snapLooksWm(u));
+          if (clean.length) {
+            const tm = html.match(/<title>([^<]+)<\/title>/i);
+            const ttl = tm ? tm[1].trim() : "Snapchat Spotlight Video";
+            return { ok: true, title: ttl, downloadUrl: clean[0], filename: snapName(ttl) };
+          }
+        }
+      } catch (err) {
+        console.warn("Snapchat raw page error:", err);
+      }
+
+      // Method B: text reader fallback
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 12000);
@@ -4124,8 +4153,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           const titleMatch = text.match(/^Title:\s*(.+)$/m);
           const title = (titleMatch && titleMatch[1]) ? titleMatch[1].trim() : "Snapchat Spotlight Video";
 
-          const videoMatch = text.match(/\[Video[^\]]*\]\((https:\/\/[^)]*(?:sc-cdn\.net|bolt-gcdn)[^)]+)\)/i) ||
-                             text.match(/(https:\/\/[^\s\)\<\>]+(?:sc-cdn\.net|bolt-gcdn)[^\s\)\<\>]+)/i);
+          const allSnap = [...text.matchAll(/https:\/\/[^\s\)\<\>"']+(?:sc-cdn\.net|bolt-gcdn)[^\s\)\<\>"']+/gi)].map(m => m[0]);
+          const videoMatch = [null, allSnap.find(u => !snapLooksWm(u)) || allSnap[0]];
 
           if (videoMatch && videoMatch[1]) {
             const directUrl = videoMatch[1].replace(/&amp;/g, '&');
