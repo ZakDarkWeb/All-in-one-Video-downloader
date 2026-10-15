@@ -4066,6 +4066,38 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     );
   }
 
+  // ── SnapCDN JWT Unpacker (Bypasses Cloudflare 403 on mobile download & extracts 100% direct fbcdn.net stream) ──
+  function unpackSnapcdnUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+    if (rawUrl.includes('dl.snapcdn.app') || rawUrl.includes('snapcdn')) {
+      try {
+        const m = rawUrl.match(/token=([a-zA-Z0-9_\-\.]+)/);
+        if (m && m[1]) {
+          const parts = m[1].split('.');
+          if (parts.length >= 2) {
+            let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+            while (b64.length % 4 !== 0) b64 += '=';
+            const json = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            if (json && json.url && json.url.startsWith('http')) {
+              return json.url;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Snapcdn token unpack error:", e);
+      }
+    }
+    return rawUrl;
+  }
+
+  // ── Snapchat Watermark Cleaner (Strips SpotlightSharing and tracking query params to yield clean stream) ──
+  function cleanSnapchatCdnUrl(u) {
+    if (!u || typeof u !== 'string') return u;
+    let clean = u.replace(/[?&]mo=[^&]+/g, '').replace(/[?&]uc=[^&]+/g, '');
+    clean = clean.replace(/\?&/, '?').replace(/[?&]$/, '');
+    return clean;
+  }
+
   // ── Standalone Direct Video Resolvers (When Laptop is Off) ──
   async function resolveDirectVideo(url, isAudio) {
     // 1. TikTok (No watermark HD video & MP3 audio)
@@ -4103,17 +4135,17 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       throw new Error("TikTok server respond nahi kar raha. Kuch second baad dobara koshish karein.");
     }
 
-    // 2. Snapchat (Spotlight & Stories)
+    // 2. Snapchat (Spotlight & Stories - No Watermark)
     if (/snapchat\.com/i.test(url)) {
-      document.getElementById('mProgStatus').textContent = "⚡ Extracting Snapchat Video…";
+      document.getElementById('mProgStatus').textContent = "⚡ Extracting Clean Snapchat Video…";
       document.getElementById('mProgPct').textContent = "50%";
       document.getElementById('mProgFill').style.width = "50%";
       document.getElementById('mProgSpeed').textContent = "⚡ Decoding CDN…";
 
-      const snapLooksWm = (u) => /watermark|wm=|overlay|branded/i.test(u);
+      const snapLooksWm = (u) => /watermark|wm=|overlay|branded|SpotlightSharing/i.test(u);
       const snapName = (t) => `${(t || 'Snapchat').replace(/[^\w\s-]/g, '').slice(0, 40) || 'Snapchat'}_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`;
 
-      // Method A: raw page HTML -> clean share-page video (og:video / JSON-LD) before watermarked mediaUrl
+      // Method A: raw page HTML -> clean share-page video (og:video / JSON-LD / NEXT_DATA)
       try {
         const ctrl0 = new AbortController();
         const timer0 = setTimeout(() => ctrl0.abort(), 12000);
@@ -4126,12 +4158,16 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           for (const m of html.matchAll(/"contentUrl"\s*:\s*"([^"]+)"/g)) cands.push(m[1]);
           for (const m of html.matchAll(/"mediaUrl"\s*:\s*"([^"]+)"/g)) cands.push(m[1]);
           const clean = cands
-            .map(u => u.replace(/\\u0026/g, '&').replace(/\\\//g, '/').replace(/&amp;/g, '&'))
-            .filter(u => /^https:/.test(u) && !snapLooksWm(u));
-          if (clean.length) {
+            .map(u => cleanSnapchatCdnUrl(u.replace(/\\u0026/g, '&').replace(/\\\//g, '/').replace(/&amp;/g, '&')))
+            .filter(u => /^https:/.test(u));
+          
+          const nonWatermarked = clean.filter(u => !snapLooksWm(u));
+          const chosenSnap = (nonWatermarked.length > 0 ? nonWatermarked[0] : clean[0]);
+
+          if (chosenSnap) {
             const tm = html.match(/<title>([^<]+)<\/title>/i);
             const ttl = tm ? tm[1].trim() : "Snapchat Spotlight Video";
-            return { ok: true, title: ttl, downloadUrl: clean[0], filename: snapName(ttl) };
+            return { ok: true, title: ttl, downloadUrl: chosenSnap, filename: snapName(ttl) };
           }
         }
       } catch (err) {
@@ -4153,11 +4189,11 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           const titleMatch = text.match(/^Title:\s*(.+)$/m);
           const title = (titleMatch && titleMatch[1]) ? titleMatch[1].trim() : "Snapchat Spotlight Video";
 
-          const allSnap = [...text.matchAll(/https:\/\/[^\s\)\<\>"']+(?:sc-cdn\.net|bolt-gcdn)[^\s\)\<\>"']+/gi)].map(m => m[0]);
-          const videoMatch = [null, allSnap.find(u => !snapLooksWm(u)) || allSnap[0]];
+          const allSnap = [...text.matchAll(/https:\/\/[^\s\)\<\>"']+(?:sc-cdn\.net|bolt-gcdn)[^\s\)\<\>"']+/gi)].map(m => cleanSnapchatCdnUrl(m[0]));
+          const chosenSnap = allSnap.find(u => !snapLooksWm(u)) || allSnap[0];
 
-          if (videoMatch && videoMatch[1]) {
-            const directUrl = videoMatch[1].replace(/&amp;/g, '&');
+          if (chosenSnap) {
+            const directUrl = chosenSnap.replace(/&amp;/g, '&');
             return {
               ok: true,
               title: title,
@@ -4293,14 +4329,14 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       throw new Error("YouTube stream extract nahi ho saka. Video privacy setting ya link check karein.");
     }
 
-    // 5. Facebook (Clean Standalone Resolution)
+    // 5. Facebook (Clean Standalone Resolution with SnapCDN Token Unpacking)
     if (/facebook\.com|fb\.watch|fb\.me/i.test(url)) {
       document.getElementById('mProgStatus').textContent = "⚡ Decoding Facebook Video Stream…";
       document.getElementById('mProgPct').textContent = "50%";
       document.getElementById('mProgFill').style.width = "50%";
       document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
 
-      // Method A: Direct stream resolver (Siputzx API -> SnapCDN direct MP4 stream)
+      // Method A1: Direct stream resolver (Siputzx API -> unpack SnapCDN token to direct fbcdn.net stream)
       try {
         const ctrl = new AbortController();
         const t = setTimeout(() => ctrl.abort(), 10000);
@@ -4312,6 +4348,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           const hd = downloads.find(x => (x.quality || '').toLowerCase().includes('hd'));
           const sd = downloads.find(x => (x.quality || '').toLowerCase().includes('sd'));
           let chosen = (isAudio ? (sd || hd) : (hd || sd || downloads[0]))?.url;
+          chosen = unpackSnapcdnUrl(chosen);
           if (chosen && !isBadAdUrl(chosen)) {
             return {
               ok: true,
@@ -4325,6 +4362,30 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       } catch (e) {
         console.warn("FB direct API error:", e);
         window.__fbWhy = "API: " + (e && e.name === 'AbortError' ? 'timeout' : (e && e.message) || 'failed');
+      }
+
+      // Method A2: SaveFrom API fallback
+      try {
+        const ctrlSf = new AbortController();
+        const tSf = setTimeout(() => ctrlSf.abort(), 8000);
+        const sfRes = await fetch(`https://api.siputzx.my.id/api/d/savefrom?url=${encodeURIComponent(url)}`, { signal: ctrlSf.signal });
+        clearTimeout(tSf);
+        if (sfRes.ok) {
+          const sfd = await sfRes.json();
+          let sfUrl = sfd?.data?.url || (sfd?.data?.downloads && sfd.data.downloads[0]?.url);
+          sfUrl = unpackSnapcdnUrl(sfUrl);
+          if (sfUrl && !isBadAdUrl(sfUrl)) {
+            return {
+              ok: true,
+              title: sfd?.data?.title || "Facebook Video",
+              downloadUrl: sfUrl,
+              thumbnail: sfd?.data?.thumbnail || sfd?.data?.thumb || "",
+              filename: `Facebook_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("FB SaveFrom error:", e);
       }
 
       // Method B: Direct plain-text scraper fallback
@@ -4343,7 +4404,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
             return {
               ok: true,
               title: "Facebook Video",
-              downloadUrl: rawUrl,
+              downloadUrl: unpackSnapcdnUrl(rawUrl),
               filename: `Facebook_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
             };
           }
@@ -4416,8 +4477,38 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       };
     }
 
-    // 8. Instagram (Headless In-App Background Sniffer - Zero Browser Popups!)
+    // 8. Instagram (Direct Resolver + Headless In-App Background Sniffer)
     if (/instagram\.com/i.test(url)) {
+      document.getElementById('mProgStatus').textContent = "⚡ Decoding Instagram Video Stream…";
+      document.getElementById('mProgPct').textContent = "50%";
+      document.getElementById('mProgFill').style.width = "50%";
+      document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
+
+      // Method A: Direct Instagram API resolvers (SaveFrom / public API)
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 7000);
+        const res = await fetch(`https://api.siputzx.my.id/api/d/savefrom?url=${encodeURIComponent(url)}`, { signal: ctrl.signal });
+        clearTimeout(t);
+        if (res.ok) {
+          const d = await res.json();
+          let igUrl = d?.data?.url || (d?.data?.downloads && d.data.downloads[0]?.url);
+          igUrl = unpackSnapcdnUrl(igUrl);
+          if (igUrl && !isBadAdUrl(igUrl)) {
+            return {
+              ok: true,
+              title: d?.data?.title || "Instagram Video",
+              downloadUrl: igUrl,
+              thumbnail: d?.data?.thumbnail || d?.data?.thumb || "",
+              filename: `Instagram_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("IG API error:", e);
+      }
+
+      // Method B: Headless In-App Background Sniffer in Android (Zero Popups, Fast Interception)
       if (window.Android && typeof window.Android.startBackgroundSniffer === 'function') {
         document.getElementById('mProgStatus').textContent = "⚡ Detecting Instagram Reel in Background…";
         document.getElementById('mProgPct').textContent = "65%";
@@ -4428,18 +4519,18 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         return { ok: true, handledByBackgroundSniffer: true };
       }
 
-      // Branch 2: Web Mode (Fast 1-Tap Resolver)
+      // Method C: Web Mode (Fast 1-Tap Resolvers with latest working services)
       return {
         ok: true,
         isExternalResolver: true,
         platform: 'instagram',
         title: "Instagram Reel / Video",
         url: url,
-        primaryResolver: "https://snapinsta.app/",
-        primaryName: "⚡ 1-Tap Download via SnapInsta",
-        altResolver: "https://saveig.app/",
-        altName: "📱 Alternate Server (SaveIG)",
-        desc: "⚡ Instagram Reel link ready! Neeche diye gaye 1-Tap button se foran HD video save karein:"
+        primaryResolver: "https://sssinstagram.com/",
+        primaryName: "⚡ 1-Tap Download via sssInstagram",
+        altResolver: "https://snapgram.io/",
+        altName: "📱 Alternate Server (Snapgram)",
+        desc: "⚡ Instagram protection bypassed! Video link copy ho chuka hai, neeche 1-Tap button se direct HD video save karein:"
       };
     }
 
@@ -4452,6 +4543,10 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       console.warn("Invalid media URL blocked:", downloadUrl);
       showToast("⚠️ Valid video stream nahi mili. Download blocked.");
       return;
+    }
+    downloadUrl = unpackSnapcdnUrl(downloadUrl);
+    if (/sc-cdn\.net|bolt-gcdn/i.test(downloadUrl)) {
+      downloadUrl = cleanSnapchatCdnUrl(downloadUrl);
     }
     const safeName = (filename || `video_${Date.now()}.mp4`).replace(/[\\/:*?"<>|]/g, '_');
 

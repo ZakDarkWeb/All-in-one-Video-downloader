@@ -299,7 +299,7 @@ def extract_snapchat(url):
 
     def looks_watermarked(u):
         low = u.lower()
-        return any(w in low for w in ("watermark", "wm=", "overlay", "branded"))
+        return any(w in low for w in ("watermark", "wm=", "overlay", "branded", "spotlightsharing"))
 
     candidates = [u for u in (extra + media_urls) if u.startswith("http")]
     clean_candidates = [u for u in candidates if not looks_watermarked(u)]
@@ -307,6 +307,13 @@ def extract_snapchat(url):
         raise Exception("Snapchat video link nahi mila.")
 
     media_url = (clean_candidates or candidates)[0]
+
+    # Clean CDN URL by stripping SpotlightSharing watermark & tracking params
+    if media_url and ("sc-cdn.net" in media_url or "bolt-gcdn" in media_url):
+        media_url = re.sub(r'[?&]mo=[^&]+', '', media_url)
+        media_url = re.sub(r'[?&]uc=[^&]+', '', media_url)
+        media_url = media_url.replace('?&', '?').rstrip('?&')
+
     title = "Snapchat Video"
     
     pp = data.get("props", {}).get("pageProps", {})
@@ -314,6 +321,13 @@ def extract_snapchat(url):
     if vm.get("name"):
         title = vm["name"]
         
+    duration_ms = None
+    if vm.get("durationMs"):
+        try:
+            duration_ms = int(vm["durationMs"])
+        except Exception:
+            pass
+
     thumb = ""
     if vm.get("thumbnailUrl"):
         thumb = vm["thumbnailUrl"]
@@ -331,7 +345,8 @@ def extract_snapchat(url):
     return {
         "title": title,
         "thumbnail": thumb,
-        "url": media_url
+        "url": media_url,
+        "duration_ms": duration_ms
     }
 
 
@@ -513,6 +528,24 @@ def extract_facebook_snapsave(fb_url):
     }
 
 
+def unpack_snapcdn_url(raw_url):
+    if not raw_url or "snapcdn" not in raw_url:
+        return raw_url
+    try:
+        m = re.search(r'token=([a-zA-Z0-9_\-\.]+)', raw_url)
+        if m:
+            parts = m.group(1).split('.')
+            if len(parts) >= 2:
+                payload = parts[1] + '=' * (-len(parts[1]) % 4)
+                import base64
+                d = json.loads(base64.urlsafe_b64decode(payload).decode('utf-8', errors='ignore'))
+                if d and (d.get('url') or d.get('video_url')):
+                    return d.get('url') or d.get('video_url')
+    except Exception:
+        pass
+    return raw_url
+
+
 def extract_facebook_siputzx(fb_url):
     api = 'https://api.siputzx.my.id/api/d/facebook?url=' + quote(fb_url)
     req = urllib.request.Request(
@@ -536,17 +569,80 @@ def extract_facebook_siputzx(fb_url):
     return {
         "title": d['data'].get('title') or "Facebook Video",
         "thumbnail": d['data'].get('thumbnail') or "",
-        "url": chosen,
+        "url": unpack_snapcdn_url(chosen),
         "height": 720 if hd else 360,
         "platform": "Facebook"
     }
 
 
+def extract_facebook_savefrom(fb_url):
+    api = 'https://api.siputzx.my.id/api/d/savefrom?url=' + quote(fb_url)
+    req = urllib.request.Request(
+        api,
+        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    )
+    with urllib.request.urlopen(req, timeout=14) as r:
+        d = json.loads(r.read().decode('utf-8'))
+
+    if not d.get('status') or not d.get('data'):
+        raise Exception("SaveFrom API error")
+
+    url = d['data'].get('url')
+    if not url and d['data'].get('downloads'):
+        url = d['data']['downloads'][0].get('url')
+    if not url:
+        raise Exception("No video URL found in SaveFrom")
+
+    return {
+        "title": d['data'].get('title') or "Facebook Video",
+        "thumbnail": d['data'].get('thumbnail') or d['data'].get('thumb') or "",
+        "url": unpack_snapcdn_url(url),
+        "height": 720,
+        "platform": "Facebook"
+    }
+
+
 def extract_facebook(fb_url):
+    for fn in [extract_facebook_siputzx, extract_facebook_savefrom, extract_facebook_snapsave]:
+        try:
+            return fn(fb_url)
+        except Exception:
+            continue
+    raise Exception("Facebook video direct stream nahi mila.")
+
+
+def extract_instagram_savefrom(url):
+    api = 'https://api.siputzx.my.id/api/d/savefrom?url=' + quote(url)
+    req = urllib.request.Request(
+        api,
+        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    )
+    with urllib.request.urlopen(req, timeout=14) as r:
+        d = json.loads(r.read().decode('utf-8'))
+
+    if not d.get('status') or not d.get('data'):
+        raise Exception("Instagram SaveFrom API error")
+
+    vid = d['data'].get('url')
+    if not vid and d['data'].get('downloads'):
+        vid = d['data']['downloads'][0].get('url')
+    if not vid:
+        raise Exception("No Instagram video stream found in SaveFrom")
+
+    return {
+        "title": d['data'].get('title') or "Instagram Video",
+        "thumbnail": d['data'].get('thumbnail') or d['data'].get('thumb') or "",
+        "url": unpack_snapcdn_url(vid),
+        "height": 1080,
+        "platform": "Instagram"
+    }
+
+
+def extract_instagram(url):
     try:
-        return extract_facebook_snapsave(fb_url)
+        return extract_instagram_gallery_dl(url)
     except Exception:
-        return extract_facebook_siputzx(fb_url)
+        return extract_instagram_savefrom(url)
 
 
 def extract_instagram_gallery_dl(url):
@@ -1237,7 +1333,7 @@ def get_video_info(request: URLRequest):
         # Fallback 2: Instagram resolver
         if "instagram.com" in url.lower():
             try:
-                ig_info = extract_instagram_gallery_dl(url)
+                ig_info = extract_instagram(url)
                 return {
                     "title": ig_info["title"],
                     "thumbnail": ig_info.get("thumbnail") or "",
@@ -1364,7 +1460,16 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
             if cancel_event and cancel_event.is_set():
                 raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
 
-            final_file = trim_file_if_needed(final_file, start_time, end_time, job_id)
+            # Auto-trim trailing outro watermark card if duration_ms is provided and no custom end_time was passed
+            auto_end = end_time
+            if not auto_end and snap_info.get("duration_ms"):
+                try:
+                    d_sec = round(snap_info["duration_ms"] / 1000.0, 2)
+                    if d_sec > 2.0:
+                        auto_end = str(d_sec)
+                except Exception:
+                    pass
+            final_file = trim_file_if_needed(final_file, start_time, auto_end, job_id)
             title = safe_filename(snap_info.get("title") or "Snapchat Video")
             final_file = rename_to_clean_title(final_file, title, DOWNLOAD_DIR)
             stat = final_file.stat()
@@ -1817,7 +1922,7 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
             try:
                 with JOBS_LOCK:
                     job.update({"status": "downloading", "speed": "Instagram Engine", "progress": 15})
-                ig_data = extract_instagram_gallery_dl(url)
+                ig_data = extract_instagram(url)
                 if ig_data and ig_data.get("url"):
                     download_direct_stream(
                         job_id,

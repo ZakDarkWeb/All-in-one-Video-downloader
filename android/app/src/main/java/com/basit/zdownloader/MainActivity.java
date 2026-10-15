@@ -225,6 +225,8 @@ public class MainActivity extends AppCompatActivity {
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
+        settings.setAllowFileAccessFromFileURLs(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
@@ -332,6 +334,46 @@ public class MainActivity extends AppCompatActivity {
         }
         try {
             String cleanUrl = url.trim().replace("&amp;", "&");
+
+            // Unpack snapcdn.app JWT token to get raw fbcdn.net stream (bypasses Cloudflare 403 on mobile DownloadManager)
+            if (cleanUrl.contains("snapcdn") && cleanUrl.contains("token=")) {
+                try {
+                    String token = "";
+                    Uri parsedUri = Uri.parse(cleanUrl);
+                    token = parsedUri.getQueryParameter("token");
+                    if (token == null || token.isEmpty()) {
+                        int idx = cleanUrl.indexOf("token=");
+                        if (idx != -1) {
+                            token = cleanUrl.substring(idx + 6);
+                            int amp = token.indexOf("&");
+                            if (amp != -1) token = token.substring(0, amp);
+                        }
+                    }
+                    if (token != null && token.contains(".")) {
+                        String[] parts = token.split("\\.");
+                        if (parts.length >= 2) {
+                            byte[] decoded = android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
+                            String jsonStr = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+                            org.json.JSONObject obj = new org.json.JSONObject(jsonStr);
+                            if (obj.has("url")) {
+                                String directFbUrl = obj.getString("url");
+                                if (directFbUrl.startsWith("http")) {
+                                    cleanUrl = directFbUrl;
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            // Strip Snapchat SpotlightSharing watermark parameter if present
+            if ((cleanUrl.contains("sc-cdn.net") || cleanUrl.contains("bolt-gcdn")) && cleanUrl.contains("mo=")) {
+                cleanUrl = cleanUrl.replaceAll("[?&]mo=[^&]+", "");
+                if (cleanUrl.endsWith("?") || cleanUrl.endsWith("&")) {
+                    cleanUrl = cleanUrl.substring(0, cleanUrl.length() - 1);
+                }
+            }
+
             String safeFilename = (filename != null && !filename.trim().isEmpty())
                     ? filename.replaceAll("[\\\\/:*?\"<>|]", "_")
                     : ("ZDownloader_" + System.currentTimeMillis() + ".mp4");
@@ -464,13 +506,14 @@ public class MainActivity extends AppCompatActivity {
                 CookieManager.getInstance().setAcceptThirdPartyCookies(snifferWebView, true);
             }
 
-            // Headless: 1x1 dp, completely invisible, attached so WebKit executes JS & rendering
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(1, 1);
-            lp.gravity = Gravity.BOTTOM | Gravity.END;
+            s.setAllowFileAccessFromFileURLs(true);
+            s.setAllowUniversalAccessFromFileURLs(true);
+
+            // Full viewport placed BEHIND webView (at index 0) so WebKit compositor renders & autoplays fully
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
             snifferWebView.setLayoutParams(lp);
-            snifferWebView.setAlpha(0.01f);
             if (rootFrameLayout != null) {
-                rootFrameLayout.addView(snifferWebView);
+                rootFrameLayout.addView(snifferWebView, 0);
             }
 
             snifferWebView.addJavascriptInterface(new Object() {
@@ -543,39 +586,28 @@ public class MainActivity extends AppCompatActivity {
                             "  var play = document.querySelector('[aria-label=\"Play\"]') || document.querySelector('video') || document.querySelector('.EmbeddedMedia') || document.querySelector('div[role=\"button\"]');" +
                             "  if (play) { try { play.click(); } catch(e) {} }" +
                             "  if (!check()) {" +
-                            "    var iv = setInterval(function() { if (check()) clearInterval(iv); }, 600);" +
-                            "    setTimeout(function() { clearInterval(iv); }, 18000);" +
+                            "    var iv = setInterval(function() { if (check()) clearInterval(iv); }, 500);" +
+                            "    setTimeout(function() { clearInterval(iv); }, 10000);" +
                             "  }" +
                             "})();";
                     view.evaluateJavascript(js, null);
                 }
             });
 
-            // 10 second timeout: destroy silently WITHOUT opening any mini browser!
+            // 6 second timeout: If background sniffing hasn't intercepted the stream, seamlessly open mini-browser
             snifferTimeoutRunnable = () -> {
                 if (snifferWebView != null) {
                     destroySniffer();
                     mainHandler.post(() -> {
-                        String js = "if (typeof showToast === 'function') showToast('⚠️ Video automatically detect nahi ho saki. Public link check karein.');" +
-                                "var card = document.getElementById('mProgCard'); if (card) card.classList.remove('show');" +
-                                "var btn = document.getElementById('mStartDlBtn'); if (btn) { btn.disabled = false; btn.innerHTML = '<span>⚡ Start Download</span>'; }";
-                        webView.evaluateJavascript(js, null);
+                        Toast.makeText(MainActivity.this, "⚡ Video play karein download detect karne ke liye...", Toast.LENGTH_SHORT).show();
+                        showMiniBrowser(cleanUrl);
                     });
                 }
             };
-            mainHandler.postDelayed(snifferTimeoutRunnable, 20000);
+            mainHandler.postDelayed(snifferTimeoutRunnable, 6000);
 
-            // If Instagram link: try embed url which bypasses login barriers
-            if (cleanUrl.contains("instagram.com")) {
-                String shortcode = extractInstagramShortcode(cleanUrl);
-                if (shortcode != null) {
-                    snifferWebView.loadUrl("https://www.instagram.com/p/" + shortcode + "/embed/captioned/");
-                } else {
-                    snifferWebView.loadUrl(cleanUrl);
-                }
-            } else {
-                snifferWebView.loadUrl(cleanUrl);
-            }
+            // Load directly
+            snifferWebView.loadUrl(cleanUrl);
         });
     }
 
@@ -1174,11 +1206,14 @@ public class MainActivity extends AppCompatActivity {
                     String filename = "ZDownloader_" + System.currentTimeMillis() + ext;
                     triggerDownload(chosen, filename);
 
-                    // Notify JS UI
+                    // Notify JS UI & auto-close mini-browser
                     mainHandler.post(() -> {
                         String js = "if (typeof showToast === 'function') showToast('\u2705 Video detect ho gayi! Download shuru ho rahi hai...');" +
                                 "var card = document.getElementById('mProgCard'); if (card) card.classList.remove('show');";
                         webView.evaluateJavascript(js, null);
+                        if (miniBrowserLayout != null && miniBrowserLayout.getVisibility() == View.VISIBLE) {
+                            mainHandler.postDelayed(() -> closeMiniBrowser(), 1500);
+                        }
                     });
                 }
                 autoDownloadRunnable = null;
