@@ -544,7 +544,7 @@ public class MainActivity extends AppCompatActivity {
                             "  if (play) { try { play.click(); } catch(e) {} }" +
                             "  if (!check()) {" +
                             "    var iv = setInterval(function() { if (check()) clearInterval(iv); }, 600);" +
-                            "    setTimeout(function() { clearInterval(iv); }, 9000);" +
+                            "    setTimeout(function() { clearInterval(iv); }, 18000);" +
                             "  }" +
                             "})();";
                     view.evaluateJavascript(js, null);
@@ -563,7 +563,7 @@ public class MainActivity extends AppCompatActivity {
                     });
                 }
             };
-            mainHandler.postDelayed(snifferTimeoutRunnable, 10000);
+            mainHandler.postDelayed(snifferTimeoutRunnable, 20000);
 
             // If Instagram link: try embed url which bypasses login barriers
             if (cleanUrl.contains("instagram.com")) {
@@ -1116,6 +1116,10 @@ public class MainActivity extends AppCompatActivity {
     private boolean isSniffableVideoUrl(String url) {
         if (url == null) return false;
         String u = url.toLowerCase();
+        // Skip partial DASH segments (would save a broken/truncated video)
+        if (u.contains("bytestart=") || u.contains("byteend=") || u.contains("range=")) {
+            return false;
+        }
         if (u.contains(".js") || u.contains(".css") || u.contains(".png") || u.contains(".jpg") ||
                 u.contains(".jpeg") || u.contains(".gif") || u.contains(".webp") || u.contains(".svg") ||
                 u.contains(".ico") || u.contains(".woff") || u.contains(".woff2") || u.contains(".ttf") ||

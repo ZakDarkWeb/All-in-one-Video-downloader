@@ -539,8 +539,19 @@ def extract_instagram_gallery_dl(url):
         cmd.extend(["--cookies", cookie_file])
     cmd.append(url)
     import subprocess
-    res = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=40)
+    except subprocess.TimeoutExpired:
+        raise Exception("Instagram request timed out. Try again.")
+    if "No module named gallery_dl" in (res.stderr or ""):
+        raise Exception("gallery-dl is not installed. Run: pip install gallery-dl")
     urls = re.findall(r'https?://[^\s]+', res.stdout)
+    if not urls:
+        err = (res.stderr or "").strip().splitlines()
+        hint = err[-1][:200] if err else "no media found"
+        if not cookie_file:
+            hint += " | Login cookies needed: sync Instagram cookies (cookie button)."
+        raise Exception("Instagram: " + hint)
     if urls:
         # Pick the actual media URL (usually ends in .mp4 or last valid URL)
         stream_url = urls[-1]
@@ -778,7 +789,24 @@ async def lifespan(app):
         if ff_dir not in os.environ.get("PATH", ""):
             os.environ["PATH"] = ff_dir + os.pathsep + os.environ.get("PATH", "")
 
+    # Facebook/Instagram extractors break often: keep yt-dlp and gallery-dl fresh.
+    # Set ZD_AUTO_UPDATE=0 to disable. New versions apply after the next restart.
+    if os.environ.get("ZD_AUTO_UPDATE", "1") != "0":
+        threading.Thread(target=auto_update_engines, daemon=True).start()
+
     yield
+
+
+def auto_update_engines():
+    import subprocess
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "--quiet",
+             "--break-system-packages", "yt-dlp", "gallery-dl"],
+            capture_output=True, text=True, timeout=300
+        )
+    except Exception:
+        pass
 
 
 # ------------------------------------------------------------

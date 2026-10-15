@@ -6,7 +6,7 @@
 <title>ZDownloader PRO • By Basit • Mobile App</title>
 <script>
 // Auto-purge old caches once on version update
-const BUILD_VERSION = 'v10.0_standalone_direct';
+const BUILD_VERSION = 'v10.1_fb_ig_fix';
 if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   localStorage.setItem('zdown_build', BUILD_VERSION);
   if ('caches' in window) {
@@ -4034,7 +4034,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
   }
 
   // Auto cache purge when app version updates
-  const APP_VERSION = 'v10.0_standalone_direct';
+  const APP_VERSION = 'v10.1_fb_ig_fix';
   try {
     if (localStorage.getItem('zdown_app_ver') !== APP_VERSION) {
       localStorage.setItem('zdown_app_ver', APP_VERSION);
@@ -4295,6 +4295,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         }
       } catch (e) {
         console.warn("FB direct API error:", e);
+        window.__fbWhy = "API: " + (e && e.name === 'AbortError' ? 'timeout' : (e && e.message) || 'failed');
       }
 
       // Method B: Direct plain-text scraper fallback
@@ -4320,7 +4321,9 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         }
       } catch (e) {
         console.warn("FB proxy stream error:", e);
+        window.__fbWhy = (window.__fbWhy ? window.__fbWhy + " | " : "") + "Proxy: " + ((e && e.message) || 'failed');
       }
+      if (window.__fbWhy) { showToast("ℹ️ Direct methods failed (" + window.__fbWhy + "). Trying fallback…"); window.__fbWhy = ""; }
 
       // Method C: Headless background sniffer in Android (Zero Popups, Zero Browser Windows)
       if (window.Android && typeof window.Android.startBackgroundSniffer === 'function') {
