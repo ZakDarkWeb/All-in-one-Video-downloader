@@ -4263,11 +4263,49 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       document.getElementById('mProgFill').style.width = "45%";
       document.getElementById('mProgSpeed').textContent = "⚡ Connecting…";
 
-      // Strategy 1: Public Invidious streams
+      // Strategy 0: Cobalt community instances (server-side merged MP4 with audio — verified 2026-11-06)
+      // Official api.cobalt.tools now demands JWT auth; these public instances answer without auth + CORS *.
+      const cobaltInstances = [
+        "https://rue-cobalt.xenon.zone",
+        "https://api.cobalt.liubquanti.click"
+      ];
+      for (const inst of cobaltInstances) {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 30000);
+          const res = await fetch(`${inst}/`, {
+            method: "POST",
+            signal: ctrl.signal,
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify(isAudio
+              ? { url: cleanYtUrl, downloadMode: "audio", audioFormat: "mp3", filenameStyle: "basic" }
+              : { url: cleanYtUrl, videoQuality: (selectedFormat === '720' ? "720" : "1080"), downloadMode: "auto", filenameStyle: "basic", youtubeVideoCodec: "h264" })
+          });
+          clearTimeout(timer);
+          if (res.ok) {
+            const d = await res.json();
+            let dlUrl = null, dlName = null;
+            if (d && (d.status === "tunnel" || d.status === "redirect") && d.url) { dlUrl = d.url; dlName = d.filename; }
+            else if (d && d.status === "picker" && Array.isArray(d.picker) && d.picker.length > 0) { dlUrl = d.picker[0].url; }
+            if (dlUrl && !isBadAdUrl(dlUrl)) {
+              const cleanName = (dlName || "").replace(/[/\\?%*:|"<>]/g, "").trim();
+              const titleFromFile = cleanName.replace(/\.(mp4|mp3|webm|m4a)$/i, "");
+              return {
+                ok: true,
+                title: titleFromFile || "YouTube Video",
+                downloadUrl: dlUrl,
+                thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+                filename: cleanName || `${(titleFromFile || 'YouTube').slice(0, 40)}_${Date.now()}.${isAudio ? 'mp3' : 'mp4'}`
+              };
+            }
+          }
+        } catch {}
+      }
+
+      // Strategy 1: Public Invidious streams (fresh list 2026-11-06 — old instances are dead;
+      // chocolatemoo53 is the only public instance left with API + CORS enabled)
       const invidiousInstances = [
-        "https://inv.tux.pizza",
-        "https://invidious.nerdvpn.de",
-        "https://vid.puffyan.us"
+        "https://yt.chocolatemoo53.com"
       ];
       for (const inst of invidiousInstances) {
         try {
@@ -4277,7 +4315,8 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
           clearTimeout(timer);
           if (res.ok) {
             const d = await res.json();
-            if (d && d.formatStreams && d.formatStreams.length > 0) {
+            const afAudio = isAudio ? (d?.adaptiveFormats || []).find(f => (f.type || '').includes('audio/mp4')) : null;
+            if (d && ((d.formatStreams && d.formatStreams.length > 0) || afAudio)) {
               const stream = isAudio 
                 ? (d.adaptiveFormats?.find(f => (f.type || '').includes('audio')) || d.formatStreams[0])
                 : (d.formatStreams.find(f => f.qualityLabel === '720p' || f.resolution === '720p') || d.formatStreams[0]);
