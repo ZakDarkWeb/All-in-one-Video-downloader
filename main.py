@@ -911,14 +911,17 @@ def base_options(url):
     if cookie_file:
         options["cookiefile"] = cookie_file
 
-    # Chrome impersonation: Facebook/Instagram datacenter aam request ko
-    # bot samajh kar block karte hain. curl-cffi installed ho to on karo,
-    # na ho to chup chaap skip (koi error nahi).
-    try:
-        from yt_dlp.networking.impersonate import ImpersonateTarget
-        options["impersonate"] = ImpersonateTarget(client="chrome")
-    except Exception:
-        pass
+    # Chrome impersonation SIRF Facebook/Instagram ke liye: Meta datacenter
+    # aam request ko bot samajh kar block karta hai, wahan ye madad karta hai.
+    # Baqi platforms (YouTube/TikTok) par iski zaroorat nahi - aur kuch
+    # networks (proxy waghera) par curl-cffi transport stall ho jata hai,
+    # jis se woh downloads bhi latak jate thay (test mein confirm hua).
+    if any(m in url.lower() for m in ["facebook.com", "fb.watch", "fb.me", "instagram.com"]):
+        try:
+            from yt_dlp.networking.impersonate import ImpersonateTarget
+            options["impersonate"] = ImpersonateTarget(client="chrome")
+        except Exception:
+            pass
 
     return options
 
