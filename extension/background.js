@@ -431,6 +431,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         .catch(err => sendResponse({ ok: false, error: err.message }));
       return true;
     }
+    // FIX: yahan file mein listener band hi nahi hota tha - 'CANCEL_DOWNLOAD'
+    // ke baad closing braces gayab the, poori background.js SYNTAX ERROR thi
+    // aur Chrome extension ka service worker load hi nahi hota tha
+    // (cookie sync + standalone FB/IG extractors sab band the).
+    sendResponse({ ok: false, error: "Koi active download nahi hai." });
+    return false;
+  }
+});
 // ── Standalone Direct Downloader (Zero Python Required) ───────────
 async function startStandaloneDownload(item) {
   let streamUrl = item.directStream;
@@ -592,9 +600,12 @@ async function getStandaloneVideoInfo(url) {
       const res = await fetch(`https://api.siputzx.my.id/api/d/facebook?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
       const json = await res.json();
       if (json.status && json.data) {
-        const hd = json.data.urls?.find(u => u.hd)?.hd;
-        const sd = json.data.urls?.find(u => u.sd)?.sd;
-        const stream = hd || sd || json.data.urls?.[0]?.sd || json.data.urls?.[0]?.hd;
+        // FIX: asal response data.downloads = [{quality:'720p (HD)', url}, ...] hai,
+        // purana code data.urls dhoondta tha jo kabhi aata hi nahi - FB hamesha fail tha.
+        const dls = json.data.downloads || [];
+        const hd = dls.find(x => /hd/i.test(x.quality || ''))?.url;
+        const sd = dls.find(x => /sd/i.test(x.quality || ''))?.url;
+        const stream = hd || sd || dls[0]?.url;
         if (stream) {
           const qualities = [];
           if (hd) qualities.push({ height: 1080, label: "HD Video (SnapCDN)", size: "Direct MP4", url: hd });
@@ -650,11 +661,19 @@ async function getStandaloneVideoInfo(url) {
   // 4. Instagram
   if (/instagram\.com/i.test(url)) {
     try {
-      const res = await fetch(`https://api.siputzx.my.id/api/d/ig?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
+      // FIX: /api/d/ig route band ho chuki hai (404). SaveFrom wala endpoint
+      // chalta hai lekin uska data nested list hota hai - andar se .mp4 dhoondo.
+      const res = await fetch(`https://api.siputzx.my.id/api/d/savefrom?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(8000) });
       const json = await res.json();
-      if (json.status && json.data && json.data.length > 0) {
-        const item = json.data[0];
-        const stream = item.url;
+      if (json.status && json.data) {
+        const dig = (n) => {
+          if (typeof n === 'string') return n.startsWith('http') && (n.includes('.mp4') || n.includes('cdninstagram')) ? n : null;
+          if (Array.isArray(n)) { for (const i of n) { const r = dig(i); if (r) return r; } }
+          else if (n && typeof n === 'object') { for (const v of Object.values(n)) { const r = dig(v); if (r) return r; } }
+          return null;
+        };
+        const stream = dig(json.data);
+        const item = Array.isArray(json.data) ? (json.data[0] || {}) : json.data;
         if (stream) {
           return {
             ok: true,

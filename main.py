@@ -546,6 +546,37 @@ def unpack_snapcdn_url(raw_url):
     return raw_url
 
 
+
+def _dig_savefrom_media(data):
+    """SaveFrom (siputzx) response ka shape badalta rehta hai:
+    kabhi data dict hota hai, kabhi list, aur url kabhi string,
+    kabhi {'url': ...}, kabhi [{'url': ...}] nested list.
+    Har shape se pehla asli video URL nikaalo (thumbnail/image skip)."""
+    found = []
+
+    def walk(node):
+        if isinstance(node, str):
+            if node.startswith("http"):
+                found.append(node)
+        elif isinstance(node, dict):
+            # 'url' key ko pehle check karo, phir baqi values
+            if isinstance(node.get("url"), (str, dict, list)):
+                walk(node["url"])
+            for k, v in node.items():
+                if k != "url":
+                    walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(data)
+    video = [u for u in found if ".mp4" in u.lower() or "cdninstagram" in u.lower()
+             or "fbcdn" in u.lower() or "snapcdn" in u.lower() or "sf-converter" in u.lower()]
+    images = (".jpg", ".jpeg", ".png", ".webp")
+    video = [u for u in video if not any(e in u.lower().split("?")[0] for e in images)]
+    return video[0] if video else None
+
+
 def extract_facebook_siputzx(fb_url):
     api = 'https://api.siputzx.my.id/api/d/facebook?url=' + quote(fb_url)
     req = urllib.request.Request(
@@ -558,10 +589,19 @@ def extract_facebook_siputzx(fb_url):
     if not d.get('status') or not d.get('data'):
         raise Exception("Siputzx API error")
 
-    downloads = d['data'].get('downloads', [])
-    hd = next((x['url'] for x in downloads if 'hd' in (x.get('quality') or '').lower()), None)
-    sd = next((x['url'] for x in downloads if 'sd' in (x.get('quality') or '').lower()), None)
+    data_obj = d['data'] if isinstance(d['data'], dict) else {}
+    downloads = data_obj.get('downloads') or []
+    if not downloads:  # purana shape: data.urls = [{'hd':..},{'sd':..}]
+        for entry in data_obj.get('urls') or []:
+            if isinstance(entry, dict):
+                for q, u in entry.items():
+                    if u:
+                        downloads.append({'quality': q, 'url': u})
+    hd = next((x['url'] for x in downloads if 'hd' in str(x.get('quality') or '').lower()), None)
+    sd = next((x['url'] for x in downloads if 'sd' in str(x.get('quality') or '').lower()), None)
     chosen = hd or sd or (downloads[0]['url'] if downloads else None)
+    if not chosen:
+        chosen = _dig_savefrom_media(d['data'])
 
     if not chosen:
         raise Exception("No video URL in Siputzx response")
@@ -587,15 +627,20 @@ def extract_facebook_savefrom(fb_url):
     if not d.get('status') or not d.get('data'):
         raise Exception("SaveFrom API error")
 
-    url = d['data'].get('url')
-    if not url and d['data'].get('downloads'):
-        url = d['data']['downloads'][0].get('url')
+    url = None
+    if isinstance(d['data'], dict):
+        url = d['data'].get('url')
+        if not url and d['data'].get('downloads'):
+            url = d['data']['downloads'][0].get('url')
+    if not url:  # naya shape: data ek list hai, url nested hota hai
+        url = _dig_savefrom_media(d['data'])
     if not url:
         raise Exception("No video URL found in SaveFrom")
 
+    meta = d['data'] if isinstance(d['data'], dict) else {}
     return {
-        "title": d['data'].get('title') or "Facebook Video",
-        "thumbnail": d['data'].get('thumbnail') or d['data'].get('thumb') or "",
+        "title": meta.get('title') or "Facebook Video",
+        "thumbnail": meta.get('thumbnail') or meta.get('thumb') or "",
         "url": unpack_snapcdn_url(url),
         "height": 720,
         "platform": "Facebook"
@@ -623,15 +668,20 @@ def extract_instagram_savefrom(url):
     if not d.get('status') or not d.get('data'):
         raise Exception("Instagram SaveFrom API error")
 
-    vid = d['data'].get('url')
-    if not vid and d['data'].get('downloads'):
-        vid = d['data']['downloads'][0].get('url')
+    vid = None
+    if isinstance(d['data'], dict):
+        vid = d['data'].get('url')
+        if not vid and d['data'].get('downloads'):
+            vid = d['data']['downloads'][0].get('url')
+    if not vid:  # asal current shape: data = [{'type':'video','data':[{'url':[{'url':...}]}]}]
+        vid = _dig_savefrom_media(d['data'])
     if not vid:
         raise Exception("No Instagram video stream found in SaveFrom")
 
+    meta = d['data'] if isinstance(d['data'], dict) else {}
     return {
-        "title": d['data'].get('title') or "Instagram Video",
-        "thumbnail": d['data'].get('thumbnail') or d['data'].get('thumb') or "",
+        "title": meta.get('title') or "Instagram Video",
+        "thumbnail": meta.get('thumbnail') or meta.get('thumb') or "",
         "url": unpack_snapcdn_url(vid),
         "height": 1080,
         "platform": "Instagram"
@@ -639,15 +689,25 @@ def extract_instagram_savefrom(url):
 
 
 def extract_instagram(url):
+    # Cookies hon to gallery-dl sab se reliable hai (private/restricted bhi).
+    # Bina cookies ke gallery-dl Instagram se 429 kha kar 60s sota hai aur
+    # backend ka 40s timeout use hamesha maar deta tha - is liye bina
+    # cookies pehle SaveFrom try karo jo public reels par foran chalta hai.
+    if get_cookie_file(url):
+        try:
+            return extract_instagram_gallery_dl(url)
+        except Exception:
+            return extract_instagram_savefrom(url)
     try:
-        return extract_instagram_gallery_dl(url)
-    except Exception:
         return extract_instagram_savefrom(url)
+    except Exception:
+        return extract_instagram_gallery_dl(url)
 
 
 def extract_instagram_gallery_dl(url):
     cookie_file = get_cookie_file(url)
-    cmd = [sys.executable, "-m", "gallery_dl", "-g"]
+    cmd = [sys.executable, "-m", "gallery_dl", "-g",
+           "-o", "sleep-request=0", "-o", "sleep-429=0"]
     if cookie_file:
         cmd.extend(["--cookies", cookie_file])
     cmd.append(url)
@@ -690,6 +750,15 @@ def download_direct_stream(job_id, stream_url, title, audio_only, start_time=Non
         "Referer": "https://www.facebook.com/" if "fbcdn" in stream_url else "https://www.instagram.com/"
     }
     r = requests.get(stream_url, headers=headers, stream=True, timeout=30)
+    # FIX: pehle status/content-type check hi nahi hota tha - resolver ka
+    # error/HTML page bhi .mp4 ban kar 'done' ho jata tha (corrupt file).
+    try:
+        r.raise_for_status()
+    except Exception:
+        raise Exception(f"Video stream download fail (HTTP {r.status_code}). Link expire ho gaya hoga, dobara try karein.")
+    ctype = (r.headers.get("content-type") or "").lower()
+    if "text/html" in ctype or "application/json" in ctype:
+        raise Exception("Video stream ki jagah error page mila. Link expire/invalid hai, dobara try karein.")
     total_size = int(r.headers.get("content-length", 0))
     downloaded = 0
     raw_file = DOWNLOAD_DIR / f"{job_id}.mp4"
@@ -714,6 +783,11 @@ def download_direct_stream(job_id, stream_url, title, audio_only, start_time=Non
     if cancel_event and cancel_event.is_set():
         raw_file.unlink(missing_ok=True)
         raise yt_dlp.utils.DownloadCancelled("Download cancelled by user")
+
+    # Bohat chhoti file = video nahi, error page hai
+    if not raw_file.exists() or raw_file.stat().st_size < 10240:
+        raw_file.unlink(missing_ok=True)
+        raise Exception("Downloaded file khaali/corrupt hai (video stream nahi mila). Dobara try karein.")
 
     ff = find_ffmpeg() or "ffmpeg"
     import subprocess
@@ -836,6 +910,15 @@ def base_options(url):
     cookie_file = get_cookie_file(url)
     if cookie_file:
         options["cookiefile"] = cookie_file
+
+    # Chrome impersonation: Facebook/Instagram datacenter aam request ko
+    # bot samajh kar block karte hain. curl-cffi installed ho to on karo,
+    # na ho to chup chaap skip (koi error nahi).
+    try:
+        from yt_dlp.networking.impersonate import ImpersonateTarget
+        options["impersonate"] = ImpersonateTarget(client="chrome")
+    except Exception:
+        pass
 
     return options
 
@@ -1681,8 +1764,12 @@ def download_worker(job_id, url, quality, audio_only, start_time=None, end_time=
     })
 
     is_yt = any(y in url.lower() for y in ["youtube.com", "youtu.be"])
+    # FIX: aria2c ko yt-dlp ke cookies/headers sahi nahi milte, is liye
+    # Facebook/Instagram ke signed fbcdn links 403/corrupt dete the.
+    # In dono platforms par native downloader hi use hoga.
+    is_meta = any(m in url.lower() for m in ["facebook.com", "fb.watch", "fb.me", "instagram.com"])
     aria2_path = find_aria2c()
-    use_aria2 = bool(aria2_path and (turbo or not is_yt))
+    use_aria2 = bool(aria2_path and (turbo or not is_yt) and not is_meta)
 
     if use_aria2:
         options["external_downloader"] = "aria2c"
@@ -2123,8 +2210,13 @@ def sync_cookies(req: CookieSyncRequest):
                         netscape_lines.append(f"{clean_dom}\tTRUE\t/\tTRUE\t{exp}\t{k.strip()}\t{v.strip()}")
                 elif len(item.strip()) > 15:
                     # Raw session ID string passed directly!
+                    # FIX: 'sessionid' sirf Instagram ka cookie hai. Facebook
+                    # ka session cookie 'xs' hota hai (saath 'c_user' bhi
+                    # chahiye hota hai - poori 'c_user=...; xs=...' string
+                    # paste karna best hai).
+                    raw_name = "xs" if "facebook" in clean_dom else "sessionid"
                     exp = int(time.time() + 86400 * 365)
-                    netscape_lines.append(f"{clean_dom}\tTRUE\t/\tTRUE\t{exp}\tsessionid\t{item.strip()}")
+                    netscape_lines.append(f"{clean_dom}\tTRUE\t/\tTRUE\t{exp}\t{raw_name}\t{item.strip()}")
     elif req.cookies:
         netscape_lines.append("# Netscape HTTP Cookie File")
         netscape_lines.append("# Generated by ZDownloader Chrome Extension")

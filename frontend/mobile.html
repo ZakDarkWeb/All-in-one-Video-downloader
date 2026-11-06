@@ -4090,6 +4090,27 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
     return rawUrl;
   }
 
+  // FIX: SaveFrom API ka response ab nested LIST hota hai
+  // ([{type:'video', data:[{url:[{url:'...mp4'}]}]}]) - purana code sirf
+  // data.url / data.downloads[0] dhoondta tha jo kabhi milta hi nahi tha,
+  // is liye app ki standalone Instagram download hamesha fail hoti thi.
+  // Ye helper kisi bhi shape ke andar se pehla asli video URL nikaalta hai.
+  function digSavefromMediaUrl(node) {
+    if (!node) return null;
+    if (typeof node === 'string') {
+      return (node.startsWith('http') && (node.includes('.mp4') || node.includes('cdninstagram') || node.includes('fbcdn') || node.includes('snapcdn') || node.includes('sf-converter'))) ? node : null;
+    }
+    if (Array.isArray(node)) {
+      for (const item of node) { const r = digSavefromMediaUrl(item); if (r) return r; }
+      return null;
+    }
+    if (typeof node === 'object') {
+      if (node.url) { const r = digSavefromMediaUrl(node.url); if (r) return r; }
+      for (const v of Object.values(node)) { const r = digSavefromMediaUrl(v); if (r) return r; }
+    }
+    return null;
+  }
+
   // ── Snapchat Watermark Cleaner (Strips SpotlightSharing and tracking query params to yield clean stream) ──
   function cleanSnapchatCdnUrl(u) {
     if (!u || typeof u !== 'string') return u;
@@ -4372,7 +4393,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         clearTimeout(tSf);
         if (sfRes.ok) {
           const sfd = await sfRes.json();
-          let sfUrl = sfd?.data?.url || (sfd?.data?.downloads && sfd.data.downloads[0]?.url);
+          let sfUrl = sfd?.data?.url || (sfd?.data?.downloads && sfd.data.downloads[0]?.url) || digSavefromMediaUrl(sfd?.data);
           sfUrl = unpackSnapcdnUrl(sfUrl);
           if (sfUrl && !isBadAdUrl(sfUrl)) {
             return {
@@ -4492,7 +4513,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         clearTimeout(t);
         if (res.ok) {
           const d = await res.json();
-          let igUrl = d?.data?.url || (d?.data?.downloads && d.data.downloads[0]?.url);
+          let igUrl = d?.data?.url || (d?.data?.downloads && d.data.downloads[0]?.url) || digSavefromMediaUrl(d?.data);
           igUrl = unpackSnapcdnUrl(igUrl);
           if (igUrl && !isBadAdUrl(igUrl)) {
             return {
