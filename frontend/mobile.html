@@ -4265,6 +4265,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
 
       // Strategy 0: Cobalt community instances (server-side merged MP4 with audio — verified 2026-11-06)
       // Official api.cobalt.tools now demands JWT auth; these public instances answer without auth + CORS *.
+      let ytDeadTunnel = false;
       const cobaltInstances = [
         "https://rue-cobalt.xenon.zone",
         "https://api.cobalt.liubquanti.click",
@@ -4291,6 +4292,16 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
             if (d && (d.status === "tunnel" || d.status === "redirect") && d.url) { dlUrl = d.url; dlName = d.filename; }
             else if (d && d.status === "picker" && Array.isArray(d.picker) && d.picker.length > 0) { dlUrl = d.picker[0].url; }
             if (dlUrl && !isBadAdUrl(dlUrl)) {
+              // 2026-11-21: Cobalt kabhi kabhi (khaas kar music videos par) aisi tunnel
+              // deta hai jo asal mein 0-byte hoti hai. Estimated-Content-Length -1/0
+              // pehle hi bata deta hai — aisi dead tunnel ko "Ready" na bolo.
+              let tunnelDead = false;
+              try {
+                const head = await fetch(dlUrl, { method: "HEAD" });
+                const est = parseInt(head.headers.get("estimated-content-length") || "", 10);
+                if (!isNaN(est) && est <= 0) tunnelDead = true;
+              } catch {}
+              if (tunnelDead) { ytDeadTunnel = true; continue; }
               const cleanName = (dlName || "").replace(/[/\\?%*:|"<>]/g, "").trim();
               const titleFromFile = cleanName.replace(/\.(mp4|mp3|webm|m4a)$/i, "");
               return {
@@ -4389,6 +4400,7 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
         console.warn("YouTube extraction error:", err);
       }
 
+      if (ytDeadTunnel) throw new Error("Ye YouTube video public source se nahi mil rahi — YouTube ne bohat si videos (khaas kar songs) par pabandi sakht kar di hai, server khaali file bhej raha tha. Yehi video Laptop/Termux backend (Turbo mode) se download ho jayegi.");
       throw new Error("YouTube stream extract nahi ho saka. Video privacy setting ya link check karein.");
     }
 
@@ -4631,6 +4643,13 @@ if (localStorage.getItem('zdown_build') !== BUILD_VERSION) {
       const resp = await fetch(downloadUrl);
       if (resp.ok) {
         const blob = await resp.blob();
+        if (!blob || blob.size <= 10000) {
+          // 2026-11-21: server ne khaali/corrupt file bheji (masalan YouTube music
+          // videos par Cobalt ki 0-byte tunnel) — garbage file save karne ke bajaye
+          // saaf error do, anchor fallback par bhi mat jao.
+          showToast("⚠️ Server se khaali file aayi — ye video is source se nahi mil rahi. Dusra link ya backend (Turbo mode) try karein.");
+          return;
+        }
         if (blob && blob.size > 1000) {
           const blobUrl = URL.createObjectURL(blob);
           const a = document.createElement('a');
