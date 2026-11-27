@@ -71,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private String pendingSharedUrl = null;
     private String lastAutoPastedUrl = "";
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final java.util.concurrent.ExecutorService netExecutor = java.util.concurrent.Executors.newFixedThreadPool(4);
     private Runnable snifferTimeoutRunnable = null;
 
     // ── Native In-App Mini Browser Components ──
@@ -653,6 +654,74 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception ignored) {}
             return "";
+        }
+
+        // Native HTTP bridge: WebView (file:// origin) ke fetch() CORS mein phans jaate the —
+        // Cobalt (YouTube), twitsave (Twitter) aur FB/Snapchat page scraping CORS header nahi
+        // bhejte, is liye phone app mein ye resolvers hamesha fail hote the. Ye request Java
+        // se karta hai (koi CORS nahi) aur result window.__zdNativeFetchDone(id, {...}) ko deta hai.
+        @JavascriptInterface
+        public void nativeFetch(final String reqId, final String method, final String url,
+                                final String headersJson, final String body, final int timeoutMs) {
+            netExecutor.execute(() -> {
+                org.json.JSONObject result = new org.json.JSONObject();
+                java.net.HttpURLConnection conn = null;
+                try {
+                    String m = (method == null || method.isEmpty()) ? "GET" : method.toUpperCase(Locale.US);
+                    int to = timeoutMs > 0 ? timeoutMs : 30000;
+                    conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+                    conn.setRequestMethod(m);
+                    conn.setInstanceFollowRedirects(true);
+                    conn.setConnectTimeout(Math.min(to, 20000));
+                    conn.setReadTimeout(to);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36");
+                    if (headersJson != null && !headersJson.isEmpty()) {
+                        org.json.JSONObject h = new org.json.JSONObject(headersJson);
+                        java.util.Iterator<String> keys = h.keys();
+                        while (keys.hasNext()) {
+                            String k = keys.next();
+                            conn.setRequestProperty(k, h.optString(k));
+                        }
+                    }
+                    if (body != null && !body.isEmpty() && !"GET".equals(m) && !"HEAD".equals(m)) {
+                        conn.setDoOutput(true);
+                        byte[] bytes = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                        conn.setFixedLengthStreamingMode(bytes.length);
+                        try (java.io.OutputStream os = conn.getOutputStream()) { os.write(bytes); }
+                    }
+                    int status = conn.getResponseCode();
+                    org.json.JSONObject hdrs = new org.json.JSONObject();
+                    for (java.util.Map.Entry<String, List<String>> e : conn.getHeaderFields().entrySet()) {
+                        if (e.getKey() != null && e.getValue() != null && !e.getValue().isEmpty()) {
+                            hdrs.put(e.getKey().toLowerCase(Locale.US), e.getValue().get(0));
+                        }
+                    }
+                    String text = "";
+                    if (!"HEAD".equals(m)) {
+                        java.io.InputStream is = status >= 400 ? conn.getErrorStream() : conn.getInputStream();
+                        if (is != null) {
+                            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                            byte[] buf = new byte[16384];
+                            int n, total = 0, cap = 6 * 1024 * 1024; // 6MB cap: sirf JSON/HTML ke liye
+                            while ((n = is.read(buf)) != -1 && total < cap) { bos.write(buf, 0, n); total += n; }
+                            is.close();
+                            text = bos.toString("UTF-8");
+                        }
+                    }
+                    result.put("status", status);
+                    result.put("url", conn.getURL().toString());
+                    result.put("headers", hdrs);
+                    result.put("body", text);
+                } catch (Exception e) {
+                    try { result.put("error", String.valueOf(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName())); } catch (Exception ignored) {}
+                } finally {
+                    if (conn != null) conn.disconnect();
+                }
+                final String js = "window.__zdNativeFetchDone && window.__zdNativeFetchDone(" +
+                        org.json.JSONObject.quote(reqId) + "," +
+                        result.toString().replace("\u2028", "\\u2028").replace("\u2029", "\\u2029") + ");";
+                mainHandler.post(() -> { if (webView != null) webView.evaluateJavascript(js, null); });
+            });
         }
 
         @JavascriptInterface
